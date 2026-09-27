@@ -159,7 +159,12 @@ sku_mapping = {
     "SHAVE-SHARKATTACK" : "SHAVE-SharkAttack",
     "SHAVE-BARBIE" : "SHAVE-Barbie",
     "N-CRNBRRYFZZ" : "ENE-CranberryFizz",
-    "COFF-Custom" : "COF-Custom",    
+    "COFF-Custom" : "COF-CB-Custom",   
+    "BLCK-CLD-BRW": "COF-CB-Cowboy",
+    "CF-CRML-HRTBRKR": "COF-CB-SaltedCaramel",
+    "CF-FRST-CRSH": "COF-CB-VanillaCrush",
+    "CFMPL": "COF-CB-MapleCream",
+    "CF-PCN-SCRT-DMRR": "COF-CB-Pecan"
 }
 
 def fix_sku(sku):

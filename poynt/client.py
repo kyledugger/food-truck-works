@@ -269,6 +269,7 @@ class PoyntClient:
 
         count_params = {
             "limit": 1,
+            "timeType": "createdAt",
         }
 
         if start_at:
@@ -334,6 +335,7 @@ class PoyntClient:
                 params = {
                     "limit": page_limit,
                     "startOffset": start_offset,
+                    "timeType": "createdAt",                    
                 }
 
                 if start_at:
