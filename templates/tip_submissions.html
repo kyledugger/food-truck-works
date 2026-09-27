@@ -159,6 +159,22 @@
                                     {% endfor %}
                                 </td>
                                 <td style="min-width: 180px;">
+                                    {% if submission.payouts %}
+                                    {% for payout in submission.payouts %}
+                                        <div class="mb-2">
+                                            <strong>{{ payout.employee_name }}</strong>
+                                            ${{ "%.2f"|format(payout.amount_cents / 100) }}
+                                            <span class="tag is-light">{{ "Cash" if payout.method == "cash" else "Paycheck" }}</span>
+                                            <span class="tag {{ 'is-success' if payout.status == 'paid' else 'is-warning' if payout.status == 'pending' else 'is-danger' }} is-light">{{ payout.status|capitalize }}</span>
+                                            {% if payout.paid_at %}<span class="tip-report-time is-size-7" data-value="{{ payout.paid_at }}"></span>{% endif %}
+                                            {% if payout.status == "pending" and payout.can_confirm %}
+                                            <form method="post" action="/poynt/tip-payouts/{{ payout.id }}/paid" class="is-inline-block">
+                                                <button class="button is-small is-success is-light" type="submit">Confirm paid</button>
+                                            </form>
+                                            {% endif %}
+                                        </div>
+                                    {% endfor %}
+                                    {% else %}
                                     {% for employee in submission.employee_totals %}
                                         <div class="is-flex is-justify-content-space-between" style="gap: 1rem;">
                                             <span>{{ employee.name }}</span>
@@ -167,12 +183,15 @@
                                             </strong>
                                         </div>
                                     {% endfor %}
+                                    {% endif %}
                                 </td>
                                 <td style="white-space: nowrap;">
                                     <strong>${{ "%.2f"|format(submission.total_tip_cents / 100) }}</strong>
                                 </td>
                                 <td style="white-space: nowrap;">
-                                    {% if submission.payout_method == "paycheck" %}
+                                    {% if submission.payout_method == "mixed" %}
+                                        Mixed
+                                    {% elif submission.payout_method == "paycheck" %}
                                         Put on paycheck
                                     {% else %}
                                         Cash out
@@ -198,6 +217,13 @@
                                 </td>
                                 {% if tip_report_can_process %}
                                     <td style="white-space: nowrap;">
+                                        {% if submission.payouts %}
+                                            {% if tip_report_role in ["owner", "manager"] and submission.processing_status == "pending" %}
+                                                <form method="post" action="/poynt/tip-submissions/{{ submission.id }}/reject" onsubmit="return confirm('Reject this unpaid submission and release its orders?');">
+                                                    <button class="button is-small is-danger is-light" type="submit">Reject unpaid</button>
+                                                </form>
+                                            {% endif %}
+                                        {% else %}
                                         {% if submission.processing_status != "paid" %}
                                             <form
                                                 method="post"
@@ -231,6 +257,7 @@
                                                     Reject
                                                 </button>
                                             </form>
+                                        {% endif %}
                                         {% endif %}
                                     </td>
                                 {% endif %}

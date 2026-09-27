@@ -332,7 +332,7 @@
     --------------------------------------------------------- */
 
     .tip-calculator-modal .modal-card {
-        width: 1100px;
+        width: 1240px;
         max-width: calc(100vw - 2rem);
     }
 
@@ -355,14 +355,14 @@
     .tip-row {
         display: grid;
         grid-template-columns:
-            minmax(430px, 1fr)
-            minmax(280px, 1fr)
-            110px
-            125px
+            minmax(590px, 1fr)
+            235px
+            90px
+            105px
             75px;
-        gap: 0.75rem;
+        gap: 0.5rem;
         align-items: center;
-        min-width: 1035px;
+        min-width: 1160px;
     }
 
     .tip-calculator-header {
@@ -383,9 +383,9 @@
     .tip-range-control {
         display: grid;
         grid-template-columns:
-            minmax(190px, 1fr)
+            minmax(270px, 1fr)
             auto
-            minmax(190px, 1fr);
+            minmax(270px, 1fr);
         gap: 0.45rem;
         align-items: center;
     }
@@ -393,6 +393,9 @@
     .tip-range-control .input {
         width: 100%;
         min-width: 0;
+        font-size: 0.9rem;
+        padding-left: 0.6rem;
+        padding-right: 0.35rem;
     }
 
     .tip-range-arrow {
@@ -448,17 +451,36 @@
 
     .tip-employee-totals-list {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-        gap: 0.65rem 1.5rem;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+        gap: 0.85rem 1rem;
         margin-top: 0.75rem;
     }
 
     .tip-employee-total {
-        display: flex;
-        justify-content: space-between;
-        gap: 1rem;
-        padding-bottom: 0.35rem;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 0.35rem 0.75rem;
+        align-content: start;
+        min-width: 0;
+        padding-bottom: 0.65rem;
         border-bottom: 1px solid var(--bulma-border-weak);
+    }
+
+    .tip-employee-total > :first-child {
+        overflow-wrap: anywhere;
+    }
+
+    .tip-employee-total > :last-child {
+        grid-column: 1 / -1;
+    }
+
+    .tip-employee-total .select {
+        width: 100%;
+        max-width: 220px;
+    }
+
+    .tip-employee-total .select select {
+        width: 100%;
     }
 
     .tip-employee-total-amount {
@@ -777,6 +799,11 @@
                         Tip Calculator
                     </button>
                     </div>
+                    {% if tip_can_manage_settings and tip_calculator_store_id %}
+                    <div class="metric-card">
+                        <a class="button is-small is-light" href="/poynt/tip-settings?store_id={{ tip_calculator_store_id | urlencode }}">Tip Settings</a>
+                    </div>
+                    {% endif %}
                     <div class="metric-card">
                         <a
                             href="/poynt/tip-submissions"
@@ -1074,6 +1101,7 @@
             </div>
 
             <div id="tip-calculator-rows"></div>
+            <p id="tip-submission-window-message" class="help mt-3"></p>
 
             <button
                 type="button"
@@ -1092,30 +1120,10 @@
                     id="tip-employee-totals-list"
                     class="tip-employee-totals-list"
                 ></div>
+                <p id="tip-cash-total" class="has-text-weight-semibold mt-3"></p>
             </div>
 
-            <div class="field mt-5">
-                <label class="label">Tips</label>
-                <div class="control">
-                    <label class="radio mr-4">
-                        <input
-                            type="radio"
-                            name="tip-payout-method"
-                            value="cash"
-                            checked
-                        >
-                        Cash out
-                    </label>
-                    <label class="radio">
-                        <input
-                            type="radio"
-                            name="tip-payout-method"
-                            value="paycheck"
-                        >
-                        Put on paycheck
-                    </label>
-                </div>
-            </div>
+            <p class="help mt-4">Each employee's full share goes to cash or paycheck.</p>
 
         </section>
 
@@ -1758,6 +1766,36 @@
         const tipCalculatorStoreName =
             {{ tip_calculator_store_name | default("") | tojson }};
 
+        const tipPayoutPolicy =
+            {{ tip_payout_policy | default("choice") | tojson }};
+
+        const tipAllocationStartAt =
+            {{ tip_allocation_start_at | default(none) | tojson }};
+        const tipEmployeeSubmissionHours =
+            {{ tip_employee_submission_hours | default(24) | tojson }};
+        const tipEmployeeWindowExempt =
+            {{ "true" if tip_employee_window_exempt | default(false) else "false" }};
+
+        function updateTipSubmissionWindow() {
+            const message = document.getElementById("tip-submission-window-message");
+            if (!message || !tipRows.length) return false;
+            const start = tipRows[0].start;
+            const beforeActivation = tipAllocationStartAt && start < new Date(tipAllocationStartAt);
+            const deadline = new Date(start.getTime() + tipEmployeeSubmissionHours * 3600000);
+            const expired = !tipEmployeeWindowExempt && Date.now() > deadline.getTime();
+            if (beforeActivation) {
+                message.textContent = "This range begins before tip allocation was activated for this store.";
+            } else if (expired) {
+                message.textContent = "The employee submission window closed " + deadline.toLocaleString() + ". Contact management.";
+            } else if (!tipEmployeeWindowExempt) {
+                message.textContent = "Submit by " + deadline.toLocaleString() + " (" + tipEmployeeSubmissionHours + " hours after the range starts).";
+            } else {
+                message.textContent = "Managers and payroll may submit after the employee window closes.";
+            }
+            tipCalculatorSubmit.disabled = Boolean(beforeActivation || expired);
+            return Boolean(beforeActivation || expired);
+        }
+
         const tipCalculatorModal =
             document.getElementById("tip-calculator-modal");
 
@@ -1973,8 +2011,6 @@
                         </button>
                     </div>
 
-                    </div>
-
                     <div
                         class="tip-money-value tip-total"
                         data-index="${index}"
@@ -2007,6 +2043,7 @@
             attachTipRowEvents();
             updateTipTotals();
             updateAddButton();
+            updateTipSubmissionWindow();
         }
         /* ---------------------------------------------------------
         Events
@@ -2377,8 +2414,9 @@
                 const splitCents = Math.floor(
                     totalCents / Math.max(1, row.employeeIds.length)
                 );
+                const remainder = totalCents % Math.max(1, row.employeeIds.length);
 
-                row.employeeIds.forEach(function(employeeId) {
+                row.employeeIds.forEach(function(employeeId, index) {
                     const employee = tipCalculatorEmployees.find(
                         function(item) {
                             return item.id === employeeId;
@@ -2393,7 +2431,7 @@
                         total_tip_cents: 0
                     };
 
-                    current.total_tip_cents += splitCents;
+                    current.total_tip_cents += splitCents + (index < remainder ? 1 : 0);
                     totalsByEmployee.set(employeeId, current);
                 });
             });
@@ -2408,6 +2446,9 @@
             }
 
             const employeeTotals = calculateEmployeeTipTotals();
+            const previousChoices = new Map(Array.from(
+                tipEmployeeTotalsList.querySelectorAll(".tip-employee-method")
+            ).map(select => [select.dataset.employeeId, select.value]));
 
             tipEmployeeTotalsList.innerHTML = employeeTotals.map(
                 function(employee) {
@@ -2417,10 +2458,35 @@
                             <span class="tip-employee-total-amount">
                                 ${formatCurrency(employee.total_tip_cents)}
                             </span>
+                            ${tipPayoutPolicy === "choice" ? `
+                                <label class="select is-small">
+                                    <select class="tip-employee-method" data-employee-id="${employee.id}">
+                                        <option value="paycheck">Put on paycheck</option>
+                                        <option value="cash">Cash out</option>
+                                    </select>
+                                </label>` : `<span>${tipPayoutPolicy === "cash" ? "Cash out" : "Put on paycheck"}</span>`}
                         </div>
                     `;
                 }
             ).join("");
+            tipEmployeeTotalsList.querySelectorAll(".tip-employee-method").forEach(function(select) {
+                select.value = previousChoices.get(select.dataset.employeeId) || "paycheck";
+                select.addEventListener("change", updateCashNeeded);
+            });
+            updateCashNeeded();
+        }
+
+        function updateCashNeeded() {
+            const employees = calculateEmployeeTipTotals();
+            const cash = employees.reduce(function(total, employee) {
+                const select = tipEmployeeTotalsList.querySelector(
+                    `.tip-employee-method[data-employee-id="${employee.id}"]`
+                );
+                const method = tipPayoutPolicy === "choice" ? select?.value : tipPayoutPolicy;
+                return total + (method === "cash" ? employee.total_tip_cents : 0);
+            }, 0);
+            document.getElementById("tip-cash-total").textContent =
+                `Cash needed for selected payouts: ${formatCurrency(cash)}`;
         }
 
 
@@ -2461,7 +2527,7 @@
         }
 
         async function submitTipRecord() {
-            if (!tipCalculatorEnabled || !tipRows.length) {
+            if (!tipCalculatorEnabled || !tipRows.length || updateTipSubmissionWindow()) {
                 return;
             }
 
@@ -2470,12 +2536,10 @@
                 return total + calculateRowTips(row, index);
             }, 0);
 
-            const payoutMethodElement = document.querySelector(
-                'input[name="tip-payout-method"]:checked'
-            );
-            const payoutMethod = payoutMethodElement
-                ? payoutMethodElement.value
-                : "cash";
+            const payoutChoices = {};
+            document.querySelectorAll(".tip-employee-method").forEach(function(select) {
+                payoutChoices[select.dataset.employeeId] = select.value;
+            });
 
             const formData = new FormData();
             formData.append("store_id", tipCalculatorStoreId);
@@ -2483,7 +2547,7 @@
             formData.append("report_start_at", payload.report_start_at);
             formData.append("report_end_at", payload.report_end_at);
             formData.append("total_tip_cents", String(totalTipCents));
-            formData.append("payout_method", payoutMethod);
+            formData.append("payout_choices", JSON.stringify(payoutChoices));
             formData.append("submission_json", JSON.stringify(payload));
 
             tipCalculatorSubmit.disabled = true;
@@ -2504,7 +2568,7 @@
                 console.error(error);
                 tipCalculatorSubmit.disabled = false;
                 tipCalculatorSubmit.textContent = "Submit Tips";
-                alert("The tip submission could not be saved. Please try again.");
+                alert("Tips may have changed or orders may already be allocated. Refresh the report and try again.");
             }
         }
 

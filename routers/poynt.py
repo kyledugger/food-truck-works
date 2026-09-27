@@ -5,6 +5,7 @@ from fastapi import APIRouter, Form, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from datetime import datetime, timedelta, timezone
 from urllib.parse import urlencode
 from poynt.token import exchange_authorization_code
@@ -19,14 +20,15 @@ from poynt.client import (
 from dotenv import load_dotenv
 import os
 from database import SessionLocal
-from models import Employee, OrganizationMember
-from tip_submission_model import TipSubmission
+from models import Employee, OrganizationMember, User
+from tip_submission_model import TipSubmission, TipStoreSettings, TipOrderClaim, TipEmployeePayout
 from poynt.connection import get_poynt_connection, get_poynt_credentials
 from organization_context import get_current_organization_id
 from permissions import (
     get_organization_role,
     role_can_manage_integrations,
     role_can_view_payroll_reports,
+    role_can_manage_organization,
 )
 
 dotenv_file = os.getenv("DOTENV_FILE", ".env")
@@ -1234,7 +1236,92 @@ def _aggregate_tip_allocations(ranges: list) -> list[dict]:
     return list(totals.values())
 
 
-def _tip_submission_display(submission: TipSubmission) -> dict:
+def _store_tip_setting(session, organization_id: int, store_id: str):
+    return session.execute(select(TipStoreSettings).where(
+        TipStoreSettings.organization_id == organization_id,
+        TipStoreSettings.store_id == store_id.lower(),
+    )).scalar_one_or_none()
+
+
+def _validate_tip_submission_window(setting, report_start: datetime, role: str | None) -> None:
+    if setting is None or setting.tip_allocation_start_at is None:
+        raise HTTPException(409, "A manager must activate tip allocation in Tip Settings first.")
+    if report_start < setting.tip_allocation_start_at:
+        raise HTTPException(403, "This report begins before this store's tip allocation start.")
+    if not role_can_view_payroll_reports(role):
+        deadline = report_start + timedelta(hours=setting.employee_submission_hours)
+        if datetime.utcnow() > deadline:
+            raise HTTPException(403, "The employee tip submission window has closed. Contact management.")
+
+
+def _active_store_order(order: dict, store_id: str) -> bool:
+    context = order.get("context") or {}
+    order_store = context.get("storeId")
+    if not order_store:
+        ids = {(tx.get("context") or {}).get("storeId") for tx in order.get("transactions") or []}
+        ids.discard(None)
+        if len(ids) != 1:
+            return False
+        order_store = next(iter(ids))
+    return order_store.lower() == store_id.lower()
+
+
+def _allocation_orders(orders: list[dict], ranges: list[dict]) -> tuple[list[dict], dict[int, int]]:
+    """Validate ranges and calculate claimed orders and employee cents on the server."""
+    parsed = []
+    for item in ranges:
+        try:
+            start = _parse_tip_submission_datetime(item["start"])
+            end = _parse_tip_submission_datetime(item["end"])
+            employee_ids = [int(employee["id"]) for employee in item["employees"]]
+        except (KeyError, TypeError, ValueError) as exc:
+            raise HTTPException(400, "Invalid tip range or employee.") from exc
+        if start >= end or not employee_ids or len(employee_ids) != len(set(employee_ids)):
+            raise HTTPException(400, "Invalid or duplicate employees in tip range.")
+        parsed.append((start, end, employee_ids, item))
+    if [item[0] for item in parsed] != sorted(item[0] for item in parsed):
+        raise HTTPException(400, "Tip ranges must be in time order.")
+    if any(parsed[i][1] > parsed[i + 1][0] for i in range(len(parsed) - 1)):
+        raise HTTPException(400, "Tip ranges may not overlap.")
+
+    claims = []
+    totals: dict[int, int] = {}
+    seen = set()
+    range_totals = [0] * len(parsed)
+    for order in orders:
+        order_id = order.get("id")
+        created = order.get("createdAt")
+        if not order_id or not created:
+            continue
+        moment = _parse_tip_submission_datetime(created)
+        matches = [index for index, item in enumerate(parsed)
+                   if item[0] <= moment < item[1] or
+                   (index == len(parsed) - 1 and moment == item[1])]
+        if not matches:
+            continue
+        if order_id in seen:
+            raise HTTPException(409, "Poynt returned a duplicate order ID.")
+        seen.add(order_id)
+        tip = int(((order.get("amounts") or {}).get("capturedTotals") or {}).get("tipAmount") or 0)
+        if tip <= 0:
+            continue
+        range_totals[matches[0]] += tip
+        claims.append((order, tip))
+    for index, (_, _, employees, item) in enumerate(parsed):
+        try:
+            displayed_cents = int(item.get("total_tip_cents", -1))
+        except (TypeError, ValueError) as exc:
+            raise HTTPException(400, "Invalid displayed tip total.") from exc
+        if displayed_cents != range_totals[index]:
+            raise HTTPException(409, "Tip amounts changed. Refresh the orders report and recalculate.")
+        share, remainder = divmod(range_totals[index], len(employees))
+        for index, employee_id in enumerate(employees):
+            totals[employee_id] = totals.get(employee_id, 0) + share + (index < remainder)
+    return claims, {employee_id: cents for employee_id, cents in totals.items() if cents > 0}
+
+
+def _tip_submission_display(submission: TipSubmission, payouts: list[TipEmployeePayout] | None = None,
+                            allowed_payout_ids: set[int] | None = None) -> dict:
     try:
         data = json.loads(submission.submission_data)
     except (TypeError, ValueError):
@@ -1260,6 +1347,16 @@ def _tip_submission_display(submission: TipSubmission) -> dict:
         "submitted_at": submission.submitted_at.isoformat(),
         "ranges": ranges,
         "employee_totals": _aggregate_tip_allocations(ranges),
+        "payouts": [{
+            "id": payout.id,
+            "employee_name": payout.employee_name,
+            "employee_id": payout.employee_id,
+            "amount_cents": payout.amount_cents,
+            "method": payout.payout_method,
+            "status": payout.status,
+            "paid_at": payout.paid_at.isoformat() if payout.paid_at else None,
+            "can_confirm": payout.id in (allowed_payout_ids or set()),
+        } for payout in (payouts or [])],
         "employee_names": [
             employee.get("name", "Unknown Employee")
             for tip_range in ranges
@@ -1325,16 +1422,6 @@ async def tip_submission_report(
         TipSubmission.submitted_at < day_end,
     )
 
-    if selected_payment:
-        submission_query = submission_query.where(
-            TipSubmission.payout_method == selected_payment
-        )
-
-    if selected_status:
-        submission_query = submission_query.where(
-            TipSubmission.processing_status == selected_status
-        )
-
     submission_query = submission_query.order_by(
         TipSubmission.submitted_at.desc(),
         TipSubmission.id.desc(),
@@ -1342,12 +1429,61 @@ async def tip_submission_report(
 
     with SessionLocal() as session:
         submissions = session.execute(submission_query).scalars().all()
+        payout_rows = session.execute(select(TipEmployeePayout).where(
+            TipEmployeePayout.submission_id.in_([item.id for item in submissions])
+        )).scalars().all() if submissions else []
+        payout_map = {}
+        for payout in payout_rows:
+            payout_map.setdefault(payout.submission_id, []).append(payout)
+        store_ids = {item.store_id for item in submissions}
+        settings = session.execute(select(TipStoreSettings).where(
+            TipStoreSettings.organization_id == organization_id,
+            TipStoreSettings.store_id.in_(store_ids),
+        )).scalars().all() if store_ids else []
+        settings_map = {setting.store_id: setting for setting in settings}
+        linked_employees = session.execute(select(Employee.id).where(
+            Employee.organization_id == organization_id, Employee.user_id == user_id,
+        )).scalars().all()
+        own_ids = set(linked_employees)
+        allowed_ids = set()
+        for submission in submissions:
+            setting = settings_map.get(submission.store_id)
+            for payout in payout_map.get(submission.id, []):
+                if payout.payout_method == "paycheck":
+                    permitted = role_can_view_payroll_reports(role)
+                else:
+                    permitted = (role_can_manage_organization(role) or
+                                 bool(setting and setting.cash_confirmer_user_id == user_id) or
+                                 bool(setting and setting.cash_confirmation == "self" and payout.employee_id in own_ids))
+                if permitted:
+                    allowed_ids.add(payout.id)
+
+        # New submissions filter by each employee's payout. Legacy submissions
+        # retain their submission-level payment and processing filters.
+        if selected_payment or selected_status:
+            submissions = [item for item in submissions if (
+                any((not selected_payment or row.payout_method == selected_payment) and
+                    (not selected_status or row.status == selected_status)
+                    for row in payout_map.get(item.id, []))
+                if payout_map.get(item.id) else
+                (not selected_payment or item.payout_method == selected_payment) and
+                (not selected_status or item.processing_status == selected_status)
+            )]
+
+        display = []
+        for item in submissions:
+            visible_payouts = payout_map.get(item.id)
+            if visible_payouts and (selected_payment or selected_status):
+                visible_payouts = [row for row in visible_payouts if
+                    (not selected_payment or row.payout_method == selected_payment) and
+                    (not selected_status or row.status == selected_status)]
+            display.append(_tip_submission_display(item, visible_payouts, allowed_ids))
 
     return templates.TemplateResponse(
         request=request,
         name="tip_submissions.html",
         context={
-            "submissions": [_tip_submission_display(item) for item in submissions],
+            "submissions": display,
             "tip_report_start_date": start_date,
             "tip_report_end_date": end_date,
             "tip_report_can_select_date_range": can_select_date_range,
@@ -1355,6 +1491,7 @@ async def tip_submission_report(
             "tip_report_payment": selected_payment,
             "tip_report_status": selected_status,
             "tip_report_can_process": can_select_date_range,
+            "tip_report_role": role,
         },
     )
 
@@ -1396,6 +1533,12 @@ async def update_tip_submission_status(
         if submission is None:
             raise HTTPException(status_code=404, detail="Tip submission not found.")
 
+        new_payouts = session.execute(select(TipEmployeePayout.id).where(
+            TipEmployeePayout.submission_id == submission.id
+        )).first()
+        if new_payouts:
+            raise HTTPException(409, "Use employee payout actions for this submission.")
+
         submission.processing_status = processing_status
         submission.processed_at = datetime.utcnow()
         submission.processed_by_user_id = user_id
@@ -1418,6 +1561,173 @@ async def update_tip_submission_status(
     return RedirectResponse(redirect_url, status_code=303)
 
 
+@router.post("/poynt/tip-payouts/{payout_id}/paid")
+async def mark_tip_payout_paid(payout_id: int, request: Request):
+    user_id = request.session.get("user_id")
+    organization_id = get_current_organization_id(request)
+    if not user_id or organization_id is None:
+        raise HTTPException(401, "Sign in to confirm a payout.")
+    role = get_organization_role(user_id, organization_id)
+    with SessionLocal() as session:
+        row = session.execute(select(TipEmployeePayout, TipSubmission).join(
+            TipSubmission, TipSubmission.id == TipEmployeePayout.submission_id
+        ).where(TipEmployeePayout.id == payout_id,
+                TipSubmission.organization_id == organization_id).with_for_update()).first()
+        if not row:
+            raise HTTPException(404, "Payout not found.")
+        payout, submission = row
+        if payout.status != "pending" or submission.processing_status == "rejected":
+            raise HTTPException(409, "This payout is not pending.")
+        setting = _store_tip_setting(session, organization_id, submission.store_id)
+        if payout.payout_method == "paycheck":
+            if not role_can_view_payroll_reports(role):
+                raise HTTPException(403, "Payroll permission is required.")
+            mode = "payroll"
+        else:
+            designated = bool(setting and setting.cash_confirmer_user_id == user_id)
+            authorized = role_can_manage_organization(role) or designated
+            employee = session.get(Employee, payout.employee_id)
+            self_confirm = (setting and setting.cash_confirmation == "self" and
+                            employee and employee.organization_id == organization_id and
+                            employee.user_id == user_id)
+            if not (authorized or self_confirm):
+                raise HTTPException(403, "Cash confirmation permission is required.")
+            mode = "self" if self_confirm and not authorized else "authorized"
+        payout.status = "paid"
+        payout.paid_at = datetime.utcnow()
+        payout.paid_by_user_id = user_id
+        payout.confirmation_mode = mode
+        session.flush()
+        statuses = session.execute(select(TipEmployeePayout.status).where(
+            TipEmployeePayout.submission_id == submission.id
+        )).scalars().all()
+        if all(status == "paid" for status in statuses):
+            submission.processing_status = "paid"
+            submission.processed_at = datetime.utcnow()
+            submission.processed_by_user_id = user_id
+        session.commit()
+    return RedirectResponse("/poynt/tip-submissions", status_code=303)
+
+
+@router.get("/poynt/tip-settings", response_class=HTMLResponse)
+async def tip_store_settings_page(request: Request, store_id: str):
+    user_id = request.session.get("user_id")
+    organization_id = get_current_organization_id(request)
+    if not user_id or organization_id is None or not role_can_manage_organization(
+        get_organization_role(user_id, organization_id)
+    ):
+        raise HTTPException(403, "Manager permission is required.")
+    with SessionLocal() as session:
+        setting = _store_tip_setting(session, organization_id, store_id)
+        members = session.execute(select(User).join(
+            OrganizationMember, OrganizationMember.user_id == User.id
+        ).where(OrganizationMember.organization_id == organization_id)).scalars().all()
+        values = {
+            "payout_policy": setting.payout_policy if setting else "choice",
+            "cash_confirmation": setting.cash_confirmation if setting else "authorized",
+            "cash_confirmer_user_id": setting.cash_confirmer_user_id if setting else None,
+            "employee_submission_hours": setting.employee_submission_hours if setting else 24,
+            "tip_allocation_start_at": (
+                setting.tip_allocation_start_at.replace(tzinfo=timezone.utc)
+                .astimezone(ZoneInfo("America/Phoenix")).strftime("%Y-%m-%dT%H:%M")
+                if setting and setting.tip_allocation_start_at else ""
+            ),
+        }
+        choices = [{"id": m.id, "name": f"{m.first_name or ''} {m.last_name or ''}".strip() or m.email}
+                   for m in members]
+    return templates.TemplateResponse(request=request, name="tip_settings.html", context={
+        "store_id": store_id.lower(), "settings": values, "members": choices,
+        "suggested_start_at": datetime.now(ZoneInfo("America/Phoenix")).strftime("%Y-%m-%dT00:00"),
+    })
+
+
+@router.post("/poynt/tip-settings")
+async def save_tip_store_settings(
+    request: Request, store_id: str = Form(...), payout_policy: str = Form(...),
+    cash_confirmation: str = Form(...), cash_confirmer_user_id: str = Form(""),
+    employee_submission_hours: int = Form(24), tip_allocation_start_at: str = Form(""),
+):
+    user_id = request.session.get("user_id")
+    organization_id = get_current_organization_id(request)
+    if not user_id or organization_id is None or not role_can_manage_organization(
+        get_organization_role(user_id, organization_id)
+    ):
+        raise HTTPException(403, "Manager permission is required.")
+    if payout_policy not in {"choice", "cash", "paycheck"} or cash_confirmation not in {"self", "authorized"}:
+        raise HTTPException(400, "Invalid tip settings.")
+    if not store_id or len(store_id) > 100:
+        raise HTTPException(400, "Invalid store ID.")
+    if not 1 <= employee_submission_hours <= 720:
+        raise HTTPException(400, "Employee submission window must be between 1 and 720 hours.")
+    with SessionLocal() as session:
+        confirmer_id = None
+        if cash_confirmer_user_id:
+            try:
+                confirmer_id = int(cash_confirmer_user_id)
+            except ValueError as exc:
+                raise HTTPException(400, "Invalid confirmer.") from exc
+            member = session.execute(select(OrganizationMember.id).where(
+                OrganizationMember.organization_id == organization_id,
+                OrganizationMember.user_id == confirmer_id,
+            )).first()
+            if not member:
+                raise HTTPException(400, "Confirmer must belong to this organization.")
+        setting = _store_tip_setting(session, organization_id, store_id)
+        if setting is None:
+            setting = TipStoreSettings(organization_id=organization_id, store_id=store_id.lower())
+            session.add(setting)
+        if setting.tip_allocation_start_at is None:
+            try:
+                local_start = datetime.fromisoformat(tip_allocation_start_at)
+                if local_start.tzinfo is not None:
+                    raise ValueError("Expected local time")
+                setting.tip_allocation_start_at = local_start.replace(
+                    tzinfo=ZoneInfo("America/Phoenix")
+                ).astimezone(timezone.utc).replace(tzinfo=None)
+            except ValueError as exc:
+                raise HTTPException(400, "Choose a valid tip allocation start date and time.") from exc
+        setting.payout_policy = payout_policy
+        setting.cash_confirmation = cash_confirmation
+        setting.cash_confirmer_user_id = confirmer_id
+        setting.employee_submission_hours = employee_submission_hours
+        session.commit()
+    return RedirectResponse(f"/poynt/tip-settings?{urlencode({'store_id': store_id.lower()})}", status_code=303)
+
+
+@router.post("/poynt/tip-submissions/{submission_id}/reject")
+async def reject_new_tip_submission(submission_id: int, request: Request):
+    user_id = request.session.get("user_id")
+    organization_id = get_current_organization_id(request)
+    if not user_id or organization_id is None:
+        raise HTTPException(401, "Sign in first.")
+    if not role_can_manage_organization(get_organization_role(user_id, organization_id)):
+        raise HTTPException(403, "Manager permission is required.")
+    with SessionLocal() as session:
+        submission = session.execute(select(TipSubmission).where(
+            TipSubmission.id == submission_id,
+            TipSubmission.organization_id == organization_id,
+        ).with_for_update()).scalar_one_or_none()
+        if not submission:
+            raise HTTPException(404, "Submission not found.")
+        payouts = session.execute(select(TipEmployeePayout).where(
+            TipEmployeePayout.submission_id == submission_id
+        )).scalars().all()
+        if not payouts or any(p.status != "pending" for p in payouts):
+            raise HTTPException(409, "Only fully unpaid submissions can be rejected.")
+        for payout in payouts:
+            payout.status = "rejected"
+        # The rejected record stays visible; its order IDs become available for correction.
+        for claim in session.execute(select(TipOrderClaim).where(
+            TipOrderClaim.submission_id == submission_id
+        )).scalars():
+            session.delete(claim)
+        submission.processing_status = "rejected"
+        submission.processed_at = datetime.utcnow()
+        submission.processed_by_user_id = user_id
+        session.commit()
+    return RedirectResponse("/poynt/tip-submissions", status_code=303)
+
+
 @router.post("/poynt/tip-submissions")
 async def submit_tip_record(
     request: Request,
@@ -1426,7 +1736,7 @@ async def submit_tip_record(
     report_start_at: str = Form(...),
     report_end_at: str = Form(...),
     total_tip_cents: int = Form(...),
-    payout_method: str = Form(...),
+    payout_choices: str = Form("{}"),
     submission_json: str = Form(...),
 ):
     user_id = request.session.get("user_id")
@@ -1438,37 +1748,89 @@ async def submit_tip_record(
         request.session.clear()
         return RedirectResponse("/login", status_code=303)
 
-    if payout_method not in {"cash", "paycheck"}:
-        return RedirectResponse("/poynt/orders", status_code=303)
-
     try:
         report_start = _parse_tip_submission_datetime(report_start_at)
         report_end = _parse_tip_submission_datetime(report_end_at)
         submission_data = json.loads(submission_json)
+        choices = json.loads(payout_choices)
     except (TypeError, ValueError, json.JSONDecodeError):
-        return RedirectResponse("/poynt/orders", status_code=303)
+        raise HTTPException(400, "Invalid tip submission.")
 
-    if report_start >= report_end:
-        return RedirectResponse("/poynt/orders", status_code=303)
+    if report_start >= report_end or report_end - report_start > timedelta(days=3):
+        raise HTTPException(400, "Invalid report range.")
 
     if not isinstance(submission_data, dict) or not isinstance(
         submission_data.get("ranges"), list
     ) or not submission_data.get("ranges"):
-        return RedirectResponse("/poynt/orders", status_code=303)
+        raise HTTPException(400, "At least one tip range is required.")
 
     if len(submission_data["ranges"]) > 6:
-        return RedirectResponse("/poynt/orders", status_code=303)
+        raise HTTPException(400, "Too many tip ranges.")
 
     for tip_range in submission_data["ranges"]:
         if not isinstance(tip_range, dict):
-            return RedirectResponse("/poynt/orders", status_code=303)
+            raise HTTPException(400, "Invalid tip range.")
         if not isinstance(tip_range.get("employees"), list) or not tip_range["employees"]:
-            return RedirectResponse("/poynt/orders", status_code=303)
+            raise HTTPException(400, "A tip range has no employees.")
+
+    if not isinstance(choices, dict) or not store_id or len(store_id) > 100:
+        raise HTTPException(400, "Invalid store or payout choices.")
+    store_id = store_id.lower()
+    for tip_range in submission_data["ranges"]:
+        try:
+            range_start = _parse_tip_submission_datetime(tip_range["start"])
+            range_end = _parse_tip_submission_datetime(tip_range["end"])
+        except (KeyError, TypeError, ValueError) as exc:
+            raise HTTPException(400, "Invalid tip range date.") from exc
+        if range_start < report_start or range_end > report_end:
+            raise HTTPException(400, "A tip range is outside the report period.")
+
+    role = get_organization_role(user_id, organization_id)
+    with SessionLocal() as session:
+        _validate_tip_submission_window(
+            _store_tip_setting(session, organization_id, store_id), report_start, role
+        )
+
+    credentials = get_poynt_credentials(organization_id)
+    if credentials is None:
+        raise HTTPException(409, "Connect Poynt before submitting tips.")
+    try:
+        orders = await fetch_poynt_orders(
+            credentials, organization_id,
+            report_start.replace(tzinfo=timezone.utc).isoformat(),
+            report_end.replace(tzinfo=timezone.utc).isoformat(),
+        )
+    except Exception as exc:
+        logger.exception("Could not refresh Poynt orders for tip submission")
+        raise HTTPException(502, "Could not verify current Poynt tips.") from exc
+    orders = [order for order in filter_completed_orders(orders)[0]
+              if _active_store_order(order, store_id)]
+    claims, allocations = _allocation_orders(orders, submission_data["ranges"])
+    if not claims or sum(tip for _, tip in claims) != total_tip_cents:
+        raise HTTPException(409, "Tip total changed. Refresh the report and recalculate.")
 
     submitted_at = datetime.utcnow()
-    processing_status = "paid" if payout_method == "cash" else "pending"
 
     with SessionLocal() as session:
+        employee_ids = list(allocations)
+        employees = session.execute(select(Employee).where(
+            Employee.organization_id == organization_id,
+            Employee.is_active.is_(True),
+            Employee.id.in_(employee_ids),
+        )).scalars().all()
+        if len(employees) != len(employee_ids):
+            raise HTTPException(400, "An employee is inactive or belongs to another organization.")
+        setting = _store_tip_setting(session, organization_id, store_id)
+        _validate_tip_submission_window(setting, report_start, role)
+        policy = setting.payout_policy if setting else "choice"
+        if policy not in {"cash", "paycheck", "choice"}:
+            raise HTTPException(400, "Invalid store payout policy.")
+        methods = {}
+        for employee in employees:
+            method = choices.get(str(employee.id), "paycheck") if policy == "choice" else policy
+            if method not in {"cash", "paycheck"}:
+                raise HTTPException(400, "Invalid employee payout method.")
+            methods[employee.id] = method
         submission = TipSubmission(
             organization_id=organization_id,
             submitted_by_user_id=user_id,
@@ -1477,15 +1839,37 @@ async def submit_tip_record(
             report_start_at=report_start,
             report_end_at=report_end,
             total_tip_cents=max(0, int(total_tip_cents)),
-            payout_method=payout_method,
-            processing_status=processing_status,
-            processed_at=submitted_at if processing_status == "paid" else None,
-            processed_by_user_id=user_id if processing_status == "paid" else None,
+            payout_method=(next(iter(set(methods.values()))) if len(set(methods.values())) == 1 else "mixed"),
+            processing_status="pending",
             submission_data=json.dumps(submission_data),
             submitted_at=submitted_at,
         )
         session.add(submission)
-        session.commit()
+        session.flush()
+        for order, tip in claims:
+            session.add(TipOrderClaim(
+                organization_id=organization_id,
+                submission_id=submission.id,
+                poynt_business_id=credentials.business_id,
+                poynt_order_id=order["id"],
+                store_id=store_id,
+                created_at=_parse_tip_submission_datetime(order["createdAt"]),
+                tip_cents=tip,
+            ))
+        for employee in employees:
+            session.add(TipEmployeePayout(
+                submission_id=submission.id,
+                employee_id=employee.id,
+                employee_name=f"{employee.first_name} {employee.last_name}".strip(),
+                amount_cents=allocations[employee.id],
+                payout_method=methods[employee.id],
+                status="pending",
+            ))
+        try:
+            session.commit()
+        except IntegrityError as exc:
+            session.rollback()
+            raise HTTPException(409, "One or more orders have already been allocated. Refresh the report.") from exc
 
     return RedirectResponse("/poynt/tip-submissions", status_code=303)
 
@@ -1864,9 +2248,19 @@ async def poynt_orders(
         organization_id
     )
 
+    tip_payout_policy = "choice"
+    tip_setting = None
+    if len(store_ids) == 1:
+        with SessionLocal() as session:
+            tip_setting = _store_tip_setting(session, organization_id, next(iter(store_ids)))
+            if tip_setting:
+                tip_payout_policy = tip_setting.payout_policy
+
     tip_calculator_enabled = (
         len(store_ids) == 1
         and bool(tip_calculator_employees)
+        and tip_setting is not None
+        and tip_setting.tip_allocation_start_at is not None
     )
 
     tip_calculator_store_name = (
@@ -1883,6 +2277,8 @@ async def poynt_orders(
         tip_calculator_disabled_reason = (
             "Add an active employee before using the Tip Calculator."
         )
+    elif tip_setting is None or tip_setting.tip_allocation_start_at is None:
+        tip_calculator_disabled_reason = "A manager must activate tip allocation in Tip Settings."
     else:
         tip_calculator_disabled_reason = ""
 
@@ -1934,6 +2330,18 @@ async def poynt_orders(
             "revenue_per_hour_report_display": revenue_per_hour_report_display,
             "profit_per_hour_display": profit_per_hour_display,
             "tip_calculator_data": tip_calculator_data,
+            "tip_payout_policy": tip_payout_policy,
+            "tip_allocation_start_at": (
+                tip_setting.tip_allocation_start_at.isoformat() + "Z"
+                if tip_setting and tip_setting.tip_allocation_start_at else None
+            ),
+            "tip_employee_submission_hours": tip_setting.employee_submission_hours if tip_setting else 24,
+            "tip_employee_window_exempt": role_can_view_payroll_reports(
+                get_organization_role(user_id, organization_id)
+            ),
+            "tip_can_manage_settings": role_can_manage_organization(
+                get_organization_role(user_id, organization_id)
+            ),
             "tip_calculator_employees": tip_calculator_employees,
             "tip_calculator_enabled": tip_calculator_enabled,
             "tip_calculator_store_name": tip_calculator_store_name,

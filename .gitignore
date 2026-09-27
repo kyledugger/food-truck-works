@@ -8,10 +8,10 @@ __pycache__/
 .env.*
 extras/**
 jwt_decode.py
-alembic/** 
 db.txt
 migrate_poynt_to_organizations.py
 stop8000.ps1
 routers/oauth_debug.py
 *.zip
 
+poynt_timetype_test.py

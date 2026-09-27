@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="section"><div class="container" style="max-width: 700px">
+  {% include "_app_brand.html" %}
+  <h1 class="title">Tip settings</h1>
+  <p class="subtitle is-6">Store {{ store_id }}</p>
+  <form method="post" action="/poynt/tip-settings" class="box">
+    <input type="hidden" name="store_id" value="{{ store_id }}">
+    <div class="field"><label class="label" for="payout-policy">Payout options</label>
+      <div class="select"><select id="payout-policy" name="payout_policy">
+        <option value="choice" {% if settings.payout_policy == "choice" %}selected{% endif %}>Employee choice: cash or paycheck</option>
+        <option value="cash" {% if settings.payout_policy == "cash" %}selected{% endif %}>Cash only</option>
+        <option value="paycheck" {% if settings.payout_policy == "paycheck" %}selected{% endif %}>Paycheck only</option>
+      </select></div>
+    </div>
+    <div class="field"><label class="label" for="cash-confirmation">Who confirms cash was paid?</label>
+      <div class="select"><select id="cash-confirmation" name="cash_confirmation">
+        <option value="authorized" {% if settings.cash_confirmation == "authorized" %}selected{% endif %}>Owner, manager, or designated person</option>
+        <option value="self" {% if settings.cash_confirmation == "self" %}selected{% endif %}>Employee may confirm their own payout</option>
+      </select></div>
+    </div>
+    <div class="field"><label class="label" for="cash-confirmer">Designated person (optional)</label>
+      <div class="select"><select id="cash-confirmer" name="cash_confirmer_user_id">
+        <option value="">No designated person</option>
+        {% for member in members %}
+          <option value="{{ member.id }}" {% if member.id == settings.cash_confirmer_user_id %}selected{% endif %}>{{ member.name }}</option>
+        {% endfor %}
+      </select></div>
+      <p class="help">This person can confirm cash payouts at this store without payroll access.</p>
+    </div>
+    <div class="field">
+      <label class="label" for="employee-submission-hours">Employee submission window (hours)</label>
+      <input class="input" id="employee-submission-hours" name="employee_submission_hours" type="number" min="1" max="720" required value="{{ settings.employee_submission_hours }}">
+      <p class="help">Starts at the beginning of the report range. Owners, managers, and payroll can submit after this window closes.</p>
+    </div>
+    <div class="field">
+      <label class="label" for="tip-allocation-start">Tip allocation starts (Phoenix time)</label>
+      {% if settings.tip_allocation_start_at %}
+        <p>{{ settings.tip_allocation_start_at | replace('T', ' ') }}</p>
+        <p class="help">This historical cutoff is fixed once activated. Earlier tips cannot be submitted.</p>
+      {% else %}
+        <input class="input" id="tip-allocation-start" name="tip_allocation_start_at" type="datetime-local" required value="{{ suggested_start_at }}">
+        <p class="help">Choose the first date and time whose tips have not already been paid. This cannot be changed in Tip Settings after activation.</p>
+      {% endif %}
+    </div>
+    <button class="button is-primary" type="submit">Save settings</button>
+    <a class="button" href="/poynt/orders">Back to orders</a>
+  </form>
+</div></section>
+{% endblock %}
