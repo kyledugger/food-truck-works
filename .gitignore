@@ -15,3 +15,6 @@ routers/oauth_debug.py
 *.zip
 
 poynt_timetype_test.py
+tips.txt
+documentation/event_design_v2.txt
+documentation/event_design.txt
