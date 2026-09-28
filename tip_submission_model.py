@@ -1,8 +1,9 @@
 from datetime import datetime
 
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import CheckConstraint, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
+from instant_type import UTCInstant
 from store_time import utc_now
 from database import Base
 
@@ -41,12 +42,12 @@ class TipSubmission(Base):
     )
 
     report_start_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
+        UTCInstant(),
         nullable=False,
     )
 
     report_end_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
+        UTCInstant(),
         nullable=False,
     )
 
@@ -68,7 +69,7 @@ class TipSubmission(Base):
     )
 
     processed_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True),
+        UTCInstant(),
         nullable=True,
     )
 
@@ -84,7 +85,7 @@ class TipSubmission(Base):
     )
 
     submitted_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
+        UTCInstant(),
         default=utc_now,
         nullable=False,
         index=True,
@@ -105,7 +106,7 @@ class TipStoreSettings(Base):
     payout_policy: Mapped[str] = mapped_column(String(20), nullable=False, default="choice")
     cash_confirmation: Mapped[str] = mapped_column(String(20), nullable=False, default="authorized")
     cash_confirmer_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
-    tip_allocation_start_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    tip_allocation_start_at: Mapped[datetime | None] = mapped_column(UTCInstant(), nullable=True)
     employee_submission_hours: Mapped[int] = mapped_column(Integer, nullable=False, default=24)
 
 
@@ -120,7 +121,7 @@ class TipOrderClaim(Base):
     poynt_business_id: Mapped[str] = mapped_column(String(100), nullable=False)
     poynt_order_id: Mapped[str] = mapped_column(String(100), nullable=False)
     store_id: Mapped[str] = mapped_column(String(100), nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(UTCInstant(), nullable=False)
     tip_cents: Mapped[int] = mapped_column(Integer, nullable=False)
 
 
@@ -138,6 +139,6 @@ class TipEmployeePayout(Base):
     amount_cents: Mapped[int] = mapped_column(Integer, nullable=False)
     payout_method: Mapped[str] = mapped_column(String(20), nullable=False)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
-    paid_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    paid_at: Mapped[datetime | None] = mapped_column(UTCInstant(), nullable=True)
     paid_by_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
     confirmation_mode: Mapped[str | None] = mapped_column(String(20), nullable=True)

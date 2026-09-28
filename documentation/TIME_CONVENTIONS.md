@@ -43,7 +43,7 @@ Example: a recorded punch is `2026-09-28T16:00:00Z`. Its display in `America/Pho
 
 ## Database and migration rules
 
-- New instant columns use PostgreSQL `timestamptz` and SQLAlchemy `DateTime(timezone=True)`. Write aware UTC values. Normalize values returned by the driver to UTC in application logic when doing arithmetic or serialization; a database connection may render the same instant in a different session timezone.
+- New instant columns use PostgreSQL `timestamptz` and the shared SQLAlchemy `UTCInstant()` mapping from `instant_type.py`. It rejects naive datetime writes and normalizes aware values to UTC on writes and reads. Use it for every new instant field; calendar dates and local scheduling fields need their own types. A database connection may render the same instant in a different session timezone.
 - Set application database sessions to UTC for predictable SQL and operational inspection. This is a secondary guard, not permission to send naive timestamps: PostgreSQL can interpret an offset-free input using the session timezone.
 - SQL `now()` is an instant and is appropriate for a `timestamptz` server default when a database-side default is intended. Keep ORM and database defaults consistent.
 - Calendar-only fields use `date`; recurring hours use local `time` plus a timezone and recurrence definition. Do not convert these to UTC at write time without retaining the civil intention.
