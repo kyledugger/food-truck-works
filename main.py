@@ -6,7 +6,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
-from database import Base, SessionLocal, engine
+from database import SessionLocal
 from models import User, Organization, OrganizationMember
 from organization_context import get_current_organization_id
 from permissions import (
@@ -25,6 +25,7 @@ from routers.poynt import router as poynt_router
 from routers.employees import router as employees_router
 from routers.account_security import router as account_security_router
 from routers.account_settings import router as account_settings_router
+from routers.stores import router as stores_router
 
 dotenv_file = os.getenv("DOTENV_FILE", ".env")
 load_dotenv(dotenv_file)
@@ -67,8 +68,7 @@ app.include_router(poynt_router)
 app.include_router(employees_router)
 app.include_router(account_security_router)
 app.include_router(account_settings_router)
-
-Base.metadata.create_all(bind=engine)
+app.include_router(stores_router)
 
 is_production = os.getenv("ENVIRONMENT") == "production"
 app.add_middleware(

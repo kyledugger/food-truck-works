@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Stores - Food Truck Works{% endblock %}
+{% block content %}
+<section class="section"><div class="container" style="max-width: 850px">
+  {% include "_app_brand.html" %}
+  <h1 class="title">Organization stores</h1>
+  <p class="subtitle is-6">Confirm the timezone for each Poynt store. Tip settings are saved separately for each store.</p>
+  {% if not stores %}<div class="notification is-warning">Poynt returned no stores for this connection.</div>{% endif %}
+  {% for store in stores %}
+  <form method="post" action="/settings/stores" class="box">
+    <input type="hidden" name="store_id" value="{{ store.id }}">
+    <h2 class="title is-5">{{ store.poynt_name }}</h2>
+    <p class="help mb-3">Poynt ID: {{ store.id }}</p>
+    <div class="field"><label class="label">Display name</label>
+      <input class="input" name="display_name" maxlength="200" value="{{ store.display_name or '' }}" placeholder="{{ store.poynt_name }}">
+    </div>
+    <div class="field"><label class="label">Store timezone</label>
+      <input class="input" name="timezone_name" required value="{{ store.timezone_name or '' }}" placeholder="America/Phoenix" list="common-timezones">
+      <p class="help">Use a city-based IANA timezone. Confirm this before using local-date reports.</p>
+    </div>
+    <div class="field"><label class="checkbox"><input type="checkbox" name="is_active" value="true" {% if store.is_active %}checked{% endif %}> Active in Food Truck Works</label></div>
+    <button class="button is-primary" type="submit">Save store</button>
+    {% if store.timezone_name %}<a class="button is-light" href="/poynt/tip-settings?store_id={{ store.id | urlencode }}">Tip payout and submission settings</a>{% endif %}
+  </form>
+  {% endfor %}
+  <datalist id="common-timezones"><option value="America/Phoenix"><option value="America/Los_Angeles"><option value="America/Denver"><option value="America/Chicago"><option value="America/New_York"><option value="Pacific/Honolulu"></datalist>
+  <a href="/dashboard">Back to dashboard</a>
+</div></section>
+{% endblock %}

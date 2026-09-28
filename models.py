@@ -367,3 +367,16 @@ class PoyntConnection(Base):
     organization: Mapped["Organization"] = relationship(
         back_populates="poynt_connection"
     )
+
+
+class OrganizationStore(Base):
+    __tablename__ = "organization_stores"
+    __table_args__ = (UniqueConstraint("organization_id", "store_id", name="uq_organization_store"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    organization_id: Mapped[int] = mapped_column(ForeignKey("organizations.id"), nullable=False, index=True)
+    store_id: Mapped[str] = mapped_column(String(100), nullable=False)
+    poynt_name: Mapped[str] = mapped_column(String(200), nullable=False)
+    display_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    timezone_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)

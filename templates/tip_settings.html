@@ -34,7 +34,7 @@
       <p class="help">Starts at the beginning of the report range. Owners, managers, and payroll can submit after this window closes.</p>
     </div>
     <div class="field">
-      <label class="label" for="tip-allocation-start">Tip allocation starts (Phoenix time)</label>
+      <label class="label" for="tip-allocation-start">Tip allocation starts ({{ store_timezone }})</label>
       {% if settings.tip_allocation_start_at %}
         <p>{{ settings.tip_allocation_start_at | replace('T', ' ') }}</p>
         <p class="help">This historical cutoff is fixed once activated. Earlier tips cannot be submitted.</p>

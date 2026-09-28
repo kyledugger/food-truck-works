@@ -10,7 +10,6 @@ from datetime import datetime, timedelta, timezone
 from urllib.parse import urlencode
 from poynt.token import exchange_authorization_code
 from zoneinfo import ZoneInfo
-from devices import icc_stores
 
 from poynt.client import (
     PoyntClient,
@@ -20,7 +19,7 @@ from poynt.client import (
 from dotenv import load_dotenv
 import os
 from database import SessionLocal
-from models import Employee, OrganizationMember, User
+from models import Employee, OrganizationMember, OrganizationStore, User
 from tip_submission_model import TipSubmission, TipStoreSettings, TipOrderClaim, TipEmployeePayout
 from poynt.connection import get_poynt_connection, get_poynt_credentials
 from organization_context import get_current_organization_id
@@ -470,7 +469,7 @@ def get_item_flow(orders):
 
     return result
 
-def get_available_store_ids(orders):
+def get_available_store_ids(orders, store_names=None):
     """
     Get the store IDs found in the original order collection.
     """
@@ -487,7 +486,7 @@ def get_available_store_ids(orders):
 
     return sorted(
         store_ids,
-        key=lambda store_id: icc_stores.get(
+        key=lambda store_id: (store_names or {}).get(
             store_id,
             f"Unknown Store {store_id}",
         ).lower(),
@@ -1113,7 +1112,7 @@ def get_tip_calculator_employees(organization_id: int) -> list[dict]:
         for employee in employees
     ]
 
-def get_stores_display(store_ids):
+def get_stores_display(store_ids, store_names):
     """
     Convert a set of store IDs into display text.
 
@@ -1130,11 +1129,11 @@ def get_stores_display(store_ids):
         if not first:
             stores_display += " + "
 
-        if store_id.lower() not in icc_stores:
-            stores_display = f"Unknown Store {store_id}"
+        if store_id.lower() not in store_names:
+            stores_display += f"Unknown Store {store_id}"
             logger.warning("Unknown Store %s", store_id)
         else:
-            stores_display += icc_stores[store_id.lower()]
+            stores_display += store_names[store_id.lower()]
 
         first = False
 
@@ -1618,6 +1617,14 @@ async def tip_store_settings_page(request: Request, store_id: str):
     ):
         raise HTTPException(403, "Manager permission is required.")
     with SessionLocal() as session:
+        store = session.execute(select(OrganizationStore).where(
+            OrganizationStore.organization_id == organization_id,
+            OrganizationStore.store_id == store_id.lower(),
+            OrganizationStore.is_active.is_(True),
+        )).scalar_one_or_none()
+        if store is None or not store.timezone_name:
+            raise HTTPException(409, "Configure this store and its timezone in Store Settings first.")
+        store_timezone = ZoneInfo(store.timezone_name)
         setting = _store_tip_setting(session, organization_id, store_id)
         members = session.execute(select(User).join(
             OrganizationMember, OrganizationMember.user_id == User.id
@@ -1629,7 +1636,7 @@ async def tip_store_settings_page(request: Request, store_id: str):
             "employee_submission_hours": setting.employee_submission_hours if setting else 24,
             "tip_allocation_start_at": (
                 setting.tip_allocation_start_at.replace(tzinfo=timezone.utc)
-                .astimezone(ZoneInfo("America/Phoenix")).strftime("%Y-%m-%dT%H:%M")
+                .astimezone(store_timezone).strftime("%Y-%m-%dT%H:%M")
                 if setting and setting.tip_allocation_start_at else ""
             ),
         }
@@ -1637,7 +1644,8 @@ async def tip_store_settings_page(request: Request, store_id: str):
                    for m in members]
     return templates.TemplateResponse(request=request, name="tip_settings.html", context={
         "store_id": store_id.lower(), "settings": values, "members": choices,
-        "suggested_start_at": datetime.now(ZoneInfo("America/Phoenix")).strftime("%Y-%m-%dT00:00"),
+        "suggested_start_at": datetime.now(store_timezone).strftime("%Y-%m-%dT00:00"),
+        "store_timezone": store.timezone_name,
     })
 
 
@@ -1660,6 +1668,13 @@ async def save_tip_store_settings(
     if not 1 <= employee_submission_hours <= 720:
         raise HTTPException(400, "Employee submission window must be between 1 and 720 hours.")
     with SessionLocal() as session:
+        store = session.execute(select(OrganizationStore).where(
+            OrganizationStore.organization_id == organization_id,
+            OrganizationStore.store_id == store_id.lower(),
+            OrganizationStore.is_active.is_(True),
+        )).scalar_one_or_none()
+        if store is None or not store.timezone_name:
+            raise HTTPException(409, "Configure this store and its timezone in Store Settings first.")
         confirmer_id = None
         if cash_confirmer_user_id:
             try:
@@ -1682,7 +1697,7 @@ async def save_tip_store_settings(
                 if local_start.tzinfo is not None:
                     raise ValueError("Expected local time")
                 setting.tip_allocation_start_at = local_start.replace(
-                    tzinfo=ZoneInfo("America/Phoenix")
+                    tzinfo=ZoneInfo(store.timezone_name)
                 ).astimezone(timezone.utc).replace(tzinfo=None)
             except ValueError as exc:
                 raise HTTPException(400, "Choose a valid tip allocation start date and time.") from exc
@@ -2024,7 +2039,15 @@ async def poynt_orders(
                 },
             )
         
-        available_store_ids = get_available_store_ids(orders)
+        with SessionLocal() as session:
+            configured_stores = session.execute(select(OrganizationStore).where(
+                OrganizationStore.organization_id == organization_id,
+            )).scalars().all()
+            store_names = {
+                store.store_id: store.display_name or store.poynt_name
+                for store in configured_stores if store.is_active
+            }
+        available_store_ids = get_available_store_ids(orders, store_names)
 
         if not available_store_ids:
             return templates.TemplateResponse(
@@ -2240,7 +2263,7 @@ async def poynt_orders(
 
     orders_data, store_ids = get_orders_data(orders)    
 
-    stores_display = get_stores_display(store_ids)
+    stores_display = get_stores_display(store_ids, store_names)
 
     tip_calculator_data = get_tip_calculator_data(orders)
 
@@ -2285,7 +2308,7 @@ async def poynt_orders(
     available_stores = [
         {
             "id": store_id,
-            "name": icc_stores.get(
+            "name": store_names.get(
                 store_id,
                 f"Unknown Store {store_id}",
             ),
