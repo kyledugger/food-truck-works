@@ -12,6 +12,7 @@ from organization_context import get_current_organization_id
 from permissions import get_organization_role, role_can_manage_organization
 from poynt.client import PoyntClient, PoyntReauthorizationRequired
 from poynt.connection import get_poynt_credentials
+from store_types import STORE_TYPES
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
@@ -68,9 +69,10 @@ async def store_settings(request: Request):
             "poynt_name": name,
             "display_name": configured[store_id].display_name if store_id in configured else "",
             "timezone_name": configured[store_id].timezone_name if store_id in configured else "",
+            "store_type": configured[store_id].store_type if store_id in configured else None,
             "is_active": configured[store_id].is_active if store_id in configured else True,
         } for store_id, name in discovered.items()]
-    return templates.TemplateResponse(request=request, name="stores.html", context={"stores": rows})
+    return templates.TemplateResponse(request=request, name="stores.html", context={"stores": rows, "store_types": STORE_TYPES})
 
 
 @router.post("/settings/stores")
@@ -79,6 +81,7 @@ async def save_store_settings(
     store_id: str = Form(...),
     display_name: str = Form(""),
     timezone_name: str = Form(...),
+    store_type: str = Form(""),
     is_active: bool = Form(False),
 ):
     organization_id = _manager_org(request)
@@ -89,6 +92,8 @@ async def save_store_settings(
     display_name = display_name.strip()
     if len(display_name) > 200:
         raise HTTPException(400, "Store name is too long.")
+    if store_type not in STORE_TYPES:
+        raise HTTPException(400, "Choose a store type.")
     if not timezone_name or len(timezone_name) > 100:
         raise HTTPException(400, "Choose a valid store timezone.")
     try:
@@ -106,6 +111,7 @@ async def save_store_settings(
         row.poynt_name = discovered[store_id]
         row.display_name = display_name or None
         row.timezone_name = timezone_name
+        row.store_type = store_type
         row.is_active = is_active
         session.commit()
     return RedirectResponse("/settings/stores", status_code=303)

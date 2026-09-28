@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Boolean, ForeignKey, String, UniqueConstraint
+from sqlalchemy import Boolean, CheckConstraint, ForeignKey, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from instant_type import UTCInstant
@@ -373,7 +373,13 @@ class PoyntConnection(Base):
 
 class OrganizationStore(Base):
     __tablename__ = "organization_stores"
-    __table_args__ = (UniqueConstraint("organization_id", "store_id", name="uq_organization_store"),)
+    __table_args__ = (
+        UniqueConstraint("organization_id", "store_id", name="uq_organization_store"),
+        CheckConstraint(
+            "store_type IN ('food_truck', 'food_trailer', 'cart', 'pop_up', 'shop', 'catering')",
+            name="ck_organization_stores_store_type",
+        ),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     organization_id: Mapped[int] = mapped_column(ForeignKey("organizations.id"), nullable=False, index=True)
@@ -381,4 +387,5 @@ class OrganizationStore(Base):
     poynt_name: Mapped[str] = mapped_column(String(200), nullable=False)
     display_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
     timezone_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    store_type: Mapped[str | None] = mapped_column(String(20), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
