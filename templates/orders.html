@@ -532,13 +532,14 @@
 
                     <div class="column is-12-mobile is-4-tablet is-3-desktop">
                         <div class="field">
-                            <label class="label" for="start">Start</label>
+                            <label class="label" for="start">Start {% if store_timezone %}({{ store_timezone }}){% endif %}</label>
                             <div class="control">
                                 <input
                                     class="input"
                                     type="datetime-local"
                                     id="start"
                                     name="start"
+                                    step="1"
                                     value="{{start_input_value}}"
                                 >
                             </div>
@@ -548,13 +549,14 @@
 
                     <div class="column is-12-mobile is-4-tablet is-3-desktop">
                         <div class="field">
-                            <label class="label" for="end">End</label>
+                            <label class="label" for="end">End {% if store_timezone %}({{ store_timezone }}){% endif %}</label>
                             <div class="control">
                                 <input
                                     class="input"
                                     type="datetime-local"
                                     id="end"
                                     name="end"
+                                    step="1"
                                     value="{{end_input_value}}"
                                 >
                             </div>
@@ -806,7 +808,7 @@
                     {% endif %}
                     <div class="metric-card">
                         <a
-                            href="/poynt/tip-submissions"
+                            href="/poynt/tip-submissions?store_id={{ tip_calculator_store_id | urlencode }}"
                             class="button is-small is-light ml-2"
                         >
                             Tip Submission Report
@@ -1222,6 +1224,7 @@
 
 {% block scripts %}
     <script>
+        const reportTimezone = {{ store_timezone | default('UTC', true) | tojson }};
         /* ---------------------------------------------------------
         Fee Calculator
         --------------------------------------------------------- */
@@ -1319,6 +1322,7 @@
                     new Intl.DateTimeFormat(
                         undefined,
                         {
+                            timeZone: reportTimezone,
                             weekday: "long",
                             month: "long",
                             day: "numeric",
@@ -1413,6 +1417,7 @@
                                     return new Intl.DateTimeFormat(
                                         undefined,
                                         {
+                                            timeZone: reportTimezone,
                                             weekday: "short",
                                             month: "short",
                                             day: "numeric",
@@ -1444,7 +1449,10 @@
                             },
 
                             ticks: {
-                                stepSize: 5
+                                stepSize: 5,
+                                callback: value => new Intl.DateTimeFormat(undefined, {
+                                    timeZone: reportTimezone, hour: "numeric", minute: "2-digit"
+                                }).format(new Date(value))
                             },
 
                             title: {
@@ -1505,6 +1513,7 @@
                                     return new Intl.DateTimeFormat(
                                         undefined,
                                         {
+                                            timeZone: reportTimezone,
                                             weekday: "short",
                                             month: "short",
                                             day: "numeric",
@@ -1526,6 +1535,10 @@
                     scales: {
                         x: {
                             type: "time",
+
+                            ticks: {callback: value => new Intl.DateTimeFormat(undefined, {
+                                timeZone: reportTimezone, hour: "numeric", minute: "2-digit"
+                            }).format(new Date(value))},
 
                             time: {
                                 tooltipFormat: "MMM d, h:mm a"
@@ -1588,6 +1601,7 @@
                                     return new Intl.DateTimeFormat(
                                         undefined,
                                         {
+                                            timeZone: reportTimezone,
                                             weekday: "short",
                                             month: "short",
                                             day: "numeric",
@@ -1610,6 +1624,10 @@
                     scales:{
                         x:{
                             type: "time",
+
+                            ticks: {callback: value => new Intl.DateTimeFormat(undefined, {
+                                timeZone: reportTimezone, hour: "numeric", minute: "2-digit"
+                            }).format(new Date(value))},
 
                             time:{
                                 tooltipFormat: "MMM d, h:mm a"
@@ -1719,30 +1737,38 @@
 
         window.addEventListener("pageshow", resetOrdersLoading);
 
-        function setToday() {
-            const now = new Date();
-
-            const start = new Date(now);
-            start.setHours(0, 0, 0, 0);
-
-            const end = new Date(now);
-            end.setHours(23, 59, 59, 999);                    
-
-            function formatForDateTimeLocal(date) {
-                const year = date.getFullYear();
-                const month = String(date.getMonth() + 1).padStart(2, "0");
-                const day = String(date.getDate()).padStart(2, "0");
-                const hours = String(date.getHours()).padStart(2, "0");
-                const minutes = String(date.getMinutes()).padStart(2, "0");
-
-                return `${year}-${month}-${day}T${hours}:${minutes}`;
+        function storeParts(date) {
+            return Object.fromEntries(new Intl.DateTimeFormat("en-US", {
+                timeZone: reportTimezone, year: "numeric", month: "2-digit", day: "2-digit",
+                hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23"
+            }).formatToParts(date).filter(part => part.type !== "literal")
+                .map(part => [part.type, part.value]));
+        }
+        function toDateTimeLocalValue(date) {
+            const p = storeParts(date);
+            return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}:${p.second}`;
+        }
+        function fromStoreLocal(value) {
+            if (!/^\d{4}-\d\d-\d\dT\d\d:\d\d(?::\d\d)?$/.test(value)) return null;
+            const fields = value.match(/\d+/g).map(Number);
+            const [year, month, day, hour, minute, second = 0] = fields;
+            const wall = Date.UTC(year, month - 1, day, hour, minute, second);
+            const target = `${fields[0]}-${String(month).padStart(2,"0")}-${String(day).padStart(2,"0")}T${String(hour).padStart(2,"0")}:${String(minute).padStart(2,"0")}:${String(second).padStart(2,"0")}`;
+            const matches = new Map();
+            for (const delta of [-86400000, 0, 86400000]) {
+                const probe = wall + delta;
+                const p = storeParts(new Date(probe));
+                const offset = Date.UTC(+p.year, +p.month-1, +p.day, +p.hour, +p.minute, +p.second) - probe;
+                const candidate = new Date(wall - offset);
+                if (toDateTimeLocalValue(candidate) === target) matches.set(candidate.getTime(), candidate);
             }
-
-            document.getElementById("start").value =
-                formatForDateTimeLocal(start);
-
-            document.getElementById("end").value =
-                formatForDateTimeLocal(end);
+            return matches.size === 1 ? [...matches.values()][0] : null;
+        }
+        function setToday() {
+            const p = storeParts(new Date());
+            const day = `${p.year}-${p.month}-${p.day}`;
+            document.getElementById("start").value = `${day}T00:00`;
+            document.getElementById("end").value = `${day}T23:59:59`;
         }
         
         const tipCalculatorData =
@@ -1786,9 +1812,9 @@
             if (beforeActivation) {
                 message.textContent = "This range begins before tip allocation was activated for this store.";
             } else if (expired) {
-                message.textContent = "The employee submission window closed " + deadline.toLocaleString() + ". Contact management.";
+                message.textContent = "The employee submission window closed " + formatTipDateTime(deadline) + " " + reportTimezone + ". Contact management.";
             } else if (!tipEmployeeWindowExempt) {
-                message.textContent = "Submit by " + deadline.toLocaleString() + " (" + tipEmployeeSubmissionHours + " hours after the range starts).";
+                message.textContent = "Submit by " + formatTipDateTime(deadline) + " " + reportTimezone + " (" + tipEmployeeSubmissionHours + " hours after the range starts).";
             } else {
                 message.textContent = "Managers and payroll may submit after the employee window closes.";
             }
@@ -1827,18 +1853,6 @@
         Date helpers
         --------------------------------------------------------- */
 
-        function toDateTimeLocalValue(date) {
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, "0");
-            const day = String(date.getDate()).padStart(2, "0");
-            const hours = String(date.getHours()).padStart(2, "0");
-            const minutes = String(date.getMinutes()).padStart(2, "0");
-            const seconds = String(date.getSeconds()).padStart(2, "0");
-
-            return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
-        }
-
-
         function formatTipDateTime(value) {
             const date = new Date(value);
 
@@ -1849,6 +1863,7 @@
             return new Intl.DateTimeFormat(
                 undefined,
                 {
+                    timeZone: reportTimezone,
                     month: "short",
                     day: "numeric",
                     hour: "numeric",
@@ -2061,12 +2076,13 @@
                             const index =
                                 Number(this.dataset.index);
 
-                            const newStart =
-                                new Date(this.value);
+                            const newStart = fromStoreLocal(this.value);
 
                             if (
-                                Number.isNaN(newStart.getTime())
+                                !newStart
                             ) {
+                                alert("Choose an unambiguous time in " + reportTimezone + ".");
+                                renderTipCalculator();
                                 return;
                             }
 

@@ -10,6 +10,7 @@ from datetime import datetime, timedelta, timezone
 from urllib.parse import urlencode
 from poynt.token import exchange_authorization_code
 from zoneinfo import ZoneInfo
+from store_time import local_to_utc, local_day_bounds, utc_iso
 
 from poynt.client import (
     PoyntClient,
@@ -668,21 +669,19 @@ def validate_and_convert_iso_datetime(iso_string: str):
         return None
 
 
-def get_orders_date_range(start, end):
+def get_orders_date_range(start, end, store_timezone):
     start_at_date = validate_and_convert_iso_datetime(start)
     end_at_date = validate_and_convert_iso_datetime(end)
 
-    arizona_tz = ZoneInfo("America/Phoenix")
-
-    if start_at_date and start_at_date.tzinfo is None:
-        start_at_date = start_at_date.replace(
-            tzinfo=arizona_tz
-        )
-
-    if end_at_date and end_at_date.tzinfo is None:
-        end_at_date = end_at_date.replace(
-            tzinfo=arizona_tz
-        )
+    if start_at_date and end_at_date:
+        try:
+            start_at_date = local_to_utc(start_at_date, ZoneInfo(store_timezone))
+            end_at_date = local_to_utc(end_at_date, ZoneInfo(store_timezone))
+        except ValueError:
+            return {
+                "error_title": "Ambiguous Local Time",
+                "error_message": "Choose valid, unambiguous times in the store timezone.",
+            }
 
     if not start:
         return {
@@ -1144,44 +1143,32 @@ def get_stores_display(store_ids, store_names):
 def _parse_tip_submission_datetime(value: str) -> datetime:
     """Parse an ISO timestamp and normalize it to a naive UTC datetime."""
     parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
-    if parsed.tzinfo is not None:
-        parsed = parsed.astimezone(ZoneInfo("UTC")).replace(tzinfo=None)
-    return parsed
+    if parsed.tzinfo is None:
+        raise ValueError("Tip timestamps must include a UTC offset")
+    return parsed.astimezone(timezone.utc).replace(tzinfo=None)
 
 
-def _get_today_utc_bounds() -> tuple[datetime, datetime]:
-    """Return today's Phoenix calendar day as naive UTC database bounds."""
-    phoenix = ZoneInfo("America/Phoenix")
-    utc = ZoneInfo("UTC")
-    today = datetime.now(phoenix).date()
-    start_local = datetime.combine(today, datetime.min.time(), tzinfo=phoenix)
-    end_local = start_local + timedelta(days=1)
-    return (
-        start_local.astimezone(utc).replace(tzinfo=None),
-        end_local.astimezone(utc).replace(tzinfo=None),
-    )
-
-
-def _get_tip_report_date_bounds(start_date: str, end_date: str) -> tuple[datetime, datetime, str, str] | None:
-    """Convert inclusive Phoenix calendar dates into UTC database bounds."""
+def _get_tip_report_date_bounds(start_date: str, end_date: str, store_timezone: str) -> tuple[datetime, datetime, str, str] | None:
+    """Convert inclusive store calendar dates into UTC database bounds."""
     try:
-        start = datetime.fromisoformat(start_date).date()
-        end = datetime.fromisoformat(end_date).date()
+        start = datetime.strptime(start_date, "%Y-%m-%d").date()
+        end = datetime.strptime(end_date, "%Y-%m-%d").date()
     except (TypeError, ValueError):
         return None
 
     if end < start:
         return None
 
-    phoenix = ZoneInfo("America/Phoenix")
-    utc = ZoneInfo("UTC")
-
-    start_local = datetime.combine(start, datetime.min.time(), tzinfo=phoenix)
-    end_local = datetime.combine(end + timedelta(days=1), datetime.min.time(), tzinfo=phoenix)
+    zone = ZoneInfo(store_timezone)
+    try:
+        start_utc, _ = local_day_bounds(start, zone)
+        _, end_utc = local_day_bounds(end, zone)
+    except ValueError:
+        return None
 
     return (
-        start_local.astimezone(utc).replace(tzinfo=None),
-        end_local.astimezone(utc).replace(tzinfo=None),
+        start_utc,
+        end_utc,
         start.isoformat(),
         end.isoformat(),
     )
@@ -1320,7 +1307,7 @@ def _allocation_orders(orders: list[dict], ranges: list[dict]) -> tuple[list[dic
 
 
 def _tip_submission_display(submission: TipSubmission, payouts: list[TipEmployeePayout] | None = None,
-                            allowed_payout_ids: set[int] | None = None) -> dict:
+                            allowed_payout_ids: set[int] | None = None, store_timezone: str = "UTC") -> dict:
     try:
         data = json.loads(submission.submission_data)
     except (TypeError, ValueError):
@@ -1333,17 +1320,18 @@ def _tip_submission_display(submission: TipSubmission, payouts: list[TipEmployee
     return {
         "id": submission.id,
         "store_name": submission.store_name,
-        "report_start_at": submission.report_start_at.isoformat(),
-        "report_end_at": submission.report_end_at.isoformat(),
+        "store_timezone": store_timezone,
+        "report_start_at": utc_iso(submission.report_start_at),
+        "report_end_at": utc_iso(submission.report_end_at),
         "total_tip_cents": submission.total_tip_cents,
         "payout_method": submission.payout_method,
         "processing_status": submission.processing_status,
         "processed_at": (
-            submission.processed_at.isoformat()
+            utc_iso(submission.processed_at)
             if submission.processed_at
             else None
         ),
-        "submitted_at": submission.submitted_at.isoformat(),
+        "submitted_at": utc_iso(submission.submitted_at),
         "ranges": ranges,
         "employee_totals": _aggregate_tip_allocations(ranges),
         "payouts": [{
@@ -1353,7 +1341,7 @@ def _tip_submission_display(submission: TipSubmission, payouts: list[TipEmployee
             "amount_cents": payout.amount_cents,
             "method": payout.payout_method,
             "status": payout.status,
-            "paid_at": payout.paid_at.isoformat() if payout.paid_at else None,
+            "paid_at": utc_iso(payout.paid_at),
             "can_confirm": payout.id in (allowed_payout_ids or set()),
         } for payout in (payouts or [])],
         "employee_names": [
@@ -1371,6 +1359,7 @@ async def tip_submission_report(
     request: Request,
     start: str = "",
     end: str = "",
+    store_id: str = "",
     payment: str = "",
     status: str = "",
 ):
@@ -1387,19 +1376,29 @@ async def tip_submission_report(
     # employee view are only a UI convenience and are not an authorization check.
     role = get_organization_role(user_id, organization_id)
     can_select_date_range = role_can_view_payroll_reports(role)
-
-    phoenix = ZoneInfo("America/Phoenix")
-    today = datetime.now(phoenix).date().isoformat()
+    with SessionLocal() as session:
+        configured_stores = session.execute(select(OrganizationStore).where(
+            OrganizationStore.organization_id == organization_id,
+            OrganizationStore.is_active.is_(True),
+        )).scalars().all()
+    store_map = {store.store_id: store for store in configured_stores if store.timezone_name}
+    if not store_map:
+        raise HTTPException(409, "Configure a store timezone in Store Settings first.")
+    selected_store_id = store_id.lower() if store_id else sorted(store_map)[0]
+    if selected_store_id not in store_map:
+        raise HTTPException(400, "Select a configured store from this organization.")
+    store_timezone = store_map[selected_store_id].timezone_name
+    today = datetime.now(ZoneInfo(store_timezone)).date().isoformat()
 
     if can_select_date_range:
         # Privileged users get a selectable inclusive date range. Default to today.
         start_date = start or today
         end_date = end or today
-        bounds = _get_tip_report_date_bounds(start_date, end_date)
+        bounds = _get_tip_report_date_bounds(start_date, end_date, store_timezone)
         if bounds is None:
             start_date = today
             end_date = today
-            bounds = _get_tip_report_date_bounds(start_date, end_date)
+            bounds = _get_tip_report_date_bounds(start_date, end_date, store_timezone)
             validation_message = "The selected date range was invalid, so today's submissions are shown."
         else:
             validation_message = ""
@@ -1407,7 +1406,7 @@ async def tip_submission_report(
         # Everyone else can only see today's submissions, regardless of URL parameters.
         start_date = today
         end_date = today
-        bounds = _get_tip_report_date_bounds(start_date, end_date)
+        bounds = _get_tip_report_date_bounds(start_date, end_date, store_timezone)
         validation_message = ""
 
     day_start, day_end, _, _ = bounds
@@ -1417,6 +1416,7 @@ async def tip_submission_report(
 
     submission_query = select(TipSubmission).where(
         TipSubmission.organization_id == organization_id,
+        TipSubmission.store_id == selected_store_id,
         TipSubmission.submitted_at >= day_start,
         TipSubmission.submitted_at < day_end,
     )
@@ -1476,7 +1476,7 @@ async def tip_submission_report(
                 visible_payouts = [row for row in visible_payouts if
                     (not selected_payment or row.payout_method == selected_payment) and
                     (not selected_status or row.status == selected_status)]
-            display.append(_tip_submission_display(item, visible_payouts, allowed_ids))
+            display.append(_tip_submission_display(item, visible_payouts, allowed_ids, store_timezone))
 
     return templates.TemplateResponse(
         request=request,
@@ -1491,6 +1491,10 @@ async def tip_submission_report(
             "tip_report_status": selected_status,
             "tip_report_can_process": can_select_date_range,
             "tip_report_role": role,
+            "tip_report_store_id": selected_store_id,
+            "tip_report_store_timezone": store_timezone,
+            "tip_report_stores": [{"id": key, "name": value.display_name or value.poynt_name}
+                                  for key, value in sorted(store_map.items())],
         },
     )
 
@@ -1502,6 +1506,7 @@ async def update_tip_submission_status(
     processing_status: str = Form(...),
     return_start: str = Form(""),
     return_end: str = Form(""),
+    return_store_id: str = Form(""),
     return_payment: str = Form(""),
     return_status: str = Form(""),
 ):
@@ -1544,6 +1549,8 @@ async def update_tip_submission_status(
         session.commit()
 
     return_params = {}
+    if return_store_id:
+        return_params["store_id"] = return_store_id
     if return_start:
         return_params["start"] = return_start
     if return_end:
@@ -1605,7 +1612,7 @@ async def mark_tip_payout_paid(payout_id: int, request: Request):
             submission.processed_at = datetime.utcnow()
             submission.processed_by_user_id = user_id
         session.commit()
-    return RedirectResponse("/poynt/tip-submissions", status_code=303)
+    return RedirectResponse(f"/poynt/tip-submissions?{urlencode({'store_id': submission.store_id})}", status_code=303)
 
 
 @router.get("/poynt/tip-settings", response_class=HTMLResponse)
@@ -1696,9 +1703,9 @@ async def save_tip_store_settings(
                 local_start = datetime.fromisoformat(tip_allocation_start_at)
                 if local_start.tzinfo is not None:
                     raise ValueError("Expected local time")
-                setting.tip_allocation_start_at = local_start.replace(
-                    tzinfo=ZoneInfo(store.timezone_name)
-                ).astimezone(timezone.utc).replace(tzinfo=None)
+                setting.tip_allocation_start_at = local_to_utc(
+                    local_start, ZoneInfo(store.timezone_name)
+                ).replace(tzinfo=None)
             except ValueError as exc:
                 raise HTTPException(400, "Choose a valid tip allocation start date and time.") from exc
         setting.payout_policy = payout_policy
@@ -1740,7 +1747,7 @@ async def reject_new_tip_submission(submission_id: int, request: Request):
         submission.processed_at = datetime.utcnow()
         submission.processed_by_user_id = user_id
         session.commit()
-    return RedirectResponse("/poynt/tip-submissions", status_code=303)
+    return RedirectResponse(f"/poynt/tip-submissions?{urlencode({'store_id': submission.store_id})}", status_code=303)
 
 
 @router.post("/poynt/tip-submissions")
@@ -1802,6 +1809,13 @@ async def submit_tip_record(
 
     role = get_organization_role(user_id, organization_id)
     with SessionLocal() as session:
+        store = session.execute(select(OrganizationStore).where(
+            OrganizationStore.organization_id == organization_id,
+            OrganizationStore.store_id == store_id,
+            OrganizationStore.is_active.is_(True),
+        )).scalar_one_or_none()
+        if store is None or not store.timezone_name:
+            raise HTTPException(409, "Configure this store's timezone before submitting tips.")
         _validate_tip_submission_window(
             _store_tip_setting(session, organization_id, store_id), report_start, role
         )
@@ -1886,7 +1900,7 @@ async def submit_tip_record(
             session.rollback()
             raise HTTPException(409, "One or more orders have already been allocated. Refresh the report.") from exc
 
-    return RedirectResponse("/poynt/tip-submissions", status_code=303)
+    return RedirectResponse(f"/poynt/tip-submissions?{urlencode({'store_id': store_id})}", status_code=303)
 
 @router.get("/poynt/orders", response_class=HTMLResponse)
 async def poynt_orders(
@@ -1914,6 +1928,31 @@ async def poynt_orders(
             status_code=303
         )
 
+    with SessionLocal() as session:
+        configured_stores = session.execute(select(OrganizationStore).where(
+            OrganizationStore.organization_id == organization_id,
+            OrganizationStore.is_active.is_(True),
+        )).scalars().all()
+    configured = {store.store_id: store for store in configured_stores if store.timezone_name}
+    store_names = {store_id: store.display_name or store.poynt_name for store_id, store in configured.items()}
+    available_stores = [{"id": store_id, "name": name} for store_id, name in sorted(store_names.items(), key=lambda item: item[1].lower())]
+    requested_stores = {store_id.lower() for store_id in (stores or []) if store_id}
+    if requested_stores and not requested_stores.issubset(configured):
+        raise HTTPException(400, "Select configured stores from this organization.")
+    selected_store_ids = sorted(requested_stores or configured)
+    selected_zones = {configured[store_id].timezone_name for store_id in selected_store_ids}
+    store_timezone = next(iter(selected_zones)) if len(selected_zones) == 1 else None
+    if not configured or not store_timezone:
+        message = ("Configure at least one store and its timezone in Store Settings."
+                   if not configured else "Select stores in one timezone for this report.")
+        return templates.TemplateResponse(request=request, name="orders.html", context={
+            "report_generated": False, "validation_title": "Store Selection Required",
+            "validation_message": message, "available_stores": available_stores,
+            "selected_stores": selected_store_ids, "start_input_value": start,
+            "end_input_value": end, "store_timezone": "", "chart_data_json": "[]",
+            "item_flow_json": "[]", "revenue_flow_json": "[]",
+        })
+
     if not start and not end:
         return templates.TemplateResponse(
             request=request,
@@ -1924,6 +1963,9 @@ async def poynt_orders(
                 "validation_message": "Enter a start and end date and time to generate order metrics.",
                 "start_input_value": "",
                 "end_input_value": "",
+                "available_stores": available_stores,
+                "selected_stores": selected_store_ids,
+                "store_timezone": store_timezone,
                 "chart_data_json": "[]",
                 "item_flow_json": "[]",
                 "revenue_flow_json": "[]",
@@ -1937,7 +1979,7 @@ async def poynt_orders(
                 "end_at_for_tip_calculator": None,
             },
         )
-    order_date_params = get_orders_date_range(start, end)
+    order_date_params = get_orders_date_range(start, end, store_timezone)
 
     if "error_title" in order_date_params:
         return templates.TemplateResponse(
@@ -1949,6 +1991,9 @@ async def poynt_orders(
                 "validation_message": order_date_params["error_message"],
                 "start_input_value": start,
                 "end_input_value": end,
+                "available_stores": available_stores,
+                "selected_stores": selected_store_ids,
+                "store_timezone": store_timezone,
                 "chart_data_json": "[]",
                 "item_flow_json": "[]",
                 "revenue_flow_json": "[]",
@@ -2024,8 +2069,9 @@ async def poynt_orders(
                     ),
                     "start_input_value": start,
                     "end_input_value": end,
-                    "available_stores": [],
-                    "selected_stores": [],
+                    "available_stores": available_stores,
+                    "selected_stores": selected_store_ids,
+                    "store_timezone": store_timezone,
                     "chart_data_json": "[]",
                     "item_flow_json": "[]",
                     "revenue_flow_json": "[]",
@@ -2039,14 +2085,6 @@ async def poynt_orders(
                 },
             )
         
-        with SessionLocal() as session:
-            configured_stores = session.execute(select(OrganizationStore).where(
-                OrganizationStore.organization_id == organization_id,
-            )).scalars().all()
-            store_names = {
-                store.store_id: store.display_name or store.poynt_name
-                for store in configured_stores if store.is_active
-            }
         available_store_ids = get_available_store_ids(orders, store_names)
 
         if not available_store_ids:
@@ -2059,35 +2097,28 @@ async def poynt_orders(
                     "validation_message": "No store information was found in the orders for this date range.",
                     "start_input_value": start,
                     "end_input_value": end,
-                    "available_stores": [],
-                    "selected_stores": [],
+                    "available_stores": available_stores,
+                    "selected_stores": selected_store_ids,
+                    "store_timezone": store_timezone,
                     "chart_data_json": "[]",
                     "item_flow_json": "[]",
                     "revenue_flow_json": "[]",
                 },
             )
 
-        available_store_set = set(available_store_ids)
-
-        if stores:
-            requested_stores = {
-                store.lower()
-                for store in stores
-                if store
-            }
-            selected_store_ids = sorted(
-                requested_stores & available_store_set
-            )
-
-            if not selected_store_ids:
-                selected_store_ids = available_store_ids
-        else:
-            selected_store_ids = available_store_ids
-
         orders = filter_orders_by_stores(
             orders,
-            selected_store_ids if stores else None,
+            selected_store_ids,
         )
+        if not orders:
+            return templates.TemplateResponse(request=request, name="orders.html", context={
+                "report_generated": False, "validation_title": "No Orders Found",
+                "validation_message": "No orders were found for the selected stores and time range.",
+                "start_input_value": start, "end_input_value": end,
+                "available_stores": available_stores, "selected_stores": selected_store_ids,
+                "store_timezone": store_timezone, "chart_data_json": "[]",
+                "item_flow_json": "[]", "revenue_flow_json": "[]",
+            })
 
     except PoyntReauthorizationRequired:
         return templates.TemplateResponse(
@@ -2305,17 +2336,6 @@ async def poynt_orders(
     else:
         tip_calculator_disabled_reason = ""
 
-    available_stores = [
-        {
-            "id": store_id,
-            "name": store_names.get(
-                store_id,
-                f"Unknown Store {store_id}",
-            ),
-        }
-        for store_id in available_store_ids
-    ]
-
     return templates.TemplateResponse(
         request=request,
         name="orders.html",
@@ -2343,6 +2363,7 @@ async def poynt_orders(
             "stores_display": stores_display,
             "available_stores": available_stores,
             "selected_stores": selected_store_ids,
+            "store_timezone": store_timezone,
             "sku_rows": sku_rows,
             "category_rows": category_rows,
             "orders_data": orders_data,

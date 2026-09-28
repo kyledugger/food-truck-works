@@ -21,6 +21,15 @@
             <form method="get" action="/poynt/tip-submissions">
                 <div class="columns is-vcentered is-variable is-3">
                     <div class="column is-narrow">
+                        <label class="label" for="tip-report-store">Store</label>
+                        <div class="select"><select id="tip-report-store" name="store_id">
+                            {% for store in tip_report_stores %}
+                            <option value="{{ store.id }}" {% if store.id == tip_report_store_id %}selected{% endif %}>{{ store.name }}</option>
+                            {% endfor %}
+                        </select></div>
+                        <p class="help">{{ tip_report_store_timezone }}</p>
+                    </div>
+                    <div class="column is-narrow">
                         <label class="label" for="tip-report-start">Date Range</label>
                         <div class="is-flex is-align-items-center" style="gap: 0.5rem;">
                             <div class="control">
@@ -232,6 +241,7 @@
                                             >
                                                 <input type="hidden" name="processing_status" value="paid">
                                                 <input type="hidden" name="return_start" value="{{ tip_report_start_date }}">
+                                                <input type="hidden" name="return_store_id" value="{{ tip_report_store_id }}">
                                                 <input type="hidden" name="return_end" value="{{ tip_report_end_date }}">
                                                 <input type="hidden" name="return_payment" value="{{ tip_report_payment }}">
                                                 <input type="hidden" name="return_status" value="{{ tip_report_status }}">
@@ -250,6 +260,7 @@
                                             >
                                                 <input type="hidden" name="processing_status" value="rejected">
                                                 <input type="hidden" name="return_start" value="{{ tip_report_start_date }}">
+                                                <input type="hidden" name="return_store_id" value="{{ tip_report_store_id }}">
                                                 <input type="hidden" name="return_end" value="{{ tip_report_end_date }}">
                                                 <input type="hidden" name="return_payment" value="{{ tip_report_payment }}">
                                                 <input type="hidden" name="return_status" value="{{ tip_report_status }}">
@@ -286,6 +297,7 @@
         }
 
         element.textContent = new Intl.DateTimeFormat(undefined, {
+            timeZone: {{ tip_report_store_timezone | tojson }},
             month: "short",
             day: "numeric",
             year: "numeric",
