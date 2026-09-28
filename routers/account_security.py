@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, BackgroundTasks, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -203,7 +203,7 @@ async def reset_password(
 
         user.password_hash = hash_password(password)
         if user.email_verified_at is None:
-            user.email_verified_at = datetime.utcnow()
+            user.email_verified_at = datetime.now(timezone.utc)
         consume_security_token(security_token)
         other_tokens = session.execute(
             select(UserSecurityToken).where(
@@ -248,7 +248,7 @@ async def verify_email(request: Request, token: str):
         user = session.get(User, security_token.user_id)
         if user is None or not user.is_active:
             return RedirectResponse("/login", status_code=303)
-        user.email_verified_at = user.email_verified_at or datetime.utcnow()
+        user.email_verified_at = user.email_verified_at or datetime.now(timezone.utc)
         consume_security_token(security_token)
         session.commit()
         log_security_event(

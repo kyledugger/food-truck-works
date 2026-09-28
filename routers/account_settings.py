@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 from email_validator import EmailNotValidError, validate_email
 from fastapi import APIRouter, Form, Request
@@ -361,7 +361,7 @@ async def confirm_email_change(request: Request, token: str):
         old_email = user.email
         user.email = user.pending_email
         user.pending_email = None
-        user.email_verified_at = datetime.utcnow()
+        user.email_verified_at = datetime.now(timezone.utc)
         consume_security_token(security_token)
         session.commit()
         log_security_event(request, "email_change", "succeeded", user_id=user.id)

@@ -1,11 +1,12 @@
 import hashlib
 import secrets
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from models import UserSecurityToken
+from store_time import as_utc
 
 
 EMAIL_VERIFICATION = "email_verification"
@@ -27,7 +28,7 @@ def create_security_token(
     purpose: str,
     lifetime: timedelta,
 ) -> str:
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     active_tokens = session.execute(
         select(UserSecurityToken).where(
             UserSecurityToken.user_id == user_id,
@@ -63,13 +64,13 @@ def get_valid_security_token(
     ).scalar_one_or_none()
     if token is None or token.used_at is not None:
         return None
-    if token.expires_at <= datetime.utcnow():
+    if as_utc(token.expires_at) <= datetime.now(timezone.utc):
         return None
     return token
 
 
 def consume_security_token(token: UserSecurityToken) -> None:
-    token.used_at = datetime.utcnow()
+    token.used_at = datetime.now(timezone.utc)
 
 
 def token_was_recently_created(
@@ -87,4 +88,4 @@ def token_was_recently_created(
         .order_by(UserSecurityToken.created_at.desc())
         .limit(1)
     ).scalar_one_or_none()
-    return bool(latest and latest.created_at > datetime.utcnow() - cooldown)
+    return bool(latest and as_utc(latest.created_at) > datetime.now(timezone.utc) - cooldown)

@@ -1,6 +1,6 @@
 import hashlib
 import secrets
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -19,6 +19,7 @@ from models import Employee, OrganizationInvitation, OrganizationMember, Organiz
 from organization_context import get_current_organization_id
 from permissions import get_organization_role, role_can_manage_employees
 from security_logging import log_security_event
+from store_time import as_utc
 from security_tokens import (
     EMAIL_VERIFICATION,
     EMAIL_VERIFICATION_LIFETIME,
@@ -481,7 +482,7 @@ async def invite_employee(
             )
 
         # Expire any previous unused invitations for this employee.
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         previous_invitations = session.execute(
             select(OrganizationInvitation).where(
@@ -540,7 +541,7 @@ async def validate_invitation(
         token.encode("utf-8")
     ).hexdigest()
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
 
     with SessionLocal() as session:
         result = session.execute(
@@ -631,7 +632,7 @@ async def validate_invitation(
             )
 
         # Invitations expire.
-        if invitation.expires_at <= now:
+        if as_utc(invitation.expires_at) <= now:
             log_security_event(
                 request,
                 "invitation_acceptance",
@@ -697,7 +698,7 @@ async def create_account_page(
         token.encode("utf-8")
     ).hexdigest()
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
 
     with SessionLocal() as session:
         result = session.execute(
@@ -757,7 +758,7 @@ async def create_account_page(
                 status_code=410,
             )
 
-        if invitation.expires_at <= now:
+        if as_utc(invitation.expires_at) <= now:
             return templates.TemplateResponse(
                 request=request,
                 name="invitation_invalid.html",
@@ -828,7 +829,7 @@ async def create_account(
         token.encode("utf-8")
     ).hexdigest()
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
 
     with SessionLocal() as session:
         result = session.execute(
@@ -888,7 +889,7 @@ async def create_account(
                 status_code=410,
             )
 
-        if invitation.expires_at <= now:
+        if as_utc(invitation.expires_at) <= now:
             return templates.TemplateResponse(
                 request=request,
                 name="invitation_invalid.html",
@@ -1068,7 +1069,7 @@ async def accept_invitation_with_existing_account(
 ):
     """Accept an employee invitation using the account for the invited email."""
     token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
 
     with SessionLocal() as session:
         result = session.execute(
@@ -1114,7 +1115,7 @@ async def accept_invitation_with_existing_account(
                 status_code=410,
             )
 
-        if invitation.expires_at <= now or not employee.is_active:
+        if as_utc(invitation.expires_at) <= now or not employee.is_active:
             return templates.TemplateResponse(
                 request=request,
                 name="invitation_invalid.html",

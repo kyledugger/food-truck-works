@@ -2,7 +2,7 @@ from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import select
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from urllib.parse import urlencode
 
 
@@ -299,7 +299,7 @@ async def oauth_callback(
 
     if expires_in:
         expires_at = (
-            datetime.utcnow()
+            datetime.now(timezone.utc)
             + timedelta(seconds=int(expires_in))
         )
 

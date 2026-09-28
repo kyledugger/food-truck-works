@@ -1,5 +1,5 @@
 import unittest
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from zoneinfo import ZoneInfo
 
 from store_time import local_day_bounds, local_to_utc, utc_iso
@@ -24,8 +24,12 @@ class StoreTimeTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 local_to_utc(local, zone)
 
-    def test_utc_naive_database_serialization(self):
+    def test_utc_serialization_accepts_legacy_and_aware_values(self):
         self.assertEqual(utc_iso(datetime(2026, 9, 27, 16)), "2026-09-27T16:00:00Z")
+        self.assertEqual(utc_iso(datetime(2026, 9, 27, 16, tzinfo=timezone.utc)),
+                         "2026-09-27T16:00:00Z")
+        self.assertEqual(local_day_bounds(date(2026, 9, 27), ZoneInfo("America/Phoenix"))[0].tzinfo,
+                         timezone.utc)
 
 
 if __name__ == "__main__":

@@ -10,7 +10,7 @@ from datetime import datetime, timedelta, timezone
 from urllib.parse import urlencode
 from poynt.token import exchange_authorization_code
 from zoneinfo import ZoneInfo
-from store_time import local_to_utc, local_day_bounds, utc_iso
+from store_time import as_utc, local_to_utc, local_day_bounds, utc_iso
 
 from poynt.client import (
     PoyntClient,
@@ -1141,11 +1141,11 @@ def get_stores_display(store_ids, store_names):
 
 
 def _parse_tip_submission_datetime(value: str) -> datetime:
-    """Parse an ISO timestamp and normalize it to a naive UTC datetime."""
+    """Parse an ISO timestamp and normalize it to aware UTC."""
     parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
     if parsed.tzinfo is None:
         raise ValueError("Tip timestamps must include a UTC offset")
-    return parsed.astimezone(timezone.utc).replace(tzinfo=None)
+    return parsed.astimezone(timezone.utc)
 
 
 def _get_tip_report_date_bounds(start_date: str, end_date: str, store_timezone: str) -> tuple[datetime, datetime, str, str] | None:
@@ -1232,11 +1232,11 @@ def _store_tip_setting(session, organization_id: int, store_id: str):
 def _validate_tip_submission_window(setting, report_start: datetime, role: str | None) -> None:
     if setting is None or setting.tip_allocation_start_at is None:
         raise HTTPException(409, "A manager must activate tip allocation in Tip Settings first.")
-    if report_start < setting.tip_allocation_start_at:
+    if report_start < as_utc(setting.tip_allocation_start_at):
         raise HTTPException(403, "This report begins before this store's tip allocation start.")
     if not role_can_view_payroll_reports(role):
         deadline = report_start + timedelta(hours=setting.employee_submission_hours)
-        if datetime.utcnow() > deadline:
+        if datetime.now(timezone.utc) > deadline:
             raise HTTPException(403, "The employee tip submission window has closed. Contact management.")
 
 
@@ -1544,7 +1544,7 @@ async def update_tip_submission_status(
             raise HTTPException(409, "Use employee payout actions for this submission.")
 
         submission.processing_status = processing_status
-        submission.processed_at = datetime.utcnow()
+        submission.processed_at = datetime.now(timezone.utc)
         submission.processed_by_user_id = user_id
         session.commit()
 
@@ -1600,7 +1600,7 @@ async def mark_tip_payout_paid(payout_id: int, request: Request):
                 raise HTTPException(403, "Cash confirmation permission is required.")
             mode = "self" if self_confirm and not authorized else "authorized"
         payout.status = "paid"
-        payout.paid_at = datetime.utcnow()
+        payout.paid_at = datetime.now(timezone.utc)
         payout.paid_by_user_id = user_id
         payout.confirmation_mode = mode
         session.flush()
@@ -1609,7 +1609,7 @@ async def mark_tip_payout_paid(payout_id: int, request: Request):
         )).scalars().all()
         if all(status == "paid" for status in statuses):
             submission.processing_status = "paid"
-            submission.processed_at = datetime.utcnow()
+            submission.processed_at = datetime.now(timezone.utc)
             submission.processed_by_user_id = user_id
         session.commit()
     return RedirectResponse(f"/poynt/tip-submissions?{urlencode({'store_id': submission.store_id})}", status_code=303)
@@ -1642,7 +1642,7 @@ async def tip_store_settings_page(request: Request, store_id: str):
             "cash_confirmer_user_id": setting.cash_confirmer_user_id if setting else None,
             "employee_submission_hours": setting.employee_submission_hours if setting else 24,
             "tip_allocation_start_at": (
-                setting.tip_allocation_start_at.replace(tzinfo=timezone.utc)
+                as_utc(setting.tip_allocation_start_at)
                 .astimezone(store_timezone).strftime("%Y-%m-%dT%H:%M")
                 if setting and setting.tip_allocation_start_at else ""
             ),
@@ -1703,9 +1703,7 @@ async def save_tip_store_settings(
                 local_start = datetime.fromisoformat(tip_allocation_start_at)
                 if local_start.tzinfo is not None:
                     raise ValueError("Expected local time")
-                setting.tip_allocation_start_at = local_to_utc(
-                    local_start, ZoneInfo(store.timezone_name)
-                ).replace(tzinfo=None)
+                setting.tip_allocation_start_at = local_to_utc(local_start, ZoneInfo(store.timezone_name))
             except ValueError as exc:
                 raise HTTPException(400, "Choose a valid tip allocation start date and time.") from exc
         setting.payout_policy = payout_policy
@@ -1744,7 +1742,7 @@ async def reject_new_tip_submission(submission_id: int, request: Request):
         )).scalars():
             session.delete(claim)
         submission.processing_status = "rejected"
-        submission.processed_at = datetime.utcnow()
+        submission.processed_at = datetime.now(timezone.utc)
         submission.processed_by_user_id = user_id
         session.commit()
     return RedirectResponse(f"/poynt/tip-submissions?{urlencode({'store_id': submission.store_id})}", status_code=303)
@@ -1826,8 +1824,8 @@ async def submit_tip_record(
     try:
         orders = await fetch_poynt_orders(
             credentials, organization_id,
-            report_start.replace(tzinfo=timezone.utc).isoformat(),
-            report_end.replace(tzinfo=timezone.utc).isoformat(),
+            report_start.isoformat(),
+            report_end.isoformat(),
         )
     except Exception as exc:
         logger.exception("Could not refresh Poynt orders for tip submission")
@@ -1838,7 +1836,7 @@ async def submit_tip_record(
     if not claims or sum(tip for _, tip in claims) != total_tip_cents:
         raise HTTPException(409, "Tip total changed. Refresh the report and recalculate.")
 
-    submitted_at = datetime.utcnow()
+    submitted_at = datetime.now(timezone.utc)
 
     with SessionLocal() as session:
         employee_ids = list(allocations)
@@ -2376,7 +2374,7 @@ async def poynt_orders(
             "tip_calculator_data": tip_calculator_data,
             "tip_payout_policy": tip_payout_policy,
             "tip_allocation_start_at": (
-                tip_setting.tip_allocation_start_at.isoformat() + "Z"
+                utc_iso(tip_setting.tip_allocation_start_at)
                 if tip_setting and tip_setting.tip_allocation_start_at else None
             ),
             "tip_employee_submission_hours": tip_setting.employee_submission_hours if tip_setting else 24,

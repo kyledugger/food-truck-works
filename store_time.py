@@ -17,19 +17,23 @@ def local_to_utc(value: datetime, zone: ZoneInfo) -> datetime:
     return candidates.pop()
 
 
-def utc_naive(value: datetime) -> datetime:
-    """Keep the current PostgreSQL TIMESTAMP WITHOUT TIME ZONE UTC convention."""
-    return value.astimezone(timezone.utc).replace(tzinfo=None)
+def utc_now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def as_utc(value: datetime) -> datetime:
+    """Normalize old/SQLite UTC-naive values and PostgreSQL aware values."""
+    return value.replace(tzinfo=timezone.utc) if value.tzinfo is None else value.astimezone(timezone.utc)
 
 
 def utc_iso(value: datetime | None) -> str | None:
-    """Serialize a database UTC-naive instant for browsers."""
+    """Serialize a UTC instant for browsers, including legacy UTC-naive rows."""
     if value is None:
         return None
-    return value.replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z")
+    return as_utc(value).isoformat().replace("+00:00", "Z")
 
 
 def local_day_bounds(day, zone: ZoneInfo):
     start = local_to_utc(datetime.combine(day, datetime.min.time()), zone)
     end = local_to_utc(datetime.combine(day + timedelta(days=1), datetime.min.time()), zone)
-    return utc_naive(start), utc_naive(end)
+    return start, end
