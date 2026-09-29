@@ -8,3 +8,5 @@ STORE_TYPES = {
     "shop": "Shop (brick and mortar)",
     "catering": "Catering",
 }
+
+INTRINSIC_BOOKABLE_TYPES = frozenset({"food_truck", "food_trailer", "cart", "pop_up"})

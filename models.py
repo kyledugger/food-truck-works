@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Boolean, CheckConstraint, ForeignKey, String, UniqueConstraint
+from sqlalchemy import Boolean, CheckConstraint, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from instant_type import UTCInstant
@@ -389,3 +389,28 @@ class OrganizationStore(Base):
     timezone_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
     store_type: Mapped[str | None] = mapped_column(String(20), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+
+    booking_resource: Mapped["BookingResource | None"] = relationship(
+        back_populates="store", uselist=False
+    )
+
+
+class BookingResource(Base):
+    """One primary booking capacity per Poynt store; event links use this stable ID."""
+
+    __tablename__ = "booking_resources"
+    __table_args__ = (
+        UniqueConstraint("organization_store_id", name="uq_booking_resource_store"),
+        CheckConstraint("capacity >= 1", name="ck_booking_resource_capacity_positive"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    organization_store_id: Mapped[int] = mapped_column(
+        ForeignKey("organization_stores.id"), nullable=False, index=True
+    )
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    name_follows_store: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    is_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    capacity: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+
+    store: Mapped[OrganizationStore] = relationship(back_populates="booking_resource")

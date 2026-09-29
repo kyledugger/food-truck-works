@@ -21,7 +21,7 @@
         <option value="{{ value }}" {% if store.store_type == value %}selected{% endif %}>{{ label }}</option>
         {% endfor %}
       </select></div></div>
-      <p class="help">What this Poynt store represents. Booking availability will be configured separately.</p>
+      <p class="help">What this Poynt store represents. Trucks, trailers, carts, and pop-ups get one booking resource automatically.</p>
     </div>
     <div class="field"><label class="label">Store timezone</label>
       <input class="input" name="timezone_name" required value="{{ store.timezone_name or '' }}" placeholder="America/Phoenix" list="common-timezones">
@@ -31,6 +31,25 @@
     <button class="button is-primary" type="submit">Save store</button>
     {% if store.timezone_name %}<a class="button is-light" href="/poynt/tip-settings?store_id={{ store.id | urlencode }}">Tip payout and submission settings</a>{% endif %}
   </form>
+  {% if store.store_type in intrinsic_types %}
+  <p class="help mb-5">Bookings: {{ store.resource.name if store.resource else (store.display_name or store.poynt_name) }} (one event at a time){% if not store.is_active %}. This store is inactive.{% endif %}</p>
+  {% elif store.store_type in ('shop', 'catering') %}
+  <form method="post" action="/settings/stores/booking" class="box">
+    <input type="hidden" name="store_id" value="{{ store.id }}">
+    <h3 class="title is-6">Bookings for {{ store.display_name or store.poynt_name }}</h3>
+    <div class="field"><label class="checkbox"><input type="checkbox" name="is_enabled" value="true" {% if store.resource and store.resource.is_enabled %}checked{% endif %}> Accept bookings for this {{ 'shop' if store.store_type == 'shop' else 'catering operation' }}</label></div>
+    <div class="field"><label class="label">Bookable space or service name</label>
+      <input class="input" name="resource_name" maxlength="200" value="{{ store.resource.name if store.resource else '' }}" placeholder="{{ 'Party room or whole shop' if store.store_type == 'shop' else 'Catering service' }}">
+    </div>
+    {% if store.store_type == 'catering' %}
+    <div class="field"><label class="label">Concurrent events</label>
+      <input class="input" type="number" name="capacity" min="1" max="100" value="{{ store.resource.capacity if store.resource else 1 }}">
+      <p class="help">How many events this operation can serve at the same time. Availability and staffing rules come later.</p>
+    </div>
+    {% else %}<p class="help mb-3">One event at a time. This is separate from your walk-in hours.</p>{% endif %}
+    <button class="button is-light" type="submit">Save booking settings</button>
+  </form>
+  {% endif %}
   {% endfor %}
   <datalist id="common-timezones"><option value="America/Phoenix"><option value="America/Los_Angeles"><option value="America/Denver"><option value="America/Chicago"><option value="America/New_York"><option value="Pacific/Honolulu"></datalist>
   <a href="/dashboard">Back to dashboard</a>
