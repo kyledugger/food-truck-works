@@ -8,15 +8,20 @@ from sqlalchemy import select
 
 from booking_resources import ensure_intrinsic_resource, store_booking_name
 from database import SessionLocal
-from models import BookingResource, OrganizationStore
+from models import BookingResource, Event, OrganizationStore
 from organization_context import get_current_organization_id
 from permissions import get_organization_role, role_can_manage_organization
 from poynt.client import PoyntClient, PoyntReauthorizationRequired
 from poynt.connection import get_poynt_credentials
 from store_types import INTRINSIC_BOOKABLE_TYPES, STORE_TYPES
+from store_time import utc_now
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
+
+# The application already registers the store router; include event routes here.
+from routers.events import router as events_router
+router.include_router(events_router)
 
 
 def _manager_org(request: Request) -> int:
@@ -118,6 +123,16 @@ async def save_store_settings(
         if row is None:
             row = OrganizationStore(organization_id=organization_id, store_id=store_id, poynt_name=discovered[store_id])
             session.add(row)
+        elif row.store_type != store_type and row.booking_resource is not None:
+            resource = session.execute(select(BookingResource).where(
+                BookingResource.id == row.booking_resource.id
+            ).with_for_update()).scalar_one()
+            if session.execute(select(Event.id).where(
+                Event.booking_resource_id == resource.id,
+                Event.status == "confirmed",
+                Event.reserved_end_at > utc_now(),
+            ).limit(1)).first():
+                raise HTTPException(400, "Cancel future reservations before changing this store type.")
         row.poynt_name = discovered[store_id]
         row.display_name = display_name or None
         row.timezone_name = timezone_name
@@ -160,6 +175,16 @@ async def save_store_booking(
                 return RedirectResponse("/settings/stores", status_code=303)
             resource = BookingResource(name=resource_name, name_follows_store=False)
             store.booking_resource = resource
+        elif is_enabled and capacity < resource.capacity:
+            session.execute(select(BookingResource).where(
+                BookingResource.id == resource.id
+            ).with_for_update()).scalar_one()
+            if session.execute(select(Event.id).where(
+                Event.booking_resource_id == resource.id,
+                Event.status == "confirmed",
+                Event.reserved_end_at > utc_now(),
+            ).limit(1)).first():
+                raise HTTPException(400, "Cancel future reservations before reducing booking capacity.")
         if is_enabled:
             resource.name = resource_name
             resource.name_follows_store = resource_name == store_booking_name(store)

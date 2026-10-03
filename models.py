@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Boolean, CheckConstraint, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import Boolean, CheckConstraint, DateTime, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from instant_type import UTCInstant
@@ -414,3 +414,33 @@ class BookingResource(Base):
     capacity: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
 
     store: Mapped[OrganizationStore] = relationship(back_populates="booking_resource")
+
+
+class Event(Base):
+    """A confirmed resource reservation at a venue-local service time."""
+
+    __tablename__ = "events"
+    __table_args__ = (
+        CheckConstraint("status IN ('confirmed', 'cancelled')", name="ck_events_status"),
+        CheckConstraint("service_end_at > service_start_at", name="ck_events_service_interval"),
+        CheckConstraint("reserved_end_at > reserved_start_at", name="ck_events_reserved_interval"),
+        CheckConstraint("setup_minutes >= 0 AND cleanup_minutes >= 0", name="ck_events_buffer_minutes"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    organization_id: Mapped[int] = mapped_column(ForeignKey("organizations.id"), nullable=False, index=True)
+    booking_resource_id: Mapped[int] = mapped_column(ForeignKey("booking_resources.id"), nullable=False, index=True)
+    title: Mapped[str] = mapped_column(String(200), nullable=False)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="confirmed")
+    venue_timezone_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    service_start_local: Mapped[datetime] = mapped_column(DateTime(timezone=False), nullable=False)
+    service_end_local: Mapped[datetime] = mapped_column(DateTime(timezone=False), nullable=False)
+    service_start_at: Mapped[datetime] = mapped_column(UTCInstant(), nullable=False)
+    service_end_at: Mapped[datetime] = mapped_column(UTCInstant(), nullable=False)
+    setup_minutes: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    cleanup_minutes: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    reserved_start_at: Mapped[datetime] = mapped_column(UTCInstant(), nullable=False)
+    reserved_end_at: Mapped[datetime] = mapped_column(UTCInstant(), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(UTCInstant(), nullable=False, default=utc_now)
+
+    resource: Mapped[BookingResource] = relationship()

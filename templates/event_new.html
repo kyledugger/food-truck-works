@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}New event - Food Truck Works{% endblock %}
+{% block content %}
+<section class="section"><div class="container" style="max-width: 720px">
+  {% include "_app_brand.html" %}
+  <h1 class="title">Reserve {{ resource.name }}</h1>
+  <p class="subtitle is-6">Enter service times in the venue's local timezone. The reserved time includes setup and cleanup.</p>
+  {% if error %}<div class="notification is-danger" role="alert">{{ error }}</div>{% endif %}
+  <form method="post" action="/events" class="box">
+    <input type="hidden" name="resource_id" value="{{ resource.id }}">
+    <div class="field"><label class="label">Event name</label><input class="input" name="title" maxlength="200" value="{{ values.title or '' }}" required></div>
+    <div class="field"><label class="label">Venue timezone</label><input class="input" name="venue_timezone_name" value="{{ values.venue_timezone_name or resource.timezone or '' }}" maxlength="100" required><p class="help">Use an IANA timezone such as America/Phoenix. Change this when the venue is in another timezone.</p></div>
+    <div class="columns">
+      <div class="column"><div class="field"><label class="label">Service starts</label><input class="input" type="datetime-local" name="service_start_local" value="{{ values.service_start_local or '' }}" required></div></div>
+      <div class="column"><div class="field"><label class="label">Service ends</label><input class="input" type="datetime-local" name="service_end_local" value="{{ values.service_end_local or '' }}" required><p class="help">Use the next date if service ends after midnight.</p></div></div>
+    </div>
+    <div class="columns">
+      <div class="column"><div class="field"><label class="label">Setup minutes before service</label><input class="input" type="number" min="0" max="1440" name="setup_minutes" value="{{ values.setup_minutes if values.setup_minutes is defined else 0 }}" required></div></div>
+      <div class="column"><div class="field"><label class="label">Cleanup minutes after service</label><input class="input" type="number" min="0" max="1440" name="cleanup_minutes" value="{{ values.cleanup_minutes if values.cleanup_minutes is defined else 0 }}" required></div></div>
+    </div>
+    <button class="button is-primary" type="submit">Confirm reservation</button>
+    <a class="button is-light" href="/events">Cancel</a>
+  </form>
+</div></section>
+{% endblock %}

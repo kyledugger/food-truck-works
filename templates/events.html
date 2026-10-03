@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Events - Food Truck Works{% endblock %}
+{% block content %}
+<section class="section"><div class="container" style="max-width: 1050px">
+  {% include "_app_brand.html" %}
+  <h1 class="title">Event reservations</h1>
+  <p class="subtitle is-6">Reserve a store resource for service, setup, and cleanup. Times shown below are in each event's venue timezone.</p>
+  <div class="box">
+    <h2 class="title is-5">Create an event</h2>
+    {% if resources %}
+      <div class="buttons">
+      {% for resource in resources %}
+        <a class="button is-primary" href="/events/new?resource_id={{ resource.id }}">{{ resource.name }}{% if resource.capacity > 1 %} ({{ resource.capacity }} concurrent){% endif %}</a>
+      {% endfor %}
+      </div>
+    {% else %}
+      <p>No active bookable resources. <a href="/settings/stores">Configure your stores</a> first.</p>
+    {% endif %}
+  </div>
+  <h2 class="title is-5">Recent events</h2>
+  {% if events %}
+    <div class="table-container"><table class="table is-fullwidth is-striped">
+      <thead><tr><th>Event</th><th>Resource</th><th>Service time</th><th>Buffers</th><th>Status</th><th></th></tr></thead>
+      <tbody>{% for event in events %}
+      <tr>
+        <td>{{ event.title }}</td><td>{{ event.resource_name }}</td>
+        <td>{{ event.start }} to {{ event.end }}<br><small>{{ event.timezone }}</small></td>
+        <td>{{ event.setup }} min setup, {{ event.cleanup }} min cleanup</td>
+        <td>{{ event.status | capitalize }}</td>
+        <td>{% if event.status == 'confirmed' %}<form method="post" action="/events/{{ event.id }}/cancel"><button class="button is-small is-light" type="submit">Cancel reservation</button></form>{% endif %}</td>
+      </tr>
+      {% endfor %}</tbody>
+    </table></div>
+  {% else %}<p>No events yet.</p>{% endif %}
+  <a href="/dashboard">Back to dashboard</a>
+</div></section>
+{% endblock %}
