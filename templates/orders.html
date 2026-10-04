@@ -798,7 +798,7 @@
                             title="{{ tip_calculator_disabled_reason | default('Tip Calculator is unavailable.') }}"
                         {% endif %}
                     >
-                        Tip Calculator
+                        Submit Tips
                     </button>
                     </div>
                     {% if tip_can_manage_settings and tip_calculator_store_id %}
@@ -811,7 +811,7 @@
                             href="/poynt/tip-submissions?store_id={{ tip_calculator_store_id | urlencode }}"
                             class="button is-small is-light ml-2"
                         >
-                            Tip Submission Report
+                            Tip History
                         </a>
                     </div>            
                 </div>            
@@ -1142,7 +1142,7 @@
                 id="tip-calculator-done"
                 class="button is-primary"
             >
-                Done
+                Exit
             </button>
         </footer>
 
