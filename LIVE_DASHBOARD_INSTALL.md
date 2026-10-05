@@ -4,6 +4,11 @@ This patch replaces the dashboard's connection notice with a live overview of
 each active configured Poynt store. Existing navigation, orders reporting,
 payroll and Square integration code are preserved.
 
+The latest update makes all dashboard sales figures include tax, with tips
+still separate. If the date-picker migration `c03e5d9182a7` is already applied,
+this calculation/label update requires no additional migration. Replace the
+included files and restart/deploy to recalculate from the existing order cache.
+
 ## Install
 
 1. Extract this ZIP into your Food Truck Works project root, replacing the
@@ -103,17 +108,17 @@ one organization; ambiguous ownership is rejected rather than shared.
 
 ## What the numbers mean
 
-- **Sales today:** original order `netTotal` minus `taxTotal`, reduced by
-  recorded refunds. Tips are separate. Poynt transaction refund totals do not
-  break out tax, so refunds are allocated proportionally between pretax sales
-  and tax. Fees/shipping already included in `netTotal` remain in sales.
-- **Difference from Orders Report:** the current report uses `netTotal`
-  directly, including tax. This patch does not change that report. Compare
-  pretax values when checking dashboard totals against it.
+- **Sales including tax:** original order `netTotal`, reduced by recorded
+  refund `orderAmount` including refunded tax. Tips are separate. Fees/shipping
+  already included in `netTotal` remain in sales. The same calculation applies
+  to daily totals, hourly charts, average sale, categories and five-minute sales.
+- **Comparison with Orders Report:** both start with `netTotal`, including
+  tax. This patch does not change that report; dashboard sales additionally
+  subtract recorded refunds from their original sale.
 - **Tips:** captured order tips minus refunded tips; multiple tenders are
   represented by aggregate order totals and do not create extra orders.
 - **Categories:** existing SKU fixes/category mapping are reused. Unmapped
-  items are Uncategorized. Order discounts, fees and refund adjustments are
+  items are Uncategorized. Tax, order discounts, fees and refund adjustments are
   allocated by item value so category sales reconcile to store sales. These
   are allocated totals, not provider-certified item-level refund accounting.
   Returned item lines are excluded from quantity; remaining quantity reflects
@@ -124,7 +129,7 @@ one organization; ambiguous ownership is rejected rather than shared.
 - **Activity time:** order creation time, consistent with the existing orders
   report. Updating a tip does not make an old order a new sale. Long-running
   orders appear in their original creation window when completed.
-- **Last five minutes:** a rolling order count and pretax sales total. At
+- **Last five minutes:** a rolling order count and sales total including tax. At
   midnight it can include the preceding day's last few minutes.
 - **Pace:** last-five-minute order count divided by the preceding 60-minute
   order count / 12, including zero-order periods. A sale at or before the
@@ -184,9 +189,9 @@ full reconciliation, missing schema, and isolated migration upgrade/downgrade.
 Live Poynt delivery and PostgreSQL multi-process locking still need checking
 in your deployment. Complete a test sale, verify one order appears, change
 the tip, and verify tips update without increasing the order count. Check
-sales against the POS's pretax total and verify a second store stays separate.
+sales against the POS's total including tax (excluding tips) and verify a second store stays separate.
 
-Validation completed for this patch: 34 new dashboard tests, 4 existing store
+Validation completed for this patch: 35 new dashboard tests, 4 existing store
 time tests, 6 existing tip report tests, and 9 existing integration tests
 passed. The existing integration migration test was excluded because it
 resolves its migration relative to the parent of the project directory;

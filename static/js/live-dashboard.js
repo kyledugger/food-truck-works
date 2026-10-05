@@ -26,7 +26,7 @@
     const message=el('p','live-empty');root.append(message);
     const body=el('div'),kpis=el('div','live-kpis');
     const fields={},labels={};
-    for (const [key,label] of [['sales','Sales today'],['tips','Tips today'],['orders','Orders today']]) {
+    for (const [key,label] of [['sales','Sales incl. tax'],['tips','Tips today'],['orders','Orders today']]) {
       const cell=el('div');fields[key]=el('strong');labels[key]=el('small','',label);cell.append(labels[key],fields[key]);kpis.append(cell);
     }
     body.append(kpis);
@@ -36,12 +36,12 @@
     const details=el('details'),summary=el('summary','','Hourly sales & category totals');details.append(summary);
     const avg=el('p','is-size-7 mt-2');details.append(avg);
     const hourlyWrap=el('div','live-chart'),hourly=el('canvas');hourly.setAttribute('role','img');hourlyWrap.append(hourly);
-    details.append(el('p','live-chart-title','Hourly net sales'),hourlyWrap);
+    details.append(el('p','live-chart-title','Hourly sales including tax'),hourlyWrap);
     const activityWrap=el('div','live-chart live-chart-small'),activity=el('canvas');activity.setAttribute('role','img');activityWrap.append(activity);
     const activityTitle=el('p','live-chart-title','Orders per 5 minutes · past hour');
     details.append(activityTitle,activityWrap);
     const table=el('table','live-category'),head=el('thead'),tr=el('tr');
-    ['Category','Qty','Sales','Share'].forEach(label=>tr.append(el('th','',label)));head.append(tr);
+    ['Category','Qty','Sales incl. tax','Share'].forEach(label=>tr.append(el('th','',label)));head.append(tr);
     const rows=el('tbody');table.append(head,rows);details.append(table);body.append(details);root.append(body);grid.append(root);
     const card={root,name,date,badge,message,body,fields,labels,now,recent,pace,last,warning,details,avg,rows,hourly,activity,activityWrap,activityTitle,charts:{}};
     details.addEventListener('toggle',()=>{if(details.open && card.data)drawCharts(card,card.data);});
@@ -52,7 +52,7 @@
     const labels=points.map(p=>p.label+(p.partial?' · partial':'')),values=points.map(p=>isMoney?p.sales_cents/100:p.orders);
     canvas.setAttribute('aria-label',points.map((p,i)=>labels[i]+': '+(isMoney?money(p.sales_cents):p.orders+' orders')).join('; '));
     if(card.charts[key]){card.charts[key].data.labels=labels;card.charts[key].data.datasets[0].data=values;card.charts[key].update('none');return;}
-    card.charts[key]=new Chart(canvas,{type:'bar',data:{labels,datasets:[{label:isMoney?'Net sales':'Orders',data:values,
+    card.charts[key]=new Chart(canvas,{type:'bar',data:{labels,datasets:[{label:isMoney?'Sales including tax':'Orders',data:values,
       backgroundColor:isMoney?'#238b83':'#7ba8c4',borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,animation:false,
       plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>isMoney?money(Math.round(ctx.parsed.y*100)):ctx.parsed.y+' orders'}}},
       scales:{y:{beginAtZero:true,ticks:{precision:0,callback:value=>isMoney?'$'+value:value}},x:{ticks:{maxRotation:0,autoSkip:true,maxTicksLimit:8}}}}});
@@ -74,7 +74,7 @@
       c.data=s;c.date.textContent=s.date+' · '+s.timezone;
       const when=s.historical?'on this date':'today';
       c.badge.textContent=(s.loading??data.initializing)?'Loading sales':s.historical?'Historical view':s.order_count?'Trading today':s.currency_warning?'No USD sales today':'No sales today';
-      c.labels.sales.textContent=s.historical?'Sales':'Sales today';c.labels.tips.textContent=s.historical?'Tips':'Tips today';c.labels.orders.textContent=s.historical?'Orders':'Orders today';
+      c.labels.sales.textContent='Sales incl. tax';c.labels.tips.textContent=s.historical?'Tips':'Tips today';c.labels.orders.textContent=s.historical?'Orders':'Orders today';
       c.now.hidden=!!s.historical;c.activityWrap.hidden=!!s.historical;c.activityTitle.hidden=!!s.historical;
       if(s.historical&&c.charts.activity){c.charts.activity.destroy();delete c.charts.activity;}
       if(s.loading??data.initializing){c.body.hidden=true;c.message.hidden=false;c.message.textContent='Collecting orders for '+s.date+'…';continue;}
@@ -83,7 +83,7 @@
       c.fields.sales.textContent=money(s.sales_cents);c.fields.tips.textContent=money(s.tips_cents);c.fields.orders.textContent=s.order_count;
       if(!s.historical){c.recent.textContent=s.recent_orders+' orders · '+money(s.recent_sales_cents);
         c.pace.textContent=s.pace+(s.pace_ratio!==null?' · '+s.pace_ratio.toFixed(1)+'× recent average':'');c.last.textContent=ago(s.last_sale_at,data.generated_at);}
-      c.avg.textContent='Average sale: '+money(s.average_sale_cents)+(s.historical?' · Full day.':' · Current hour is partial.');
+      c.avg.textContent='Average sale incl. tax: '+money(s.average_sale_cents)+(s.historical?' · Full day.':' · Current hour is partial.');
       c.warning.hidden=!s.currency_warning;c.warning.textContent='Non-USD orders are excluded from these totals.';
       c.rows.replaceChildren();
       for(const row of s.categories){const tr=el('tr');[row.name,row.quantity,money(row.sales_cents),row.share+'%'].forEach(v=>tr.append(el('td','',v)));c.rows.append(tr);}

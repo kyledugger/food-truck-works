@@ -43,12 +43,9 @@ def money(order):
     captured = amounts.get("capturedTotals") or {}
     refunded = amounts.get("refundedTotals") or {}
     total = cents(amounts.get("netTotal", amounts.get("orderAmount", 0)))
-    tax = cents(amounts.get("taxTotal"))
     refund = abs(cents(refunded.get("orderAmount")))
-    # Poynt's refunded transaction totals do not expose tax separately.
-    # Allocate the refund proportionally across the original pretax/tax amount.
-    refund_net = cents(Decimal(refund) * Decimal(total - tax) / Decimal(total)) if total > 0 else 0
-    sales = total - tax - refund_net
+    # netTotal includes tax, but not tips. Refund orderAmount also includes tax.
+    sales = total - refund
     tips = cents(captured.get("tipAmount")) - abs(cents(refunded.get("tipAmount")))
     return sales, tips
 
@@ -64,7 +61,7 @@ def completed(order):
 
 
 def categories(order, sales):
-    """Allocate order discounts/fees/refunds by item value; sum equals net sales."""
+    """Allocate tax/discounts/fees/refunds by item value; sum equals sales."""
     groups = defaultdict(lambda: {"quantity": Decimal(0), "weight": Decimal(0)})
     for item in order.get("items") or []:
         if item.get("status") == "RETURNED":

@@ -62,8 +62,8 @@
             <div class="buttons"><button id="enable-live-webhook" class="button is-small is-link is-light" hidden>Enable order webhooks</button></div>
             {% endif %}
             <div id="live-stores" class="live-store-grid mb-5"></div>
-            <p class="is-size-7 has-text-grey mb-5">Sales exclude tax and tips. Refunds reduce the original sale; refunded tax is allocated proportionally.
-                Category sales allocate order adjustments by item value. Pace compares the last 5 minutes with the preceding 60 minutes, including quiet periods.
+            <p class="is-size-7 has-text-grey mb-5">All sales figures include tax and exclude tips. Refunds, including refunded tax, reduce the original sale.
+                Category sales allocate tax and order adjustments by item value. Pace compares the last 5 minutes with the preceding 60 minutes, including quiet periods.
                 Activity uses order creation time. All dates and chart labels use each store's timezone.
                 Past dates show full-day totals with live activity turned off.</p>
 
@@ -139,11 +139,11 @@
 {% endblock %}
 
 {% block head %}
-<link rel="stylesheet" href="/static/css/live-dashboard.css?v=20261005-2">
+<link rel="stylesheet" href="/static/css/live-dashboard.css?v=20261005-3">
 {% endblock %}
 {% block scripts %}
 {% if poynt_connection %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.min.js"></script>
-<script src="/static/js/live-dashboard.js?v=20261005-2" defer></script>
+<script src="/static/js/live-dashboard.js?v=20261005-3" defer></script>
 {% endif %}
 {% endblock %}

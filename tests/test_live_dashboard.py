@@ -46,13 +46,24 @@ def store(zone="America/Phoenix"):
 
 
 class MetricsTests(unittest.TestCase):
-    def test_money_excludes_tax_and_tips(self):
-        self.assertEqual(money(sale(datetime.now(UTC))), (1000, 200))
+    def test_money_includes_tax_and_excludes_tips(self):
+        self.assertEqual(money(sale(datetime.now(UTC))), (1083, 200))
+
+    def test_tax_included_consistently_in_every_sales_metric(self):
+        now=datetime(2026,10,5,20,tzinfo=UTC)
+        o=sale(now);o["amounts"]["refundedTotals"]={"orderAmount":100,"tipAmount":50}
+        result=summarize(store(),[o],now)
+        self.assertEqual(result["sales_cents"],983)
+        self.assertEqual(result["average_sale_cents"],983)
+        self.assertEqual(result["recent_sales_cents"],983)
+        self.assertEqual(sum(h["sales_cents"] for h in result["hourly"]),983)
+        self.assertEqual(sum(c["sales_cents"] for c in result["categories"]),983)
+        self.assertEqual(result["tips_cents"],150)
 
     def test_refund_allocation_and_tips(self):
         o = sale(datetime.now(UTC))
         o["amounts"]["refundedTotals"] = {"orderAmount": 542, "tipAmount": 100}
-        self.assertEqual(money(o), (500, 100))
+        self.assertEqual(money(o), (541, 100))
         o["amounts"]["refundedTotals"] = {"orderAmount": 1083, "tipAmount": 200}
         self.assertEqual(money(o), (0, 0))
 
@@ -131,7 +142,7 @@ class MetricsTests(unittest.TestCase):
         refunded["amounts"]["refundedTotals"]={"orderAmount":1083,"tipAmount":200}
         pending=sale(now,"pending",statuses={"transactionStatusSummary":"PENDING"})
         r=summarize(store(),[sale(now),refunded,pending],now)
-        self.assertEqual(r["order_count"],2);self.assertEqual(r["sales_cents"],1000);self.assertEqual(r["tips_cents"],200)
+        self.assertEqual(r["order_count"],2);self.assertEqual(r["sales_cents"],1083);self.assertEqual(r["tips_cents"],200)
 
     def test_historical_day_has_no_live_metrics_and_all_hours_complete(self):
         start,end=local_day_bounds(date(2026,10,4),ZoneInfo("America/Phoenix"))
@@ -289,7 +300,7 @@ class DatabaseAndRoutesTests(unittest.TestCase):
         self.assertEqual(mock.call_args.kwargs["start_at"],start.isoformat().replace("+00:00","Z"))
         self.assertEqual(mock.call_args.kwargs["end_at"],end.isoformat().replace("+00:00","Z"))
         result=self.client.get(url).json();self.assertFalse(result["polling_needed"]);self.assertFalse(result["initializing"])
-        self.assertEqual(result["stores"][0]["sales_cents"],1000);self.assertIsNone(result["stores"][0]["pace"])
+        self.assertEqual(result["stores"][0]["sales_cents"],1083);self.assertIsNone(result["stores"][0]["pace"])
         self.assertEqual(result["stores"][0]["order_count"],1)
         self.client.get(url)
         with self.factory() as s:self.assertEqual(s.scalar(select(func.count()).select_from(DashboardDay)),1)
