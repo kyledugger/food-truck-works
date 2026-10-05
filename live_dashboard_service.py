@@ -8,7 +8,7 @@ from sqlalchemy import select, or_, delete
 from sqlalchemy.exc import IntegrityError
 from database import SessionLocal
 from models import OrganizationStore, PoyntConnection
-from live_dashboard_models import DashboardOrder, DashboardSync, DashboardNotification
+from live_dashboard_models import DashboardOrder, DashboardSync, DashboardNotification, DashboardDay
 from live_dashboard_metrics import instant, order_store
 from poynt.client import PoyntClient, PoyntReauthorizationRequired
 from poynt.connection import get_poynt_credentials
@@ -125,6 +125,10 @@ async def process_organization(organization_id, business_id, token):
             DashboardNotification.business_id == business_id,
             DashboardNotification.processed_at.is_(None), DashboardNotification.retry_at <= now
         ).order_by(DashboardNotification.id).limit(20)).all()]
+        historical_days = [(row.id, row.report_date) for row in session.scalars(select(DashboardDay).where(
+            DashboardDay.organization_id == organization_id, DashboardDay.business_id == business_id,
+            DashboardDay.next_load_at <= now, DashboardDay.requested_at >= now - timedelta(minutes=5)
+        ).order_by(DashboardDay.next_load_at).limit(1)).all()]
     # Notifications first; reconciliation may be a larger initial fetch.
     for notification_id, order_id in pending:
         try:
@@ -146,6 +150,37 @@ async def process_organization(organization_id, business_id, token):
                 notification = session.get(DashboardNotification, notification_id)
                 notification.retry_at = utc_now() + timedelta(seconds=60)
                 session.commit()
+    for day_id, report_date in historical_days:
+        try:
+            bounds = []
+            for store in stores:
+                try:
+                    bounds.append(local_day_bounds(report_date, ZoneInfo(store.timezone_name or "")))
+                except (ValueError, KeyError):
+                    pass
+            if not bounds:
+                raise ValueError("No configured store timezone")
+            orders = await client.get_recent_orders(start_at=utc_iso(min(b[0] for b in bounds)),
+                end_at=utc_iso(max(b[1] for b in bounds)), fetch_all=True)
+            with SessionLocal() as session:
+                if not owned_state(session, organization_id, business_id, token):
+                    return
+                for order in orders:
+                    save_order(session, organization_id, business_id, order)
+                day = session.get(DashboardDay, day_id)
+                day.loaded_at = utc_now()
+                day.next_load_at = utc_now() + timedelta(minutes=5)
+                day.error = None
+                session.commit()
+        except Exception:
+            logger.warning("Historical dashboard retry scheduled: organization=%s day=%s", organization_id, report_date)
+            with SessionLocal() as session:
+                if not owned_state(session, organization_id, business_id, token):
+                    return
+                day = session.get(DashboardDay, day_id)
+                day.error = "Historical sales could not load. Retrying shortly."
+                day.next_load_at = utc_now() + timedelta(seconds=60)
+                session.commit()
     if reconcile and valid:
         # Include the previous comparison hour across local midnight.
         start = min(v[0] for v in valid) - timedelta(minutes=65)
@@ -160,11 +195,13 @@ async def process_organization(organization_id, business_id, token):
             state.last_reconciled_at = utc_now()
             state.next_reconcile_at = utc_now() + timedelta(minutes=5)
             state.error = None
-            cutoff = utc_now() - timedelta(days=3)
+            cutoff = utc_now() - timedelta(days=90)
             session.execute(delete(DashboardOrder).where(DashboardOrder.organization_id == organization_id,
                 DashboardOrder.created_at < cutoff))
             session.execute(delete(DashboardNotification).where(DashboardNotification.organization_id == organization_id,
-                DashboardNotification.processed_at < cutoff))
+                DashboardNotification.processed_at < utc_now() - timedelta(days=3)))
+            session.execute(delete(DashboardDay).where(DashboardDay.organization_id == organization_id,
+                DashboardDay.requested_at < cutoff))
             session.commit()
     elif reconcile:
         with SessionLocal() as session:
@@ -181,10 +218,13 @@ async def dashboard_worker():
                 now = utc_now()
                 pending_orgs = select(DashboardNotification.organization_id).where(
                     DashboardNotification.processed_at.is_(None), DashboardNotification.retry_at <= now)
+                historical_orgs = select(DashboardDay.organization_id).where(
+                    DashboardDay.next_load_at <= now, DashboardDay.requested_at >= now - timedelta(minutes=5))
                 ids = session.scalars(select(DashboardSync.organization_id).join(PoyntConnection,
                     PoyntConnection.organization_id == DashboardSync.organization_id).where(
                     PoyntConnection.business_id == DashboardSync.business_id,
-                    or_(DashboardSync.next_reconcile_at <= now, DashboardSync.organization_id.in_(pending_orgs))
+                    or_(DashboardSync.next_reconcile_at <= now, DashboardSync.organization_id.in_(pending_orgs),
+                        DashboardSync.organization_id.in_(historical_orgs))
                 ).order_by(DashboardSync.next_reconcile_at).limit(50)).all()
             for organization_id in ids:
                 claim = acquire(organization_id)

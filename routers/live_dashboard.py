@@ -5,8 +5,8 @@ import json
 import os
 from urllib.parse import urlsplit
 from zoneinfo import ZoneInfo
-from datetime import timedelta
-from fastapi import APIRouter, Request, HTTPException
+from datetime import timedelta, date as calendar_date
+from fastapi import APIRouter, Request, HTTPException, Query
 from fastapi.responses import JSONResponse
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
@@ -14,7 +14,7 @@ from database import SessionLocal
 from models import User, PoyntConnection, OrganizationStore
 from organization_context import get_current_organization_id
 from permissions import get_organization_role, role_can_manage_integrations
-from live_dashboard_models import DashboardOrder, DashboardSync, DashboardNotification
+from live_dashboard_models import DashboardOrder, DashboardSync, DashboardNotification, DashboardDay
 from live_dashboard_metrics import summarize
 from live_dashboard_service import ensure_sync, acquire, owned_state, release
 from poynt.client import PoyntClient, PoyntAPIError
@@ -40,47 +40,101 @@ def authorized(request):
 
 
 @router.get("/dashboard/data")
-def dashboard_data(request: Request):
+def dashboard_data(request: Request, report_date: str = Query("today", alias="date")):
     organization_id, role = authorized(request)
     now = utc_now()
+    try:
+        selected_date = calendar_date.fromisoformat(report_date) if report_date not in {"today", "yesterday"} else None
+        if selected_date and selected_date.isoformat() != report_date:
+            raise ValueError()
+    except ValueError:
+        raise HTTPException(400, "Choose Today, Yesterday, or a date in YYYY-MM-DD format.")
     try:
         with SessionLocal() as session:
             connection = session.scalar(select(PoyntConnection).where(PoyntConnection.organization_id == organization_id))
             if connection is None:
-                return JSONResponse({"connected": False, "stores": [], "generated_at": utc_iso(now)}, headers={"Cache-Control": "no-store"})
+                return JSONResponse({"connected": False, "stores": [], "generated_at": utc_iso(now),
+                    "selection": report_date, "polling_needed": False}, headers={"Cache-Control": "no-store"})
             state = ensure_sync(session, organization_id, connection.business_id)
             session.commit()
             stores = session.scalars(select(OrganizationStore).where(OrganizationStore.organization_id == organization_id,
                 OrganizationStore.is_active.is_(True)).order_by(OrganizationStore.id)).all()
             results = []
-            needs_day_sync = False
+            live_pending = False
+            history_pending = False
+            view_load_times = []
+            local_dates = []
+            has_live_store = False
+            history_errors = []
             for store in stores:
                 try:
                     zone = ZoneInfo(store.timezone_name or "")
-                    start, end = local_day_bounds(now.astimezone(zone).date(), zone)
+                    local_today = now.astimezone(zone).date()
+                    day = selected_date or (local_today - timedelta(days=1) if report_date == "yesterday" else local_today)
+                    if not local_today - timedelta(days=89) <= day <= local_today:
+                        raise HTTPException(400, "Choose a date within the last 90 days, including today, in each store's timezone.")
+                    start, end = local_day_bounds(day, zone)
+                    local_dates.append(local_today)
                 except (ValueError, KeyError):
                     results.append({"id": store.id, "name": store.display_name or store.poynt_name,
                         "setup_required": True, "message": "Set this store's timezone in Store Settings."})
                     continue
-                if state.last_reconciled_at is None or state.last_reconciled_at < start:
-                    needs_day_sync = True
+                historical = day < local_today
+                load_error = None
+                if historical:
+                    cache = session.scalar(select(DashboardDay).where(DashboardDay.organization_id == organization_id,
+                        DashboardDay.business_id == connection.business_id, DashboardDay.report_date == day))
+                    if cache is None:
+                        try:
+                            with session.begin_nested():
+                                cache = DashboardDay(organization_id=organization_id, business_id=connection.business_id, report_date=day)
+                                session.add(cache)
+                                session.flush()
+                        except IntegrityError:
+                            cache = session.scalar(select(DashboardDay).where(DashboardDay.organization_id == organization_id,
+                                DashboardDay.business_id == connection.business_id, DashboardDay.report_date == day))
+                    cache.requested_at = now
+                    loading = cache.loaded_at is None
+                    stale = loading or cache.loaded_at < now - timedelta(minutes=5)
+                    history_pending |= stale
+                    load_error = cache.error
+                    if cache.error:
+                        history_errors.append(cache.error)
+                    if cache.loaded_at:
+                        view_load_times.append(cache.loaded_at)
+                else:
+                    has_live_store = True
+                    loading = state.last_reconciled_at is None or state.last_reconciled_at < start
+                    live_pending |= loading
+                    stale = loading or state.last_reconciled_at < now - timedelta(minutes=7)
+                    if state.last_reconciled_at:
+                        view_load_times.append(state.last_reconciled_at)
                 orders = session.scalars(select(DashboardOrder).where(DashboardOrder.organization_id == organization_id,
                     DashboardOrder.business_id == connection.business_id, DashboardOrder.store_id == store.store_id,
-                    DashboardOrder.created_at >= start - timedelta(minutes=65), DashboardOrder.created_at < end)).all()
-                results.append(summarize(store, [row.payload for row in orders], now))
-            if needs_day_sync and state.next_reconcile_at > now:
+                    DashboardOrder.created_at >= start - (timedelta(0) if historical else timedelta(minutes=65)),
+                    DashboardOrder.created_at < end)).all()
+                payloads = [row.payload for row in orders]
+                result = summarize(store, payloads, end - timedelta(microseconds=1) if historical else now, historical=historical)
+                result.update(loading=loading, stale=stale, load_error=load_error)
+                results.append(result)
+            if live_pending and state.next_reconcile_at > now:
                 state.next_reconcile_at = now
-                session.commit()
+            session.commit()
             pending = session.scalar(select(DashboardNotification.received_at).where(
                 DashboardNotification.organization_id == organization_id,
                 DashboardNotification.business_id == connection.business_id,
                 DashboardNotification.processed_at.is_(None)).order_by(DashboardNotification.received_at).limit(1))
             data = {"connected": True, "generated_at": utc_iso(now), "stores": results,
+                "selection": report_date, "historical_view": not has_live_store and bool(local_dates),
+                "polling_needed": has_live_store or history_pending,
+                "earliest_date": (max(local_dates) - timedelta(days=89)).isoformat() if local_dates else None,
+                "latest_date": min(local_dates).isoformat() if local_dates else None,
+                "last_view_loaded_at": utc_iso(min(view_load_times)) if view_load_times else None,
                 "last_reconciled_at": utc_iso(state.last_reconciled_at), "last_webhook_at": utc_iso(state.last_webhook_at),
-                "initializing": state.last_reconciled_at is None or needs_day_sync,
-                "stale": needs_day_sync or state.last_reconciled_at is None or state.last_reconciled_at < now - timedelta(minutes=7),
-                "error": state.error,
-                "queue_delayed": bool(pending and pending < now - timedelta(seconds=60)),
+                "initializing": any(s.get("loading") for s in results),
+                "stale": any(s.get("stale") for s in results),
+                "error": history_errors[0] if history_errors else state.error if has_live_store else None,
+                "queue_delayed": bool(has_live_store and pending and pending < now - timedelta(seconds=60)),
                 "webhook_registered": bool(state.hook_id),
                 "can_enable_webhook": role_can_manage_integrations(role) and bool(os.getenv("POYNT_WEBHOOK_SECRET") and os.getenv("POYNT_WEBHOOK_URL"))}
             return JSONResponse(data, headers={"Cache-Control": "no-store"})

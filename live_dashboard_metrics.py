@@ -89,7 +89,7 @@ def categories(order, sales):
     return result
 
 
-def summarize(store, orders, now):
+def summarize(store, orders, now, historical=False):
     zone = ZoneInfo(store.timezone_name)
     day = now.astimezone(zone).date()
     start, end = local_day_bounds(day, zone)
@@ -99,7 +99,7 @@ def summarize(store, orders, now):
     while bucket < end and bucket <= now:
         local = bucket.astimezone(zone)
         hourly.append({"at": utc_iso(bucket), "label": local.strftime("%I %p").lstrip("0") + " " + local.tzname(),
-                       "partial": bucket <= now < bucket + timedelta(hours=1), "sales_cents": 0, "orders": 0})
+                       "partial": not historical and bucket <= now < bucket + timedelta(hours=1), "sales_cents": 0, "orders": 0})
         bucket += timedelta(hours=1)
     recent_start = now - timedelta(minutes=5)
     baseline_start = recent_start - timedelta(hours=1)
@@ -149,10 +149,12 @@ def summarize(store, orders, now):
         lower = now - timedelta(minutes=60) + timedelta(minutes=5 * index)
         upper = lower + timedelta(minutes=5)
         activity.append({"at": utc_iso(lower), "label": upper.astimezone(zone).strftime("%I:%M %p").lstrip("0"),
-                         "orders": sum(lower <= row[0] < upper for row in eligible)})
+                         "orders": sum(lower <= row[0] < upper or
+                             (index == 11 and row[0] == now) for row in eligible)})
     total_sales = sum(row[2] for row in today)
-    return {"id": store.id, "name": store.display_name or store.poynt_name, "store_id": store.store_id,
+    result = {"id": store.id, "name": store.display_name or store.poynt_name, "store_id": store.store_id,
             "timezone": store.timezone_name, "date": day.isoformat(), "sales_cents": total_sales,
+            "historical": historical,
             "tips_cents": sum(row[3] for row in today), "order_count": len(today),
             "average_sale_cents": cents(Decimal(total_sales) / len(today)) if today else 0,
             "recent_orders": len(recent), "recent_sales_cents": sum(row[2] for row in recent),
@@ -162,3 +164,7 @@ def summarize(store, orders, now):
             "categories": [{"name": name, **row, "share": round(row["sales_cents"] / total_sales * 100, 1) if total_sales else 0}
                            for name, row in sorted(totals.items(), key=lambda pair: (-pair[1]["sales_cents"], pair[0]))],
             "currency_warning": currency_warning}
+    if historical:
+        result.update(recent_orders=None, recent_sales_cents=None, pace=None,
+            pace_ratio=None, baseline_orders=None, last_sale_at=utc_iso(max((row[0] for row in today), default=None)), activity=[])
+    return result

@@ -1,6 +1,6 @@
 """Persistent sales cache and durable webhook inbox. Alembic owns creation."""
-from datetime import datetime
-from sqlalchemy import ForeignKey, String, JSON, UniqueConstraint, Index
+from datetime import datetime, date
+from sqlalchemy import ForeignKey, String, JSON, UniqueConstraint, Index, Date
 from sqlalchemy.orm import Mapped, mapped_column
 from database import Base
 from instant_type import UTCInstant
@@ -50,3 +50,20 @@ class DashboardNotification(Base):
     received_at: Mapped[datetime] = mapped_column(UTCInstant(), default=utc_now)
     retry_at: Mapped[datetime] = mapped_column(UTCInstant(), default=utc_now)
     processed_at: Mapped[datetime | None] = mapped_column(UTCInstant())
+
+
+class DashboardDay(Base):
+    """Requested historical days, loaded once then refreshed only on demand."""
+    __tablename__ = "dashboard_days"
+    __table_args__ = (
+        UniqueConstraint("organization_id", "business_id", "report_date", name="uq_dashboard_day"),
+        Index("ix_dashboard_day_pending", "next_load_at", "requested_at"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    organization_id: Mapped[int] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"))
+    business_id: Mapped[str] = mapped_column(String(100))
+    report_date: Mapped[date] = mapped_column(Date)
+    loaded_at: Mapped[datetime | None] = mapped_column(UTCInstant())
+    next_load_at: Mapped[datetime] = mapped_column(UTCInstant(), default=utc_now)
+    requested_at: Mapped[datetime] = mapped_column(UTCInstant(), default=utc_now)
+    error: Mapped[str | None] = mapped_column(String(200))

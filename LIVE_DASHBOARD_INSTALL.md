@@ -10,8 +10,11 @@ payroll and Square integration code are preserved.
    included files. The ZIP contains only changed/new files, not a full source
    snapshot. Commit these changes through your usual workflow.
 2. Back up the database and check the exact database target before running the
-   migration. This package does not run a migration for you. The new revision
+   migration. This package does not run a migration for you. The live revision
    `b92d7a10e643` follows `a61f0d8c3b92` (the Square integration foundation).
+   The permanent date picker adds `c03e5d9182a7` after `b92d7a10e643`.
+   If you installed the first dashboard patch, `upgrade head` applies only
+   this additional historical-date migration.
 3. Apply the migration in each environment you intend to use:
 
    ```powershell
@@ -29,6 +32,36 @@ payroll and Square integration code are preserved.
 5. In **Store Settings**, ensure each tracked store is active and has its IANA
    timezone configured. Open the dashboard to initialize its persistent sync
    state. The first full collection can take longer than subsequent updates.
+
+## Choose a date, including yesterday for testing
+
+The date picker is permanent. No testing environment variable or code change
+is needed. Click **Yesterday** to load October 4, 2026 when testing on October
+5. That button pins the actual calendar date in the page URL, so you can
+reload/bookmark it and return to the same day's data for the next week.
+Alternatively choose October 4 directly in the calendar field.
+
+- **Today** uses each store's local day, updates automatically every fifteen
+  seconds, and includes five-minute activity and current pace.
+- **Past dates** show the complete day's totals, categories and all hourly
+  buckets. They are labeled Historical view. The five-minute activity,
+  current pace, recent-activity chart, and live-webhook enabling button are
+  hidden. Historical API responses also return no current activity metrics.
+- Historical days are fetched on demand. A small durable queue tracks whether
+  the chosen date has loaded, so an empty cache is not mistaken for zero sales.
+  The page polls while loading, then stops automatic polling. **Refresh**
+  checks for updates; full historical fetches are cached for five minutes.
+- Choose from the last 90 local calendar days, including today. **Yesterday**
+  uses the stores' reported dates rather than guessing from the browser's
+  timezone. Explicit dates apply to all stores. If that date is still today
+  for one store and already a past day for another, only the current-day
+  store keeps live activity.
+- Clicking **Today** restores the live view. The worker continues collecting
+  today's webhook updates while you review past sales. Historical date choice
+  does not change the orders report or payroll date ranges.
+
+The app defaults to Today when no date is in the URL. To start directly with
+your testing day, use `/dashboard?date=2026-10-04`.
 
 ## Enable Poynt order webhooks
 
@@ -102,7 +135,8 @@ one organization; ambiguous ownership is rejected rather than shared.
 - **Currency:** this version displays USD. Other currencies are excluded with
   a warning instead of being added together.
 
-The cache retains recent reporting data for approximately three days.
+The order cache retains recent reporting data for approximately ninety days;
+processed notification IDs are retained for approximately three days.
 No customer names, addresses, contact details, payment card data or tokens
 are added to the order cache. Notifications store IDs and processing state.
 
@@ -123,7 +157,7 @@ pause while that service is stopped/asleep; queued jobs resume when it wakes.
 Dashboard reads are organization-scoped and authenticated. Webhook enabling
 requires owner/manager permissions and a same-origin AJAX request.
 
-Browser polling updates existing card/chart objects, preserves expanded
+In today's view, browser polling updates existing card/chart objects, preserves expanded
 panels, pauses in hidden tabs, resumes on return and marks stale data on
 errors. Empty stores show No sales today. Missing store timezone shows setup
 instructions. Missing migration returns a dashboard-specific setup error
@@ -152,12 +186,14 @@ in your deployment. Complete a test sale, verify one order appears, change
 the tip, and verify tips update without increasing the order count. Check
 sales against the POS's pretax total and verify a second store stays separate.
 
-Validation completed for this patch: 27 new dashboard tests, 4 existing store
+Validation completed for this patch: 34 new dashboard tests, 4 existing store
 time tests, 6 existing tip report tests, and 9 existing integration tests
 passed. The existing integration migration test was excluded because it
 resolves its migration relative to the parent of the project directory;
 that unrelated test has not been changed. Application import, Python syntax
 and JavaScript syntax checks passed. Browser checks with synthetic orders
 passed for real Chart.js rendering, desktop/phone layouts, live refreshes,
-preserved panels, webhook enabling, and stale-data warnings. The source ZIP
+preserved panels, webhook enabling, stale-data warnings, historical selection,
+date persistence on reload, hiding live metrics for past dates, and returning
+to Today. The source ZIP
 does not include logo PNG assets, so branding images could not be checked.

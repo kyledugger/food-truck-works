@@ -1,6 +1,8 @@
 .live-heading{display:flex;justify-content:space-between;align-items:center;gap:1rem;margin-top:2rem}
 .live-store-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,430px),1fr));gap:1.25rem;align-items:start}
 .live-store [hidden],#enable-live-webhook[hidden]{display:none!important}
+.live-date-controls{display:flex;align-items:center;flex-wrap:wrap;gap:.65rem}
+.live-date-controls input{width:155px}
 .live-store{border:1px solid #dbe4e8;border-radius:14px;padding:1.4rem;background:var(--bulma-scheme-main,#fff);box-shadow:0 5px 20px #19394908}
 .live-store-header{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem}
 .live-store h2{font-size:1.3rem;font-weight:700}.live-store-date{font-size:.8rem;color:#687980;margin-top:.2rem}

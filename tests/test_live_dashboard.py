@@ -22,7 +22,7 @@ from alembic.migration import MigrationContext
 from alembic.operations import Operations
 from database import Base
 from models import User, Organization, OrganizationMember, OrganizationStore, PoyntConnection
-from live_dashboard_models import DashboardOrder, DashboardNotification, DashboardSync
+from live_dashboard_models import DashboardOrder, DashboardNotification, DashboardSync, DashboardDay
 from live_dashboard_metrics import summarize, money, instant, order_store, categories
 from live_dashboard_service import save_order, acquire, release, process_organization
 from routers import live_dashboard as routes
@@ -133,12 +133,22 @@ class MetricsTests(unittest.TestCase):
         r=summarize(store(),[sale(now),refunded,pending],now)
         self.assertEqual(r["order_count"],2);self.assertEqual(r["sales_cents"],1000);self.assertEqual(r["tips_cents"],200)
 
+    def test_historical_day_has_no_live_metrics_and_all_hours_complete(self):
+        start,end=local_day_bounds(date(2026,10,4),ZoneInfo("America/Phoenix"))
+        result=summarize(store(),[sale(start+timedelta(hours=12)),sale(end)],end-timedelta(microseconds=1),historical=True)
+        self.assertEqual(result["date"],"2026-10-04");self.assertEqual(result["order_count"],1)
+        self.assertEqual(len(result["hourly"]),24);self.assertFalse(any(h["partial"] for h in result["hourly"]))
+        for name in ("recent_orders","recent_sales_cents","pace","pace_ratio","baseline_orders"):
+            self.assertIsNone(result[name])
+        self.assertEqual(result["activity"],[])
+
 
 class DatabaseAndRoutesTests(unittest.TestCase):
     def setUp(self):
         # SQLite loses offsets by default. Restore its known UTC storage values
         # at the test driver boundary; production UTCInstant remains strict.
         sqlite3.register_converter("DATETIME",lambda raw:datetime.fromisoformat(raw.decode()).replace(tzinfo=UTC).isoformat())
+        sqlite3.register_converter("DATE",lambda raw:raw.decode())
         self.engine=create_engine("sqlite://",connect_args={"check_same_thread":False,"detect_types":sqlite3.PARSE_DECLTYPES},poolclass=StaticPool)
         Base.metadata.create_all(self.engine)
         self.factory=sessionmaker(self.engine,autoflush=False)
@@ -267,12 +277,93 @@ class DatabaseAndRoutesTests(unittest.TestCase):
         self.client.get("/test-login");DashboardOrder.__table__.drop(self.engine)
         response=self.client.get("/dashboard/data");self.assertEqual(response.status_code,503);self.assertIn("migration",response.json()["detail"])
 
+    def test_historical_backfill_full_day_no_live_and_cache_reuse(self):
+        self.client.get("/test-login")
+        day=utc_now().astimezone(ZoneInfo("America/Phoenix")).date()-timedelta(days=1)
+        url="/dashboard/data?date="+day.isoformat()
+        initial=self.client.get(url).json();self.assertTrue(initial["historical_view"]);self.assertTrue(initial["initializing"])
+        start,end=local_day_bounds(day,ZoneInfo("America/Phoenix"))
+        business,token=acquire(1);mock=AsyncMock(return_value=[sale(start+timedelta(hours=12)),sale(end,"next_day")])
+        with patch("poynt.client.PoyntClient.get_recent_orders",new=mock):asyncio.run(process_organization(1,business,token))
+        release(1,token)
+        self.assertEqual(mock.call_args.kwargs["start_at"],start.isoformat().replace("+00:00","Z"))
+        self.assertEqual(mock.call_args.kwargs["end_at"],end.isoformat().replace("+00:00","Z"))
+        result=self.client.get(url).json();self.assertFalse(result["polling_needed"]);self.assertFalse(result["initializing"])
+        self.assertEqual(result["stores"][0]["sales_cents"],1000);self.assertIsNone(result["stores"][0]["pace"])
+        self.assertEqual(result["stores"][0]["order_count"],1)
+        self.client.get(url)
+        with self.factory() as s:self.assertEqual(s.scalar(select(func.count()).select_from(DashboardDay)),1)
+        live=self.client.get("/dashboard/data").json();self.assertFalse(live["historical_view"]);self.assertTrue(live["polling_needed"])
+
+    def test_history_date_validation_and_yesterday_timezone(self):
+        self.client.get("/test-login")
+        for value in ("bad","2026-02-30","20261004",(utc_now().date()+timedelta(days=3)).isoformat(),(utc_now().date()-timedelta(days=100)).isoformat()):
+            self.assertEqual(self.client.get("/dashboard/data?date="+value).status_code,400)
+        result=self.client.get("/dashboard/data?date=yesterday").json()
+        expected=utc_now().astimezone(ZoneInfo("America/Phoenix")).date()-timedelta(days=1)
+        self.assertEqual(result["stores"][0]["date"],expected.isoformat())
+        self.assertTrue(result["historical_view"])
+
+    def test_historical_error_is_separate_from_today(self):
+        self.client.get("/test-login");self.client.get("/dashboard/data?date=yesterday")
+        business,token=acquire(1)
+        with patch("poynt.client.PoyntClient.get_recent_orders",new=AsyncMock(side_effect=RuntimeError("offline"))):
+            asyncio.run(process_organization(1,business,token))
+        release(1,token)
+        history=self.client.get("/dashboard/data?date=yesterday").json();self.assertIn("Historical",history["error"])
+        live=self.client.get("/dashboard/data").json();self.assertIsNone(live["error"])
+
+    def test_historical_multi_timezone_fetch_and_per_store_bounds(self):
+        self.client.get("/test-login")
+        day=utc_now().astimezone(ZoneInfo("America/Phoenix")).date()-timedelta(days=1)
+        with self.factory() as s:
+            s.add(OrganizationStore(organization_id=1,store_id="east",poynt_name="East",timezone_name="America/New_York"));s.commit()
+        self.client.get("/dashboard/data?date="+day.isoformat())
+        phoenix=local_day_bounds(day,ZoneInfo("America/Phoenix"));east=local_day_bounds(day,ZoneInfo("America/New_York"))
+        orders=[sale(phoenix[0]+timedelta(hours=12),"west",store="truck"),sale(east[0],"east",store="east"),
+                sale(east[0]-timedelta(seconds=1),"outside",store="east")]
+        business,token=acquire(1);mock=AsyncMock(return_value=orders)
+        with patch("poynt.client.PoyntClient.get_recent_orders",new=mock):asyncio.run(process_organization(1,business,token))
+        release(1,token)
+        self.assertEqual(mock.call_args.kwargs["start_at"],min(phoenix[0],east[0]).isoformat().replace("+00:00","Z"))
+        self.assertEqual(mock.call_args.kwargs["end_at"],max(phoenix[1],east[1]).isoformat().replace("+00:00","Z"))
+        data=self.client.get("/dashboard/data?date="+day.isoformat()).json()
+        self.assertEqual([s["order_count"] for s in data["stores"]],[1,1])
+        with self.factory() as s:self.assertEqual(s.scalar(select(func.count()).select_from(DashboardDay)),1)
+
+    def test_historical_cache_survives_live_cleanup_after_three_days(self):
+        self.client.get("/test-login")
+        day=utc_now().astimezone(ZoneInfo("America/Phoenix")).date()-timedelta(days=7)
+        self.client.get("/dashboard/data?date="+day.isoformat())
+        start,end=local_day_bounds(day,ZoneInfo("America/Phoenix"))
+        business,token=acquire(1)
+        with patch("poynt.client.PoyntClient.get_recent_orders",new=AsyncMock(return_value=[sale(start+timedelta(hours=12))])):
+            asyncio.run(process_organization(1,business,token))
+        release(1,token)
+        with self.factory() as s:s.get(DashboardSync,1).next_reconcile_at=utc_now();s.commit()
+        business,token=acquire(1)
+        with patch("poynt.client.PoyntClient.get_recent_orders",new=AsyncMock(return_value=[])):
+            asyncio.run(process_organization(1,business,token))
+        release(1,token)
+        result=self.client.get("/dashboard/data?date="+day.isoformat()).json()
+        self.assertEqual(result["stores"][0]["order_count"],1)
+
 
 class MigrationTests(unittest.TestCase):
     def test_upgrade_and_downgrade_isolated_database(self):
         engine=create_engine("sqlite:///:memory:")
         path="alembic/versions/b92d7a10e643_live_dashboard.py"
         spec=importlib.util.spec_from_file_location("dashboard_migration",path);module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+        with engine.begin() as connection:
+            connection.exec_driver_sql("CREATE TABLE organizations (id INTEGER PRIMARY KEY)")
+            operations=Operations(MigrationContext.configure(connection))
+            with patch.object(module,"op",operations):module.upgrade();module.downgrade()
+        engine.dispose()
+
+    def test_history_upgrade_downgrade_isolated_database(self):
+        engine=create_engine("sqlite:///:memory:")
+        path="alembic/versions/c03e5d9182a7_dashboard_history.py"
+        spec=importlib.util.spec_from_file_location("history_migration",path);module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
         with engine.begin() as connection:
             connection.exec_driver_sql("CREATE TABLE organizations (id INTEGER PRIMARY KEY)")
             operations=Operations(MigrationContext.configure(connection))
