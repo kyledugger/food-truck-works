@@ -1,4 +1,6 @@
 import os
+import asyncio
+from contextlib import asynccontextmanager, suppress
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from sqlalchemy import select
@@ -27,6 +29,8 @@ from routers.account_security import router as account_security_router
 from routers.account_settings import router as account_settings_router
 from routers.stores import router as stores_router
 from routers.integrations import router as integrations_router
+from routers.live_dashboard import router as live_dashboard_router
+from live_dashboard_service import dashboard_worker
 
 dotenv_file = os.getenv("DOTENV_FILE", ".env")
 load_dotenv(dotenv_file)
@@ -59,7 +63,18 @@ else:
 POYNT_APP_ID = os.environ["POYNT_APP_ID"]
 POYNT_AUTHORIZE_URL = os.environ["POYNT_AUTHORIZE_URL"]
 
-app = FastAPI(title="Food Truck Works")
+@asynccontextmanager
+async def lifespan(app):
+    task = asyncio.create_task(dashboard_worker())
+    try:
+        yield
+    finally:
+        task.cancel()
+        with suppress(asyncio.CancelledError):
+            await task
+
+
+app = FastAPI(title="Food Truck Works", lifespan=lifespan)
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
@@ -71,6 +86,7 @@ app.include_router(account_security_router)
 app.include_router(account_settings_router)
 app.include_router(stores_router)
 app.include_router(integrations_router)
+app.include_router(live_dashboard_router)
 
 is_production = os.getenv("ENVIRONMENT") == "production"
 app.add_middleware(

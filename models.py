@@ -447,3 +447,4 @@ class Event(Base):
 
 # Register integration tables for Alembic and shared metadata.
 from integrations.models import IntegrationConnection, IntegrationMapping, IntegrationOAuthAttempt
+from live_dashboard_models import DashboardSync, DashboardOrder, DashboardNotification

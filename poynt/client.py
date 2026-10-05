@@ -458,5 +458,29 @@ class PoyntClient:
 
 
         return response.json()
-    
 
+    async def get_order(self, order_id: str) -> dict:
+        """Fetch current state, never follow URLs from a webhook payload."""
+        from urllib.parse import quote
+        await self._refresh_if_needed()
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.get(
+                f"{self.BASE_URL}/businesses/{quote(self.business_id, safe='')}/orders/{quote(order_id, safe='')}",
+                headers=self._headers())
+        if not response.is_success:
+            raise PoyntAPIError(f"Poynt API returned HTTP {response.status_code}")
+        return response.json()
+
+    async def register_order_webhook(self, delivery_url: str, secret: str) -> dict:
+        import uuid
+        await self._refresh_if_needed()
+        headers = {**self._headers(), "Poynt-Request-Id": str(uuid.uuid4())}
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(f"{self.BASE_URL}/hooks", headers=headers, json={
+                "applicationId": os.environ["POYNT_APP_ID"], "businessId": self.business_id,
+                "deliveryUrl": delivery_url, "secret": secret,
+                "eventTypes": ["ORDER_OPENED", "ORDER_COMPLETED", "ORDER_CANCELLED", "ORDER_UPDATED"]})
+        if not response.is_success:
+            raise PoyntAPIError(f"Poynt webhook registration returned HTTP {response.status_code}")
+        return response.json()
+    
