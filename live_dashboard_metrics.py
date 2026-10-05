@@ -125,6 +125,42 @@ def order_pace(orders, start, end, now):
             for size in samples]
 
 
+def kitchen_intake(orders, now):
+    """Rolling arrival quantities, independent of midnight and order-size groups."""
+    recent_start = now - timedelta(minutes=5)
+    baseline_start = now - timedelta(minutes=20)
+    recent_items = Decimal(0)
+    baseline_items = Decimal(0)
+    recent_orders = 0
+    for order in orders:
+        if not completed(order):
+            continue
+        try:
+            at = instant(order.get("createdAt"))
+        except (ValueError, TypeError):
+            continue
+        if not baseline_start <= at <= now:
+            continue
+        # Arrival workload uses original quantities, including later returns.
+        quantity = sum((max(Decimal(0), number(item.get("quantity")))
+                        for item in order.get("items") or []), Decimal(0))
+        if at >= recent_start:
+            recent_items += quantity
+            recent_orders += 1
+        else:
+            baseline_items += quantity
+    rate = recent_items / 5
+    baseline = baseline_items / 15
+    trend = "steady"
+    if rate > baseline * Decimal("1.2"):
+        trend = "rising"
+    elif rate < baseline * Decimal("0.8"):
+        trend = "falling"
+    return {"items_per_minute": float(rate), "recent_items": float(recent_items),
+            "recent_orders": recent_orders, "baseline_items_per_minute": float(baseline),
+            "trend": trend}
+
+
 def store_details(orders, start, end, now):
     """Today's incoming orders, plus sold SKU quantities; no customer/payment fields."""
     rows = []
@@ -151,7 +187,7 @@ def store_details(orders, start, end, now):
                 if item["status"] != "RETURNED":
                     skus[item["sku"] or "Unknown SKU"] += number(item["quantity"])
     rows.sort(key=lambda row: (row["created_at"], row["id"]), reverse=True)
-    return {"order_pace": order_pace(orders, start, end, now), "latest_orders": rows[:20], "sku_counts": [{"sku": sku, "quantity": float(qty)}
+    return {"kitchen_intake": kitchen_intake(orders, now), "order_pace": order_pace(orders, start, end, now), "latest_orders": rows[:20], "sku_counts": [{"sku": sku, "quantity": float(qty)}
             for sku, qty in sorted(skus.items(), key=lambda pair: (-pair[1], pair[0]))]}
 
 

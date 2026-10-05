@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{{ store.display_name or store.poynt_name }} · Live Store{% endblock %}
-{% block head %}<link rel="stylesheet" href="/static/css/live-dashboard.css?v=20261005-8"><link rel="stylesheet" href="/static/css/store-dashboard.css?v=20261005-2">{% endblock %}
+{% block head %}<link rel="stylesheet" href="/static/css/live-dashboard.css?v=20261005-8"><link rel="stylesheet" href="/static/css/store-dashboard.css?v=20261005-3">{% endblock %}
 {% block content %}
 <main class="store-screen">
     <header class="store-toolbar">
@@ -10,10 +10,17 @@
             {% if is_store_display %}<form method="post" action="/logout"><button class="button is-small is-light">Log out</button></form>{% endif %}</div>
     </header>
     <div id="live-status" class="notification is-light" role="status" aria-live="polite">Loading sales…</div>
+    <div class="store-flow-row">
+    <section class="store-intake" aria-labelledby="store-intake-title">
+        <h2 id="store-intake-title" class="has-text-weight-semibold">Kitchen intake</h2>
+        <div id="store-intake-data"><p class="store-pace-note">Collecting item flow…</p></div>
+        <p class="store-pace-note">Completed-order items, last 5 minutes. Quiet time counts. Incoming demand, not kitchen backlog.</p>
+    </section>
     <section class="store-pace" aria-labelledby="store-pace-title">
         <div><h2 id="store-pace-title" class="has-text-weight-semibold">Time between orders</h2><p class="store-pace-note">Recent: median over the last 10 minutes. Fast today: fastest 10%, up to 10 samples. Completed orders; gap belongs to the newer order. Includes guest interaction and quiet gaps; multiple registers may overlap.</p></div>
         <div id="store-pace-cards" class="store-pace-cards"><p class="store-pace-note">Collecting order intervals…</p></div>
     </section>
+    </div>
     <div class="store-layout">
         <section id="live-stores" class="live-store-grid" data-store-id="{{ store.id }}" aria-label="Today's store sales"></section>
         <section class="store-orders"><h2 class="title is-5 mb-1">Latest orders <span class="is-size-7 has-text-grey">Today · latest 20</span></h2><p class="is-size-7 has-text-grey mb-3">Newest first. Includes open and cancelled orders.</p><div id="store-order-feed"><p>Loading orders…</p></div></section>
@@ -22,4 +29,4 @@
     <dialog id="store-skus" aria-labelledby="store-skus-title"><div class="store-modal-head"><h2 id="store-skus-title" class="title is-5 mb-0">Products sold today</h2><button id="store-skus-close" class="button is-small">Close</button></div><p class="is-size-7 mb-3">Completed USD sales, excluding returned items.</p><div class="store-sku-chart"><canvas id="store-sku-canvas" role="img" aria-label="Product SKU quantities"></canvas></div><table class="live-category"><thead><tr><th>SKU</th><th>Qty</th></tr></thead><tbody id="store-sku-rows"></tbody></table></dialog>
 </main>
 {% endblock %}
-{% block scripts %}<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.min.js"></script><script src="/static/js/store-dashboard.js?v=20261005-4" defer></script><script src="/static/js/live-dashboard.js?v=20261005-8" defer></script>{% endblock %}
+{% block scripts %}<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.min.js"></script><script src="/static/js/store-dashboard.js?v=20261005-5" defer></script><script src="/static/js/live-dashboard.js?v=20261005-8" defer></script>{% endblock %}

@@ -4,6 +4,19 @@
   if(!feed)return;
   let store=null,chart=null,fingerprint='';
   const paceCards=document.getElementById('store-pace-cards');
+  const intakeData=document.getElementById('store-intake-data');
+  function intake(){
+    intakeData.replaceChildren();
+    if(!store||store.setup_required||store.loading||!store.kitchen_intake){intakeData.append(el('p','store-pace-note',store?.setup_required?'Store setup required.':'Collecting item flow…'));return;}
+    const metric=store.kitchen_intake,number=new Intl.NumberFormat('en-US',{maximumFractionDigits:1});
+    intakeData.append(el('strong','store-intake-value',metric.items_per_minute.toFixed(1)+' items/min'));
+    intakeData.append(el('p','store-intake-detail',metric.recent_items?number.format(metric.recent_items)+' items · '+metric.recent_orders+' orders in the last 5 minutes':'No items in the last 5 minutes.'));
+    const labels={rising:'↑ Rising',steady:'→ Steady',falling:'↓ Falling'};
+    const trend=el('p','store-intake-detail',(labels[metric.trend]||labels.steady)+' · Preceding 15 min: '+metric.baseline_items_per_minute.toFixed(1)+' items/min');
+    trend.title='Rising or falling means more than 20% above or below the preceding 15-minute rate.';
+    intakeData.append(trend);
+  }
+  document.addEventListener('store-access-denied',()=>intakeData.replaceChildren());
   function pace(){
     paceCards.replaceChildren();
     if(!store||store.setup_required||store.loading){paceCards.append(el('p','store-pace-note',store?.setup_required?'Store setup required.':'Collecting order intervals…'));return;}
@@ -30,7 +43,7 @@
     chart=new Chart(canvas,{type:'bar',data:{labels:counts.map(i=>i.sku),datasets:[{label:'Items',data:counts.map(i=>i.quantity),backgroundColor:'#16835f',borderRadius:3}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,ticks:{precision:0},grid:{color:'#dbe4e8'}}}}});
   }
   document.addEventListener('store-data',event=>{
-    store=event.detail.stores?.[0];pace();if(!store)return;
+    store=event.detail.stores?.[0];pace();intake();if(!store)return;
     if(store.setup_required||store.loading){feed.replaceChildren(el('p','',store.setup_required?store.message:'Collecting today’s orders…'));fingerprint='';return;}
     const orders=store.latest_orders||[],next=JSON.stringify(orders);
     if(next!==fingerprint){fingerprint=next;feed.replaceChildren();

@@ -341,3 +341,17 @@ This is store-level arrival pace, not kitchen preparation time or an individual
 cashier score. Registers can overlap; gaps include guest interaction and waits.
 The existing 15-second refresh updates both values and ages recent samples out.
 No new migration or permissions changes are required.
+
+## Kitchen intake
+The store display shows completed-order item quantities per minute over the last
+5 minutes, item/order totals, and the preceding non-overlapping 15-minute rate.
+Trend is rising above 120% of baseline, falling below 80%, otherwise steady.
+Both zero is steady; a positive current rate against zero baseline is rising.
+Windows include quiet time and cross store-local midnight using UTC instants.
+Baseline includes [now-20 minutes, now-5 minutes); recent includes
+[now-5 minutes, now]. Future or invalid timestamps and noncompleted/cancelled
+orders are excluded. Positive original item quantities are used, including later
+returned items, because intake measures original arrival workload rather than
+net sales. Uses all cached store orders before latest-20 truncation. Existing
+loading/stale-data indicators and 15-second refresh apply. Neutral presentation
+shows demand, not backlog or capacity. No migration required.

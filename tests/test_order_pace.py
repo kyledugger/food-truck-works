@@ -1,8 +1,22 @@
 import unittest
 from datetime import datetime, timedelta, timezone
-from live_dashboard_metrics import order_pace
+from live_dashboard_metrics import order_pace, kitchen_intake
 
 class OrderPaceTests(unittest.TestCase):
+    def test_kitchen_intake_windows_and_quantity(self):
+        now = datetime(2026, 10, 5, 7, 2, tzinfo=timezone.utc)
+        def order(minutes, quantity, state="COMPLETED"):
+            return {"createdAt": (now-timedelta(minutes=minutes)).isoformat(), "items": [{"quantity": quantity}], "statuses": {"transactionStatusSummary": state}}
+        result = kitchen_intake([order(5, 5), order(0, 7), order(20, 15), order(21, 99), order(-1, 99), order(1, 99, "OPEN"), order(1, 99, "CANCELLED")], now)
+        self.assertEqual(result["recent_items"], 12)
+        self.assertEqual(result["recent_orders"], 2)
+        self.assertEqual(result["items_per_minute"], 2.4)
+        self.assertEqual(result["baseline_items_per_minute"], 1)
+        self.assertEqual(result["trend"], "rising")
+        self.assertEqual(kitchen_intake([], now)["trend"], "steady")
+        self.assertEqual(kitchen_intake([order(10, 15)], now)["trend"], "falling")
+        self.assertEqual(kitchen_intake([order(1, 5), order(10, 15)], now)["trend"], "steady")
+
     def test_groups_recent_and_day_benchmark(self):
         now = datetime(2026, 10, 5, 20, tzinfo=timezone.utc)
         def order(seconds, units=1, state="COMPLETED"):
