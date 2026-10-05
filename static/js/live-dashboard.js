@@ -118,6 +118,12 @@
     try {
       const response=await fetch('/dashboard/data?'+new URLSearchParams(storeView?{date:'today',store_id:storeView}:{date:requestedSelection}),{credentials:'same-origin',cache:'no-store',signal:controller.signal});
       if(response.status===401){location.assign('/login');return;}
+      if(response.status===403){
+        clearInterval(timer);for(const c of cards.values()){Object.values(c.charts).forEach(chart=>chart.destroy());c.root.remove();}cards.clear();
+        if(enable)enable.hidden=true;
+        document.getElementById('live-mode').textContent='Access denied';refreshed.textContent='';
+        document.dispatchEvent(new Event('store-access-denied'));
+      }
       const data=await response.json();if(!response.ok)throw new Error(data.detail||'Dashboard could not refresh.');if(requestedSelection===selection)render(data);
     }catch(error){if(error.name!=='AbortError' || requestedSelection===selection){status.hidden=false;document.getElementById('live-mode')?.classList.remove('live-mode-active');status.textContent=error.message+' Displayed totals may be out of date.';status.className='notification is-warning is-light';}}
     finally{clearTimeout(timeout);controller=null;inFlight=false;if(requestedSelection!==selection)refresh();}

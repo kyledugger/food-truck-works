@@ -28,6 +28,8 @@ from live_dashboard_service import save_order, acquire, release, process_organiz
 from routers import live_dashboard as routes
 from store_time import local_day_bounds, utc_now
 from zoneinfo import ZoneInfo
+from jinja2 import Environment, FileSystemLoader
+from permissions import role_can_view_dashboard_sales
 
 UTC = timezone.utc
 
@@ -46,6 +48,16 @@ def store(zone="America/Phoenix"):
 
 
 class MetricsTests(unittest.TestCase):
+    def test_dashboard_template_omits_sales_for_disallowed_roles(self):
+        template=Environment(loader=FileSystemLoader("templates")).get_template("dashboard.html")
+        for role in ("owner", "manager", "member", "payroll", "store", None):
+            allowed=role_can_view_dashboard_sales(role)
+            html=template.render(user=SimpleNamespace(display_name="Test"),organization_options=[],
+                poynt_connection=True,can_view_dashboard_sales=allowed)
+            self.assertEqual('id="live-stores"' in html,allowed)
+            self.assertEqual('/static/js/live-dashboard.js' in html,allowed)
+            self.assertIn("Tip History",html)
+
     def test_store_feed_caps_latest_orders_and_sku_counts_only_completed_sales(self):
         now=datetime(2026,10,5,20,tzinfo=UTC)
         orders=[sale(now-timedelta(minutes=i),order_id=str(i)) for i in range(25)]
@@ -221,6 +233,24 @@ class DatabaseAndRoutesTests(unittest.TestCase):
         self.assertEqual(data["stores"][0]["latest_orders"][0]["number"],"42")
         self.assertEqual(data["stores"][0]["latest_orders"][0]["items"][0]["name"],"Chocolate bar")
         self.assertNotIn("latest_orders",self.client.get("/dashboard/data").json()["stores"][0])
+
+    def test_dashboard_sales_role_access_and_store_today_only(self):
+        self.client.get("/test-login")
+        for role in ("member", "payroll", "employee", "store", "unknown"):
+            with self.factory() as session:
+                membership=session.scalar(select(OrganizationMember).where(OrganizationMember.user_id==1));membership.role=role;session.commit()
+            for url in ("/dashboard/data", "/dashboard/data?date=yesterday", "/dashboard/data?store_id=1", "/dashboard/stores/1"):
+                self.assertEqual(self.client.get(url).status_code,403,(role,url))
+            self.assertEqual(self.client.post("/dashboard/webhook/enable").status_code,403)
+        for role in ("owner", "manager"):
+            with self.factory() as session:
+                membership=session.scalar(select(OrganizationMember).where(OrganizationMember.user_id==1));membership.role=role;session.commit()
+            self.assertEqual(self.client.get("/dashboard/data").status_code,200)
+            self.assertEqual(self.client.get("/dashboard/stores/1").status_code,200)
+            self.assertEqual(self.client.get("/dashboard/data?store_id=1").status_code,200)
+            self.assertEqual(self.client.get("/dashboard/data?date=yesterday").status_code,200)
+            for day in ("yesterday", "2026-10-04"):
+                self.assertEqual(self.client.get("/dashboard/data?store_id=1&date="+day).status_code,400)
 
     def test_unauthenticated_and_tenant_scoping(self):
         self.assertEqual(self.client.get("/dashboard/data").status_code,401)

@@ -193,7 +193,7 @@ in your deployment. Complete a test sale, verify one order appears, change
 the tip, and verify tips update without increasing the order count. Check
 sales against the POS's total including tax (excluding tips) and verify a second store stays separate.
 
-Validation completed for this patch: 38 dashboard tests, 4 existing store
+Validation completed for this patch: 40 dashboard tests, 4 existing store
 time tests, 6 existing tip report tests, and 9 existing integration tests
 passed. The existing integration migration test was excluded because it
 resolves its migration relative to the parent of the project directory;
@@ -228,9 +228,25 @@ fits the viewport, with internal scrolling for long order/category lists; smalle
 screens stack the panels. Processing-time metrics are deferred; order creation
 intervals are available but do not represent measured kitchen/preparation duration.
 
-Access follows existing organization dashboard membership permissions; this is not
+Access is limited to owners and managers; this is not
 yet a separate restricted kiosk session or role. Both page and data endpoints check
 store ownership and active status. No additional migration or webhook registration
 is needed. Browser checks cover the feed, refresh, SKU modal, Escape dismissal,
-desktop viewport fit, mobile layout and empty stores. 38 dashboard tests pass,
+desktop viewport fit, mobile layout and empty stores. 40 dashboard tests pass,
 including tenant boundaries, feed limits, item fields and SKU eligibility.
+
+## Dashboard role restrictions
+
+Only owners and managers can see organization dashboard sales or the live store
+page/data. Members and payroll users retain their regular home page navigation,
+but sales widgets and their JavaScript are not rendered. API requests are denied
+with HTTP 403, including direct URLs and historical requests. Unknown roles are
+denied by default. A role revocation clears previously displayed sales on the next
+refresh. Single-store API requests accept only `date=today`; organization owners
+and managers can still browse historical dates on the all-store dashboard.
+
+There is currently no store-login role, assigned-store membership, or kiosk session.
+A future store login needs a verified store assignment plus an explicit all-store
+permission before it can receive access. No placeholder role is granted access.
+This change does not alter access to the separate Orders Report or payroll pages.
+No additional database migration is needed.

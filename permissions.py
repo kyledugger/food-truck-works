@@ -70,3 +70,7 @@ def role_can_manage_integrations(role: str | None) -> bool:
 
 def role_can_view_payroll_reports(role: str | None) -> bool:
     return role in PAYROLL_REPORT_ROLES
+
+
+def role_can_view_dashboard_sales(role: str | None) -> bool:
+    return role in {OrganizationRole.OWNER, OrganizationRole.MANAGER}

@@ -45,6 +45,7 @@
 
 
         {% if poynt_connection %}
+            {% if can_view_dashboard_sales %}
             <div class="live-toolbar">
             <div class="live-date-controls">
                 <button id="live-today" class="button is-small is-link">Today</button>
@@ -69,6 +70,7 @@
                 Activity uses order creation time. All dates and chart labels use each store's timezone.
                 Past dates show full-day totals with live activity turned off.</p>
 
+            {% endif %}
             <div class="columns">
 
                 <div class="column">
@@ -141,11 +143,11 @@
 {% endblock %}
 
 {% block head %}
-<link rel="stylesheet" href="/static/css/live-dashboard.css?v=20261005-6">
+<link rel="stylesheet" href="/static/css/live-dashboard.css?v=20261005-7">
 {% endblock %}
 {% block scripts %}
-{% if poynt_connection %}
+{% if poynt_connection and can_view_dashboard_sales %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.min.js"></script>
-<script src="/static/js/live-dashboard.js?v=20261005-6" defer></script>
+<script src="/static/js/live-dashboard.js?v=20261005-7" defer></script>
 {% endif %}
 {% endblock %}

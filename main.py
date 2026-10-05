@@ -15,6 +15,7 @@ from permissions import (
     get_organization_role,
     role_can_manage_employees,
     role_can_manage_integrations,
+    role_can_view_dashboard_sales,
 )
 from poynt.connection import (
     get_poynt_connection
@@ -197,6 +198,7 @@ async def dashboard(request: Request):
             "organization_options": organization_options,
             "can_manage_poynt": can_manage_poynt,
             "can_manage_employees": can_manage_employees,
+            "can_view_dashboard_sales": role_can_view_dashboard_sales(role),
         }
     )
 

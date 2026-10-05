@@ -14,7 +14,7 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from database import SessionLocal
 from models import User, PoyntConnection, OrganizationStore
 from organization_context import get_current_organization_id
-from permissions import get_organization_role, role_can_manage_integrations
+from permissions import get_organization_role, role_can_manage_integrations, role_can_view_dashboard_sales
 from live_dashboard_models import DashboardOrder, DashboardSync, DashboardNotification, DashboardDay
 from live_dashboard_metrics import summarize, store_details
 from live_dashboard_service import ensure_sync, acquire, owned_state, release
@@ -43,7 +43,9 @@ def authorized(request):
 
 @router.get("/dashboard/stores/{store_id}")
 def store_dashboard(request: Request, store_id: int):
-    organization_id, _ = authorized(request)
+    organization_id, role = authorized(request)
+    if not role_can_view_dashboard_sales(role):
+        raise HTTPException(403, "Your role cannot view dashboard sales.")
     with SessionLocal() as session:
         store = session.scalar(select(OrganizationStore).where(OrganizationStore.id == store_id,
             OrganizationStore.organization_id == organization_id, OrganizationStore.is_active.is_(True)))
@@ -56,6 +58,10 @@ def store_dashboard(request: Request, store_id: int):
 @router.get("/dashboard/data")
 def dashboard_data(request: Request, report_date: str = Query("today", alias="date"), store_id: int | None = Query(None)):
     organization_id, role = authorized(request)
+    if not role_can_view_dashboard_sales(role):
+        raise HTTPException(403, "Your role cannot view dashboard sales.")
+    if store_id is not None and report_date != "today":
+        raise HTTPException(400, "The live store dashboard only supports Today.")
     now = utc_now()
     try:
         selected_date = calendar_date.fromisoformat(report_date) if report_date not in {"today", "yesterday"} else None

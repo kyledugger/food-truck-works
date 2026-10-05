@@ -3,6 +3,7 @@
   const feed=document.getElementById('store-order-feed'),dialog=document.getElementById('store-skus');
   if(!feed)return;
   let store=null,chart=null,fingerprint='';
+  document.addEventListener('store-access-denied',()=>{store=null;fingerprint='';feed.replaceChildren();if(dialog.open)dialog.close();if(chart){chart.destroy();chart=null;}document.getElementById('store-sku-rows').replaceChildren();});
   const el=(tag,cls,text)=>{const node=document.createElement(tag);if(cls)node.className=cls;if(text!==undefined)node.textContent=text;return node;};
   const money=(cents,currency='USD')=>{try{return new Intl.NumberFormat('en-US',{style:'currency',currency}).format(cents/100);}catch{return currency+' '+(cents/100).toFixed(2);}};
   function products(){
