@@ -28,6 +28,9 @@
                     <a href="/account" class="button is-light">
                         Account Settings
                     </a>
+                    {% if can_manage_poynt %}
+                    <a href="/integrations" class="button is-light">Integrations</a>
+                    {% endif %}
 
                     <form method="post" action="/logout">
                         <button type="submit" class="button is-light">Log Out</button>

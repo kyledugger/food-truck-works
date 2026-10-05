@@ -444,3 +444,6 @@ class Event(Base):
     created_at: Mapped[datetime] = mapped_column(UTCInstant(), nullable=False, default=utc_now)
 
     resource: Mapped[BookingResource] = relationship()
+
+# Register integration tables for Alembic and shared metadata.
+from integrations.models import IntegrationConnection, IntegrationMapping, IntegrationOAuthAttempt

@@ -26,6 +26,7 @@ from routers.employees import router as employees_router
 from routers.account_security import router as account_security_router
 from routers.account_settings import router as account_settings_router
 from routers.stores import router as stores_router
+from routers.integrations import router as integrations_router
 
 dotenv_file = os.getenv("DOTENV_FILE", ".env")
 load_dotenv(dotenv_file)
@@ -69,6 +70,7 @@ app.include_router(employees_router)
 app.include_router(account_security_router)
 app.include_router(account_settings_router)
 app.include_router(stores_router)
+app.include_router(integrations_router)
 
 is_production = os.getenv("ENVIRONMENT") == "production"
 app.add_middleware(

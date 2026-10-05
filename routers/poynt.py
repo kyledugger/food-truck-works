@@ -1582,6 +1582,8 @@ async def mark_tip_payout_paid(payout_id: int, request: Request):
         if not row:
             raise HTTPException(404, "Payout not found.")
         payout, submission = row
+        # Keep redirect data available after commit expires the ORM instance.
+        redirect_store_id = submission.store_id
         if payout.status != "pending" or submission.processing_status == "rejected":
             raise HTTPException(409, "This payout is not pending.")
         setting = _store_tip_setting(session, organization_id, submission.store_id)
@@ -1612,7 +1614,7 @@ async def mark_tip_payout_paid(payout_id: int, request: Request):
             submission.processed_at = datetime.now(timezone.utc)
             submission.processed_by_user_id = user_id
         session.commit()
-    return RedirectResponse(f"/poynt/tip-submissions?{urlencode({'store_id': submission.store_id})}", status_code=303)
+    return RedirectResponse(f"/poynt/tip-submissions?{urlencode({'store_id': redirect_store_id})}", status_code=303)
 
 
 @router.get("/poynt/tip-settings", response_class=HTMLResponse)
@@ -1734,6 +1736,8 @@ async def reject_new_tip_submission(submission_id: int, request: Request):
         )).scalars().all()
         if not payouts or any(p.status != "pending" for p in payouts):
             raise HTTPException(409, "Only fully unpaid submissions can be rejected.")
+        # Keep redirect data available after commit expires the ORM instance.
+        redirect_store_id = submission.store_id
         for payout in payouts:
             payout.status = "rejected"
         # The rejected record stays visible; its order IDs become available for correction.
@@ -1745,7 +1749,7 @@ async def reject_new_tip_submission(submission_id: int, request: Request):
         submission.processed_at = datetime.now(timezone.utc)
         submission.processed_by_user_id = user_id
         session.commit()
-    return RedirectResponse(f"/poynt/tip-submissions?{urlencode({'store_id': submission.store_id})}", status_code=303)
+    return RedirectResponse(f"/poynt/tip-submissions?{urlencode({'store_id': redirect_store_id})}", status_code=303)
 
 
 @router.post("/poynt/tip-submissions")
