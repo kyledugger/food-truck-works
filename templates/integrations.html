@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Integrations - Food Truck Works{% endblock %}
+{% block content %}
+<section class="section"><div class="container">
+<a href="/dashboard">Back to Dashboard</a>
+<h1 class="title mt-4">Integrations</h1>
+{% if notice %}<div class="notification is-info is-light">{{ notice }}</div>{% endif %}
+<div class="box">
+<h2 class="title is-4">Square</h2>
+<p class="mb-4">Connect your account, then link its locations and team members to your business records.</p>
+<form method="post" action="/integrations/square/connect">
+<input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+<div class="select"><select name="environment" aria-label="Square environment"><option value="sandbox">Sandbox (test account)</option><option value="production">Production (real account)</option></select></div>
+<button class="button is-primary" type="submit">Connect Square</button>
+</form></div>
+{% for card in cards %}<div class="box">
+<h2 class="title is-5">Square {{ card.environment }}: {{ card.account }}</h2>
+<p>Status: {{ card.status }}{% if card.verified_at %}. Last verified: {{ card.verified_at }}{% endif %}</p>
+{% if card.error %}<p class="notification is-warning is-light mt-3">{{ card.error }}</p>{% endif %}
+<p class="my-3">Authorized features: {{ card.capabilities|join(', ') or 'None' }}</p>
+{% for kind, records, targets in [('location', card.locations, stores), ('employee', card.employees, employees)] %}
+<h3 class="title is-6 mt-4">{{ 'Locations' if kind == 'location' else 'Team members' }}</h3>
+{% if not targets %}<p>No business {{ 'stores' if kind == 'location' else 'employees' }} available to link. Create them first.</p>{% endif %}
+{% for record in records %}<form method="post" action="/integrations/{{ card.id }}/mapping" class="mb-3">
+<input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="kind" value="{{ kind }}"><input type="hidden" name="external_id" value="{{ record.id }}">
+<label>{{ record.name }} ({{ record.status or 'Unknown status' }})</label>
+<div class="select"><select name="target_id" aria-label="Link {{ record.name }}">
+<option value="0">Unmapped</option>
+{% for target in targets %}<option value="{{ target.id }}" {% if card.mappings.get((kind, record.id)) == target.id %}selected{% endif %}>{{ (target.display_name or target.poynt_name) if kind == 'location' else (target.first_name ~ ' ' ~ target.last_name) }}</option>{% endfor %}
+</select></div><button type="submit" class="button is-light">Save mapping</button></form>{% endfor %}
+{% endfor %}
+{% if card.status != 'disconnected' %}<form method="post" action="/integrations/{{ card.id }}/disconnect" class="mt-4"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button type="submit" class="button is-danger is-light">Disconnect Square</button></form>{% endif %}
+</div>{% endfor %}
+<p>Poynt remains available through your existing dashboard connection.</p>
+</div></section>
+{% endblock %}
