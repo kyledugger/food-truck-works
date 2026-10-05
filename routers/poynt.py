@@ -1354,6 +1354,48 @@ def _tip_submission_display(submission: TipSubmission, payouts: list[TipEmployee
     }
 
 
+def _tip_range_totals(submissions: list[dict], own_ids: set[int] | None = None) -> list[dict]:
+    """Summarize non-rejected allocations using integer cents and employee IDs."""
+    totals = {}
+    for submission in submissions:
+        rows = submission["payouts"]
+        if not rows:
+            rows = [{"employee_id": employee["id"], "employee_name": employee["name"],
+                     "amount_cents": employee["total_tip_cents"],
+                     "method": submission["payout_method"],
+                     "status": submission["processing_status"]}
+                    for employee in submission["employee_totals"]]
+        for row in rows:
+            if row["status"] == "rejected" or row["method"] not in {"cash", "paycheck"}:
+                continue
+            if own_ids is not None and row["employee_id"] not in own_ids:
+                continue
+            key = ("id", row["employee_id"]) if row["employee_id"] is not None else ("name", row["employee_name"].casefold())
+            if key not in totals:
+                totals[key] = {"name": row["employee_name"], "cash_cents": 0,
+                               "cash_paid_cents": 0, "cash_pending_cents": 0,
+                               "paycheck_cents": 0, "paycheck_paid_cents": 0,
+                               "paycheck_pending_cents": 0}
+            amount = row["amount_cents"]
+            totals[key][row["method"] + "_cents"] += amount
+            totals[key][row["method"] + ("_paid_cents" if row["status"] == "paid" else "_pending_cents")] += amount
+    return sorted(totals.values(), key=lambda row: row["name"].casefold())
+
+
+def _tip_report_redirect(store_id: str, start: str = "", end: str = "",
+                         payment: str = "", status: str = "") -> RedirectResponse:
+    params = {"store_id": store_id}
+    if start:
+        params["start"] = start
+    if end:
+        params["end"] = end
+    if payment in {"cash", "paycheck"}:
+        params["payment"] = payment
+    if status in {"pending", "paid", "rejected"}:
+        params["status"] = status
+    return RedirectResponse(f"/poynt/tip-submissions?{urlencode(params)}", status_code=303)
+
+
 @router.get("/poynt/tip-submissions", response_class=HTMLResponse)
 async def tip_submission_report(
     request: Request,
@@ -1372,10 +1414,10 @@ async def tip_submission_report(
         request.session.clear()
         return RedirectResponse("/login", status_code=303)
 
-    # Date-range access is controlled server-side. The disabled inputs on the
-    # employee view are only a UI convenience and are not an authorization check.
+    # Employees may review historical dates, with their data scoped below.
     role = get_organization_role(user_id, organization_id)
-    can_select_date_range = role_can_view_payroll_reports(role)
+    can_view_payroll = role_can_view_payroll_reports(role)
+    can_select_date_range = True
     with SessionLocal() as session:
         configured_stores = session.execute(select(OrganizationStore).where(
             OrganizationStore.organization_id == organization_id,
@@ -1390,23 +1432,16 @@ async def tip_submission_report(
     store_timezone = store_map[selected_store_id].timezone_name
     today = datetime.now(ZoneInfo(store_timezone)).date().isoformat()
 
-    if can_select_date_range:
-        # Privileged users get a selectable inclusive date range. Default to today.
-        start_date = start or today
-        end_date = end or today
-        bounds = _get_tip_report_date_bounds(start_date, end_date, store_timezone)
-        if bounds is None:
-            start_date = today
-            end_date = today
-            bounds = _get_tip_report_date_bounds(start_date, end_date, store_timezone)
-            validation_message = "The selected date range was invalid, so today's submissions are shown."
-        else:
-            validation_message = ""
-    else:
-        # Everyone else can only see today's submissions, regardless of URL parameters.
+    # Selectable inclusive store-local date range; default to today.
+    start_date = start or today
+    end_date = end or today
+    bounds = _get_tip_report_date_bounds(start_date, end_date, store_timezone)
+    if bounds is None:
         start_date = today
         end_date = today
         bounds = _get_tip_report_date_bounds(start_date, end_date, store_timezone)
+        validation_message = "The selected date range was invalid, so today's submissions are shown."
+    else:
         validation_message = ""
 
     day_start, day_end, _, _ = bounds
@@ -1457,6 +1492,10 @@ async def tip_submission_report(
                 if permitted:
                     allowed_ids.add(payout.id)
 
+        range_display = [_tip_submission_display(item, payout_map.get(item.id), allowed_ids, store_timezone)
+                         for item in submissions]
+        range_totals = _tip_range_totals(range_display, None if can_view_payroll else own_ids)
+
         # New submissions filter by each employee's payout. Legacy submissions
         # retain their submission-level payment and processing filters.
         if selected_payment or selected_status:
@@ -1476,20 +1515,38 @@ async def tip_submission_report(
                 visible_payouts = [row for row in visible_payouts if
                     (not selected_payment or row.payout_method == selected_payment) and
                     (not selected_status or row.status == selected_status)]
-            display.append(_tip_submission_display(item, visible_payouts, allowed_ids, store_timezone))
+            shown = _tip_submission_display(item, visible_payouts, allowed_ids, store_timezone)
+            if not can_view_payroll:
+                # Preserve cash-confirmer access; other historical rows are personal.
+                if shown["payouts"]:
+                    shown["payouts"] = [row for row in shown["payouts"]
+                                        if row["employee_id"] in own_ids or row["id"] in allowed_ids]
+                    if not shown["payouts"]:
+                        continue
+                    shown["employee_totals"] = []
+                    shown["total_tip_cents"] = sum(row["amount_cents"] for row in shown["payouts"])
+                else:
+                    shown["employee_totals"] = [row for row in shown["employee_totals"] if row["id"] in own_ids]
+                    if not shown["employee_totals"]:
+                        continue
+                    shown["total_tip_cents"] = sum(row["total_tip_cents"] for row in shown["employee_totals"])
+                shown["ranges"] = []
+                shown["employee_names"] = []
+            display.append(shown)
 
     return templates.TemplateResponse(
         request=request,
         name="tip_submissions.html",
         context={
             "submissions": display,
+            "tip_range_totals": range_totals,
             "tip_report_start_date": start_date,
             "tip_report_end_date": end_date,
             "tip_report_can_select_date_range": can_select_date_range,
             "tip_report_validation_message": validation_message,
             "tip_report_payment": selected_payment,
             "tip_report_status": selected_status,
-            "tip_report_can_process": can_select_date_range,
+            "tip_report_can_process": can_view_payroll,
             "tip_report_role": role,
             "tip_report_store_id": selected_store_id,
             "tip_report_store_timezone": store_timezone,
@@ -1568,7 +1625,10 @@ async def update_tip_submission_status(
 
 
 @router.post("/poynt/tip-payouts/{payout_id}/paid")
-async def mark_tip_payout_paid(payout_id: int, request: Request):
+async def mark_tip_payout_paid(
+    payout_id: int, request: Request, return_start: str = Form(""),
+    return_end: str = Form(""), return_payment: str = Form(""), return_status: str = Form(""),
+):
     user_id = request.session.get("user_id")
     organization_id = get_current_organization_id(request)
     if not user_id or organization_id is None:
@@ -1614,7 +1674,7 @@ async def mark_tip_payout_paid(payout_id: int, request: Request):
             submission.processed_at = datetime.now(timezone.utc)
             submission.processed_by_user_id = user_id
         session.commit()
-    return RedirectResponse(f"/poynt/tip-submissions?{urlencode({'store_id': redirect_store_id})}", status_code=303)
+    return _tip_report_redirect(redirect_store_id, return_start, return_end, return_payment, return_status)
 
 
 @router.get("/poynt/tip-settings", response_class=HTMLResponse)
@@ -1717,7 +1777,10 @@ async def save_tip_store_settings(
 
 
 @router.post("/poynt/tip-submissions/{submission_id}/reject")
-async def reject_new_tip_submission(submission_id: int, request: Request):
+async def reject_new_tip_submission(
+    submission_id: int, request: Request, return_start: str = Form(""),
+    return_end: str = Form(""), return_payment: str = Form(""), return_status: str = Form(""),
+):
     user_id = request.session.get("user_id")
     organization_id = get_current_organization_id(request)
     if not user_id or organization_id is None:
@@ -1749,7 +1812,7 @@ async def reject_new_tip_submission(submission_id: int, request: Request):
         submission.processed_at = datetime.now(timezone.utc)
         submission.processed_by_user_id = user_id
         session.commit()
-    return RedirectResponse(f"/poynt/tip-submissions?{urlencode({'store_id': redirect_store_id})}", status_code=303)
+    return _tip_report_redirect(redirect_store_id, return_start, return_end, return_payment, return_status)
 
 
 @router.post("/poynt/tip-submissions")
