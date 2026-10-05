@@ -23,7 +23,7 @@ from alembic.operations import Operations
 from database import Base
 from models import User, Organization, OrganizationMember, OrganizationStore, PoyntConnection
 from live_dashboard_models import DashboardOrder, DashboardNotification, DashboardSync, DashboardDay
-from live_dashboard_metrics import summarize, money, instant, order_store, categories
+from live_dashboard_metrics import summarize, money, instant, order_store, categories, store_details
 from live_dashboard_service import save_order, acquire, release, process_organization
 from routers import live_dashboard as routes
 from store_time import local_day_bounds, utc_now
@@ -46,6 +46,16 @@ def store(zone="America/Phoenix"):
 
 
 class MetricsTests(unittest.TestCase):
+    def test_store_feed_caps_latest_orders_and_sku_counts_only_completed_sales(self):
+        now=datetime(2026,10,5,20,tzinfo=UTC)
+        orders=[sale(now-timedelta(minutes=i),order_id=str(i)) for i in range(25)]
+        orders.append(sale(now,order_id="open",statuses={"transactionStatusSummary":"OPEN"},items=[{"sku":"BAR-CUSTOM","quantity":100}]))
+        orders.append(sale(now-timedelta(days=1),order_id="old"))
+        result=store_details(orders,now-timedelta(hours=13),now+timedelta(hours=11),now)
+        self.assertEqual(len(result["latest_orders"]),20)
+        self.assertEqual(result["latest_orders"][0]["id"],"open")
+        self.assertEqual(result["sku_counts"][0]["quantity"],25)
+
     def test_item_count_uses_quantities_and_excludes_returns_and_other_days(self):
         now=datetime(2026,10,5,20,tzinfo=UTC)
         order=sale(now,items=[{"quantity":3,"status":"FULFILLED"},
@@ -194,6 +204,23 @@ class DatabaseAndRoutesTests(unittest.TestCase):
         self.client.close();self.env.stop()
         for p in self.patches:p.stop()
         self.engine.dispose()
+
+    def test_single_store_page_and_data_enforce_organization_scope(self):
+        self.assertEqual(self.client.get("/dashboard/stores/1").status_code,401)
+        self.client.get("/test-login")
+        self.assertEqual(self.client.get("/dashboard/stores/2").status_code,404)
+        self.assertEqual(self.client.get("/dashboard/data?store_id=2").status_code,404)
+        response=self.client.get("/dashboard/stores/1")
+        self.assertEqual(response.status_code,200)
+        self.assertIn('data-store-id="1"',response.text)
+        with self.factory() as session:
+            o=sale(utc_now(),orderNumber="42",items=[{"name":"Chocolate bar","sku":"BAR-CUSTOM","quantity":2,"status":"FULFILLED"}])
+            save_order(session,1,"business",o);session.commit()
+        data=self.client.get("/dashboard/data?store_id=1").json()
+        self.assertEqual(len(data["stores"]),1)
+        self.assertEqual(data["stores"][0]["latest_orders"][0]["number"],"42")
+        self.assertEqual(data["stores"][0]["latest_orders"][0]["items"][0]["name"],"Chocolate bar")
+        self.assertNotIn("latest_orders",self.client.get("/dashboard/data").json()["stores"][0])
 
     def test_unauthenticated_and_tenant_scoping(self):
         self.assertEqual(self.client.get("/dashboard/data").status_code,401)

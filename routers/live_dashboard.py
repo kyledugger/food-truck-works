@@ -8,6 +8,7 @@ from zoneinfo import ZoneInfo
 from datetime import timedelta, date as calendar_date
 from fastapi import APIRouter, Request, HTTPException, Query
 from fastapi.responses import JSONResponse
+from fastapi.templating import Jinja2Templates
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from database import SessionLocal
@@ -15,13 +16,14 @@ from models import User, PoyntConnection, OrganizationStore
 from organization_context import get_current_organization_id
 from permissions import get_organization_role, role_can_manage_integrations
 from live_dashboard_models import DashboardOrder, DashboardSync, DashboardNotification, DashboardDay
-from live_dashboard_metrics import summarize
+from live_dashboard_metrics import summarize, store_details
 from live_dashboard_service import ensure_sync, acquire, owned_state, release
 from poynt.client import PoyntClient, PoyntAPIError
 from poynt.connection import get_poynt_credentials
 from store_time import local_day_bounds, utc_iso, utc_now
 
 router = APIRouter()
+templates = Jinja2Templates(directory="templates")
 
 
 def authorized(request):
@@ -39,8 +41,20 @@ def authorized(request):
     return organization_id, role
 
 
+@router.get("/dashboard/stores/{store_id}")
+def store_dashboard(request: Request, store_id: int):
+    organization_id, _ = authorized(request)
+    with SessionLocal() as session:
+        store = session.scalar(select(OrganizationStore).where(OrganizationStore.id == store_id,
+            OrganizationStore.organization_id == organization_id, OrganizationStore.is_active.is_(True)))
+        if store is None:
+            raise HTTPException(404, "Store not found.")
+        return templates.TemplateResponse(request=request, name="store_dashboard.html",
+            context={"store": store}, headers={"Cache-Control": "no-store"})
+
+
 @router.get("/dashboard/data")
-def dashboard_data(request: Request, report_date: str = Query("today", alias="date")):
+def dashboard_data(request: Request, report_date: str = Query("today", alias="date"), store_id: int | None = Query(None)):
     organization_id, role = authorized(request)
     now = utc_now()
     try:
@@ -59,6 +73,10 @@ def dashboard_data(request: Request, report_date: str = Query("today", alias="da
             session.commit()
             stores = session.scalars(select(OrganizationStore).where(OrganizationStore.organization_id == organization_id,
                 OrganizationStore.is_active.is_(True)).order_by(OrganizationStore.id)).all()
+            if store_id is not None:
+                stores = [store for store in stores if store.id == store_id]
+                if not stores:
+                    raise HTTPException(404, "Store not found.")
             results = []
             live_pending = False
             history_pending = False
@@ -115,6 +133,8 @@ def dashboard_data(request: Request, report_date: str = Query("today", alias="da
                     DashboardOrder.created_at < end)).all()
                 payloads = [row.payload for row in orders]
                 result = summarize(store, payloads, end - timedelta(microseconds=1) if historical else now, historical=historical)
+                if store_id is not None:
+                    result.update(store_details(payloads, start, end, now))
                 result.update(loading=loading, stale=stale, load_error=load_error)
                 results.append(result)
             if live_pending and state.next_reconcile_at > now:

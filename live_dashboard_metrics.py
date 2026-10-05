@@ -86,6 +86,36 @@ def categories(order, sales):
     return result
 
 
+def store_details(orders, start, end, now):
+    """Today's incoming orders, plus sold SKU quantities; no customer/payment fields."""
+    rows = []
+    skus = defaultdict(Decimal)
+    for order in orders:
+        try:
+            at = instant(order.get("createdAt"))
+        except (ValueError, TypeError):
+            continue
+        if not start <= at < end or at > now:
+            continue
+        items = [{"name": str(item.get("name") or ""),
+                  "sku": fix_sku(str(item.get("sku") or "")),
+                  "quantity": float(number(item.get("quantity"))),
+                  "status": str(item.get("status") or "")} for item in order.get("items") or []]
+        currency = (order.get("amounts") or {}).get("currency") or "USD"
+        sales, tips = money(order)
+        rows.append({"id": str(order.get("id") or ""), "number": str(order.get("orderNumber") or order.get("id") or ""),
+                     "created_at": utc_iso(at), "sales_cents": sales, "tips_cents": tips, "currency": currency,
+                     "status": str((order.get("statuses") or {}).get("transactionStatusSummary") or
+                                   (order.get("statuses") or {}).get("status") or "OPEN"), "items": items})
+        if completed(order) and currency == "USD":
+            for item in items:
+                if item["status"] != "RETURNED":
+                    skus[item["sku"] or "Unknown SKU"] += number(item["quantity"])
+    rows.sort(key=lambda row: (row["created_at"], row["id"]), reverse=True)
+    return {"latest_orders": rows[:20], "sku_counts": [{"sku": sku, "quantity": float(qty)}
+            for sku, qty in sorted(skus.items(), key=lambda pair: (-pair[1], pair[0]))]}
+
+
 def summarize(store, orders, now, historical=False):
     zone = ZoneInfo(store.timezone_name)
     day = now.astimezone(zone).date()

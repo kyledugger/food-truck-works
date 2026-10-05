@@ -91,9 +91,9 @@ def save_order(session, organization_id, business_id, order):
         row = DashboardOrder(organization_id=organization_id, business_id=business_id, order_id=order_id)
         session.add(row)
     # Persist reporting fields only, excluding customer/contact/payment details.
-    payload = {key: order.get(key) for key in ("id", "createdAt", "updatedAt", "amounts", "statuses")}
+    payload = {key: order.get(key) for key in ("id", "orderNumber", "createdAt", "updatedAt", "amounts", "statuses")}
     payload["items"] = [{key: item.get(key) for key in
-        ("sku", "quantity", "unitPrice", "discount", "status")} for item in order.get("items") or []]
+        ("name", "sku", "quantity", "unitPrice", "discount", "status")} for item in order.get("items") or []]
     row.payload = payload
     row.store_id = order_store(order)
     row.created_at = at

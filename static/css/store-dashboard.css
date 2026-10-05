@@ -1,0 +1,20 @@
+.store-screen{padding:1.25rem;min-height:100dvh;display:flex;flex-direction:column;gap:1rem}
+.store-toolbar,.store-toolbar-actions{display:flex;justify-content:space-between;align-items:center;gap:.75rem;flex-wrap:wrap}
+.store-layout{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(320px,1fr);gap:1rem;flex:1;min-height:0}
+.store-orders{border:1px solid #dbe4e8;border-radius:14px;padding:1rem;overflow:auto}
+.store-screen .live-store-grid{display:block;min-width:0;overflow:auto}
+.store-screen .live-store{padding:1rem}.store-screen .live-kpis{margin:.8rem 0}.store-screen .live-now{padding:.7rem}
+.store-screen .live-store details{margin-top:.65rem}.store-screen .live-chart{height:170px;margin:.5rem 0}.store-screen .live-chart-small{height:95px}
+.store-screen .live-category{margin-top:.5rem}.store-screen .live-category td,.store-screen .live-category th{padding:.35rem .25rem}
+.store-footnote{font-size:.7rem;color:#687980}.store-order{padding:.75rem 0;border-bottom:1px solid #dbe4e8}.store-order-head{display:flex;justify-content:space-between;gap:.5rem;align-items:center;flex-wrap:wrap}
+.store-order table{width:100%;font-size:.8rem;margin-top:.4rem}.store-order td{padding:.2rem;overflow-wrap:anywhere}.store-order td:first-child{width:48%}.store-order td:nth-child(2){text-align:right}.store-order small{color:#687980}
+#store-skus{border:0;border-radius:14px;padding:1.25rem;width:min(720px,calc(100vw - 2rem));max-height:85dvh;overflow:auto;margin:auto}#store-skus::backdrop{background:#142c4280}.store-modal-head{display:flex;justify-content:space-between;align-items:center;gap:1rem;margin-bottom:.75rem}.store-sku-chart{position:relative;min-height:160px}
+@media(min-width:1000px) and (min-height:650px){.store-screen{height:100dvh}.store-layout{overflow:hidden}}
+@media(max-width:800px){.store-layout{grid-template-columns:1fr}.store-toolbar-actions{width:100%}.store-orders{max-height:65dvh}}
+@media(min-width:1000px){
+.store-screen .live-store-header h2{display:none}.store-screen .live-store-date{margin-top:0}
+.store-chart-grid{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:1rem}
+.store-screen .live-chart-title{margin-top:.5rem;font-size:.85rem}.store-screen .live-chart{height:145px}
+.store-screen .live-now strong{font-size:1.15rem}.store-screen .live-store details>button{justify-self:start;margin-top:.5rem}
+}
+.store-order th{padding:.2rem;text-align:left}.store-order th:nth-child(2){text-align:right}

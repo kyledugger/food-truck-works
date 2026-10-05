@@ -7,6 +7,8 @@
   const enable = document.getElementById('enable-live-webhook');
   const dateInput=document.getElementById('live-date'),todayButton=document.getElementById('live-today'),previousButton=document.getElementById('live-previous'),nextButton=document.getElementById('live-next');
   let selection=new URL(location.href).searchParams.get('date')||'today', lastData=null,controller=null;
+  const storeView=grid.dataset.storeId;
+  if(storeView)selection='today';
   const cards = new Map();
   let timer, inFlight = false;
   const money = cents => new Intl.NumberFormat('en-US', {style:'currency',currency:'USD'}).format(cents/100);
@@ -22,7 +24,7 @@
     const root=el('article','live-store');
     const header=el('div','live-store-header'), info=el('div');
     const name=el('h2'), date=el('p','live-store-date'), badge=el('span','tag is-light');
-    info.append(name,date);header.append(info,badge);root.append(header);
+    const storeLink=el('a');storeLink.href='/dashboard/stores/'+id;storeLink.append(name);info.append(storeLink,date);header.append(info,badge);root.append(header);
     const message=el('p','live-empty');root.append(message);
     const body=el('div'),kpis=el('div','live-kpis');
     const fields={},labels={};
@@ -40,6 +42,8 @@
     const activityWrap=el('div','live-chart live-chart-small'),activity=el('canvas');activity.setAttribute('role','img');activityWrap.append(activity);
     const activityTitle=el('p','live-chart-title','Orders per 5 minutes · past hour');
     details.append(activityTitle,activityWrap);
+    if(storeView){const charts=el('div','store-chart-grid'),hourlyPanel=el('div'),activityPanel=el('div');hourlyPanel.append(details.querySelector('.live-chart-title'),hourlyWrap);activityPanel.append(activityTitle,activityWrap);charts.append(hourlyPanel,activityPanel);details.append(charts);}
+    if(storeView){const products=el('button','button is-small is-light','Category totals · View product SKU counts');products.type='button';products.addEventListener('click',()=>document.dispatchEvent(new CustomEvent('store-products')));details.append(products);}
     const table=el('table','live-category'),head=el('thead'),tr=el('tr');
     ['Category','Qty','Sales','Share'].forEach(label=>tr.append(el('th','',label)));head.append(tr);
     const rows=el('tbody');table.append(head,rows);details.append(table);body.append(details);root.append(body);grid.append(root);
@@ -78,8 +82,8 @@
       c.now.hidden=!!s.historical;c.activityWrap.hidden=!!s.historical;c.activityTitle.hidden=!!s.historical;
       if(s.historical&&c.charts.activity){c.charts.activity.destroy();delete c.charts.activity;}
       if(s.loading??data.initializing){c.body.hidden=true;c.message.hidden=false;c.message.textContent='Collecting orders for '+s.date+'…';continue;}
-      if(!c.initialized){c.details.open=!!s.order_count;c.initialized=true;}
-      if(!s.order_count){c.message.hidden=false;c.message.textContent=s.currency_warning?'No USD sales '+when+'. Other currencies are excluded.':'No sales '+when+'.';c.body.hidden=!s.recent_orders&&!s.currency_warning;}
+      if(!c.initialized){c.details.open=!!s.order_count||!!storeView;c.initialized=true;}
+      if(!s.order_count){c.message.hidden=false;c.message.textContent=s.currency_warning?'No USD sales '+when+'. Other currencies are excluded.':'No sales '+when+'.';c.body.hidden=!storeView&&!s.recent_orders&&!s.currency_warning;}
       c.fields.sales.textContent=money(s.sales_cents);c.fields.tips.textContent=money(s.tips_cents);c.fields.orders.textContent=s.order_count;c.fields.items.textContent=new Intl.NumberFormat('en-US').format(s.item_count||0);
       if(!s.historical){c.recent.textContent=s.recent_orders+' orders · '+money(s.recent_sales_cents);
         c.pace.textContent=s.pace+(s.pace_ratio!==null?' · '+s.pace_ratio.toFixed(1)+'× recent average':'');c.last.textContent=ago(s.last_sale_at,data.generated_at);}
@@ -104,6 +108,7 @@
     refreshed.textContent=(data.historical_view?'Sales loaded ':'Updated ')+(loaded?new Date(loaded).toLocaleTimeString():'—');
     if(enable)enable.hidden=!!data.historical_view||!data.can_enable_webhook||data.webhook_registered;
     if(data.polling_needed===false)clearInterval(timer);
+    if(storeView)document.dispatchEvent(new CustomEvent('store-data',{detail:data}));
   }
   async function refresh() {
     if(inFlight||document.hidden)return;
@@ -111,7 +116,7 @@
     const requestedSelection=selection;
     controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),15000);
     try {
-      const response=await fetch('/dashboard/data?'+new URLSearchParams({date:requestedSelection}),{credentials:'same-origin',cache:'no-store',signal:controller.signal});
+      const response=await fetch('/dashboard/data?'+new URLSearchParams(storeView?{date:'today',store_id:storeView}:{date:requestedSelection}),{credentials:'same-origin',cache:'no-store',signal:controller.signal});
       if(response.status===401){location.assign('/login');return;}
       const data=await response.json();if(!response.ok)throw new Error(data.detail||'Dashboard could not refresh.');if(requestedSelection===selection)render(data);
     }catch(error){if(error.name!=='AbortError' || requestedSelection===selection){status.hidden=false;document.getElementById('live-mode')?.classList.remove('live-mode-active');status.textContent=error.message+' Displayed totals may be out of date.';status.className='notification is-warning is-light';}}

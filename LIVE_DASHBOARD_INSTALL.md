@@ -193,7 +193,7 @@ in your deployment. Complete a test sale, verify one order appears, change
 the tip, and verify tips update without increasing the order count. Check
 sales against the POS's total including tax (excluding tips) and verify a second store stays separate.
 
-Validation completed for this patch: 36 dashboard tests, 4 existing store
+Validation completed for this patch: 38 dashboard tests, 4 existing store
 time tests, 6 existing tip report tests, and 9 existing integration tests
 passed. The existing integration migration test was excluded because it
 resolves its migration relative to the parent of the project directory;
@@ -210,3 +210,27 @@ right-aligned status in one toolbar, shortened Sales/Average sale/Hourly Sales l
 and clarified chart gridlines. The shared base template forces Bulma light mode and
 all logo templates use their normal artwork, regardless of device theme.
 No additional database migration is needed.
+
+## Live store display
+
+Click a store name on the organization dashboard to open `/dashboard/stores/{id}`.
+This view always shows today in that store's timezone and uses the same 15-second
+refresh and webhook-backed cache. Use Full screen for an on-location display.
+The newest 20 orders appear first, including open, completed, refunded and cancelled
+orders; the day totals continue counting completed USD sales. The feed includes
+order number/time/amount/tips/status and item name/quantity/SKU/status. Customer,
+contact, payment details and free-text notes are not copied into the dashboard cache.
+Item names and order numbers populate on the next ordinary sync (normally within
+five minutes); older cache entries fall back to SKU/order ID until refreshed.
+Category totals' product button opens a modal with today's SKU quantity chart/table,
+excluding returned items. Escape or Close dismisses it. On desktop the dashboard
+fits the viewport, with internal scrolling for long order/category lists; smaller
+screens stack the panels. Processing-time metrics are deferred; order creation
+intervals are available but do not represent measured kitchen/preparation duration.
+
+Access follows existing organization dashboard membership permissions; this is not
+yet a separate restricted kiosk session or role. Both page and data endpoints check
+store ownership and active status. No additional migration or webhook registration
+is needed. Browser checks cover the feed, refresh, SKU modal, Escape dismissal,
+desktop viewport fit, mobile layout and empty stores. 38 dashboard tests pass,
+including tenant boundaries, feed limits, item fields and SKU eligibility.
