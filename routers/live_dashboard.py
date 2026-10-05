@@ -21,6 +21,7 @@ from live_dashboard_service import ensure_sync, acquire, owned_state, release
 from poynt.client import PoyntClient, PoyntAPIError
 from poynt.connection import get_poynt_credentials
 from store_time import local_day_bounds, utc_iso, utc_now
+from store_display_access import display_assignment, valid_display_session
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
@@ -31,7 +32,8 @@ def authorized(request):
     if not user_id:
         raise HTTPException(401, "Sign in to view the dashboard.")
     with SessionLocal() as session:
-        if session.get(User, user_id) is None:
+        user = session.get(User, user_id)
+        if user is None or not user.is_active:
             request.session.clear()
             raise HTTPException(401, "Sign in to view the dashboard.")
     organization_id = get_current_organization_id(request)
@@ -41,25 +43,35 @@ def authorized(request):
     return organization_id, role
 
 
-@router.get("/dashboard/stores/{store_id}")
-def store_dashboard(request: Request, store_id: int):
+def sales_authorized(request, store_id=None):
     organization_id, role = authorized(request)
+    with SessionLocal() as session:
+        user = session.get(User, request.session["user_id"])
+        if user.account_type == "store_display":
+            display = display_assignment(session, user.id)
+            if not display or not valid_display_session(request, *display) or store_id != display[1].id:
+                raise HTTPException(403, "Store Display access is limited to the assigned store.")
+            return organization_id, "store_display"
     if not role_can_view_dashboard_sales(role):
         raise HTTPException(403, "Your role cannot view dashboard sales.")
+    return organization_id, role
+
+
+@router.get("/dashboard/stores/{store_id}")
+def store_dashboard(request: Request, store_id: int):
+    organization_id, role = sales_authorized(request, store_id)
     with SessionLocal() as session:
         store = session.scalar(select(OrganizationStore).where(OrganizationStore.id == store_id,
             OrganizationStore.organization_id == organization_id, OrganizationStore.is_active.is_(True)))
         if store is None:
             raise HTTPException(404, "Store not found.")
         return templates.TemplateResponse(request=request, name="store_dashboard.html",
-            context={"store": store}, headers={"Cache-Control": "no-store"})
+            context={"store": store, "is_store_display": role == "store_display"}, headers={"Cache-Control": "no-store"})
 
 
 @router.get("/dashboard/data")
 def dashboard_data(request: Request, report_date: str = Query("today", alias="date"), store_id: int | None = Query(None)):
-    organization_id, role = authorized(request)
-    if not role_can_view_dashboard_sales(role):
-        raise HTTPException(403, "Your role cannot view dashboard sales.")
+    organization_id, role = sales_authorized(request, store_id)
     if store_id is not None and report_date != "today":
         raise HTTPException(400, "The live store dashboard only supports Today.")
     now = utc_now()

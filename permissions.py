@@ -13,6 +13,12 @@ class OrganizationRole(StrEnum):
     MEMBER = "member"
 
 
+class StoreRole(StrEnum):
+    STORE_DISPLAY = "store_display"
+    STORE_MANAGER = "store_manager"
+    STAFF = "staff"
+
+
 MANAGE_ORGANIZATION_ROLES = {
     OrganizationRole.OWNER,
     OrganizationRole.MANAGER,

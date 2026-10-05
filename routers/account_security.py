@@ -59,7 +59,7 @@ def _send_password_reset_if_eligible(email: str) -> None:
         user = session.execute(
             select(User).where(User.email == email)
         ).scalar_one_or_none()
-        if user is None or not user.is_active:
+        if user is None or not user.is_active or user.account_type == "store_display":
             return
         if token_was_recently_created(session, user.id, PASSWORD_RESET):
             return
@@ -79,7 +79,7 @@ def _send_verification_if_eligible(email: str) -> None:
         user = session.execute(
             select(User).where(User.email == email)
         ).scalar_one_or_none()
-        if user is None or not user.is_active or user.email_verified_at is not None:
+        if user is None or not user.is_active or user.account_type == "store_display" or user.email_verified_at is not None:
             return
         if token_was_recently_created(session, user.id, EMAIL_VERIFICATION):
             return
@@ -189,7 +189,7 @@ async def reset_password(
             )
 
         user = session.get(User, security_token.user_id)
-        if user is None or not user.is_active:
+        if user is None or not user.is_active or user.account_type == "store_display":
             return templates.TemplateResponse(
                 request=request,
                 name="message.html",
@@ -246,7 +246,7 @@ async def verify_email(request: Request, token: str):
                 status_code=400,
             )
         user = session.get(User, security_token.user_id)
-        if user is None or not user.is_active:
+        if user is None or not user.is_active or user.account_type == "store_display":
             return RedirectResponse("/login", status_code=303)
         user.email_verified_at = user.email_verified_at or datetime.now(timezone.utc)
         consume_security_token(security_token)

@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Store Displays - Food Truck Works{% endblock %}
+{% block content %}
+<section class="section"><div class="container" style="max-width:850px">
+{% include "_app_brand.html" %}
+<h1 class="title">Store Display logins</h1>
+<p class="subtitle is-6">Dedicated accounts for on-location screens. Each can see only its assigned store's Today dashboard.</p>
+<p class="mb-4">Use a separate login email for each display account. Managers set and reset its password here; no verification or reset email is sent. These accounts cannot access employee, payroll, reporting, or organization settings.</p>
+<form class="box" method="post" action="/settings/store-displays">
+  <h2 class="title is-5">Create a display login</h2><input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <div class="field"><label class="label" for="display-label">Display name</label><input id="display-label" class="input" name="label" required maxlength="100" placeholder="Truck counter screen"></div>
+  <div class="field"><label class="label" for="display-email">Login email</label><input id="display-email" class="input" type="email" name="email" required maxlength="320" autocomplete="off"><p class="help">Use a new address, separate from any personal account.</p></div>
+  <div class="field"><label class="label" for="display-store">Assigned store</label><div class="select is-fullwidth"><select id="display-store" name="store_id" required><option value="" disabled selected>Choose an active store</option>{% for store in stores %}{% if store.is_active %}<option value="{{ store.id }}">{{ store.display_name or store.poynt_name }}</option>{% endif %}{% endfor %}</select></div></div>
+  <div class="field"><label class="label" for="display-password">Password</label><input id="display-password" class="input" type="password" name="password" required minlength="10" maxlength="128" autocomplete="new-password"></div>
+  <div class="field"><label class="label" for="display-confirm">Confirm password</label><input id="display-confirm" class="input" type="password" name="confirm_password" required minlength="10" maxlength="128" autocomplete="new-password"></div>
+  <button class="button is-primary">Create display login</button>
+</form>
+{% for assignment, user, current_store in accounts %}
+<form class="box" method="post" action="/settings/store-displays/{{ assignment.id }}">
+  <h2 class="title is-5">{{ user.display_name }} <span class="tag {{ 'is-success' if assignment.is_active and user.is_active and current_store.is_active else 'is-warning' }}">{{ 'Enabled' if assignment.is_active and user.is_active and current_store.is_active else 'Disabled or store inactive' }}</span></h2>
+  <p class="mb-3">{{ user.email }}</p><input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <div class="field"><label class="label" for="store-{{ assignment.id }}">Assigned store</label><div class="select is-fullwidth"><select id="store-{{ assignment.id }}" name="store_id" required>{% for store in stores %}<option value="{{ store.id }}" {% if store.id == assignment.organization_store_id %}selected{% endif %}>{{ store.display_name or store.poynt_name }}{% if not store.is_active %} (inactive){% endif %}</option>{% endfor %}</select></div></div>
+  <div class="field"><label class="checkbox"><input name="is_active" type="checkbox" value="true" {% if assignment.is_active and user.is_active %}checked{% endif %}> Login enabled</label></div>
+  <details class="mb-3"><summary>Reset password</summary><div class="field mt-3"><label class="label" for="password-{{ assignment.id }}">New password (optional)</label><input id="password-{{ assignment.id }}" class="input" type="password" name="password" minlength="10" maxlength="128" autocomplete="new-password"></div><div class="field"><label class="label" for="confirm-{{ assignment.id }}">Confirm new password</label><input id="confirm-{{ assignment.id }}" class="input" type="password" name="confirm_password" minlength="10" maxlength="128" autocomplete="new-password"></div></details>
+  <p class="help mb-3">Saving ends existing display sessions. Sign in again on the display afterward.</p>
+  <button class="button is-light">Save display login</button>
+</form>
+{% else %}<p class="mb-4">No display logins yet.</p>{% endfor %}
+<a href="/settings/stores">Back to Store Settings</a> · <a href="/dashboard">Dashboard</a>
+</div></section>
+{% endblock %}

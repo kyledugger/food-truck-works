@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Boolean, CheckConstraint, DateTime, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import Boolean, CheckConstraint, DateTime, ForeignKey, Integer, String, UniqueConstraint, Index, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from instant_type import UTCInstant
@@ -15,8 +15,10 @@ logger = logging.getLogger(__name__)
 
 class User(Base):
     __tablename__ = "users"
+    __table_args__ = (CheckConstraint("account_type IN ('person', 'store_display')", name="ck_user_account_type"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    account_type: Mapped[str] = mapped_column(String(30), nullable=False, default="person", server_default="person")
 
     first_name: Mapped[str | None] = mapped_column(
         String(100),
@@ -181,6 +183,24 @@ class OrganizationMember(Base):
     user: Mapped["User"] = relationship(
         back_populates="organization_memberships"
     )
+
+class StoreAssignment(Base):
+    """Store-scoped authority, independent of organization membership role."""
+    __tablename__ = "store_assignments"
+    __table_args__ = (
+        UniqueConstraint("organization_member_id", "organization_store_id", name="uq_store_assignment_member_store"),
+        CheckConstraint("role IN ('store_display', 'store_manager', 'staff')", name="ck_store_assignment_role"),
+        Index("uq_store_display_member", "organization_member_id", unique=True,
+              postgresql_where=text("role = 'store_display'"), sqlite_where=text("role = 'store_display'")),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    organization_member_id: Mapped[int] = mapped_column(ForeignKey("organization_members.id", ondelete="CASCADE"), nullable=False, index=True)
+    organization_store_id: Mapped[int] = mapped_column(ForeignKey("organization_stores.id", ondelete="CASCADE"), nullable=False, index=True)
+    role: Mapped[str] = mapped_column(String(30), nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default="true")
+    session_version: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    created_at: Mapped[datetime] = mapped_column(UTCInstant(), nullable=False, default=utc_now)
+
 
 class Employee(Base):
     __tablename__ = "employees"

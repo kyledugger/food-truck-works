@@ -15,6 +15,7 @@ from database import SessionLocal
 from models import User, Organization, OrganizationMember
 from email_service import EmailDeliveryError, send_verification_email
 from security_logging import log_security_event
+from store_display_access import display_assignment
 from security_tokens import (
     EMAIL_VERIFICATION,
     EMAIL_VERIFICATION_LIFETIME,
@@ -433,6 +434,11 @@ async def login(
                 status_code=403
             )
 
+        display = display_assignment(session, user.id) if user.account_type == "store_display" else None
+        if user.account_type == "store_display" and display is None:
+            return templates.TemplateResponse(request=request, name="login.html",
+                context={"error": "This display is disabled or its store is unavailable. Contact a manager."}, status_code=403)
+
         if password_needs_rehash(user.password_hash):
             user.password_hash = hash_password(password)
             session.commit()
@@ -446,7 +452,13 @@ async def login(
         request.session.clear()
         request.session["user_id"] = user.id
 
-        if len(memberships) == 1:
+        if display:
+            assignment, store = display
+            request.session["organization_id"] = store.organization_id
+            request.session["store_assignment_id"] = assignment.id
+            request.session["store_session_version"] = assignment.session_version
+            destination = f"/dashboard/stores/{store.id}"
+        elif len(memberships) == 1:
             request.session["organization_id"] = memberships[0].organization_id
             destination = "/dashboard"
         else:

@@ -4,10 +4,9 @@ This patch replaces the dashboard's connection notice with a live overview of
 each active configured Poynt store. Existing navigation, orders reporting,
 payroll and Square integration code are preserved.
 
-The latest update makes all dashboard sales figures include tax, with tips
-still separate. If the date-picker migration `c03e5d9182a7` is already applied,
-this calculation/label update requires no additional migration. Replace the
-included files and restart/deploy to recalculate from the existing order cache.
+The latest update adds dedicated Store Display accounts and a reusable store-assignment
+model. **Apply the new migration `d14f6b92a803` before starting this version.** It follows
+`c03e5d9182a7`. Existing users receive account type `person`, preserving their roles.
 
 ## Install
 
@@ -18,8 +17,9 @@ included files and restart/deploy to recalculate from the existing order cache.
    migration. This package does not run a migration for you. The live revision
    `b92d7a10e643` follows `a61f0d8c3b92` (the Square integration foundation).
    The permanent date picker adds `c03e5d9182a7` after `b92d7a10e643`.
-   If you installed the first dashboard patch, `upgrade head` applies only
-   this additional historical-date migration.
+   The Store Display migration `d14f6b92a803` follows `c03e5d9182a7`.
+   If all earlier dashboard migrations are applied, `upgrade head` adds only
+   the account-type field and store-assignment table.
 3. Apply the migration in each environment you intend to use:
 
    ```powershell
@@ -193,7 +193,7 @@ in your deployment. Complete a test sale, verify one order appears, change
 the tip, and verify tips update without increasing the order count. Check
 sales against the POS's total including tax (excluding tips) and verify a second store stays separate.
 
-Validation completed for this patch: 40 dashboard tests, 4 existing store
+Validation completed for this patch: 46 dashboard tests, 4 existing store
 time tests, 6 existing tip report tests, and 9 existing integration tests
 passed. The existing integration migration test was excluded because it
 resolves its migration relative to the parent of the project directory;
@@ -232,7 +232,7 @@ Access is limited to owners and managers; this is not
 yet a separate restricted kiosk session or role. Both page and data endpoints check
 store ownership and active status. No additional migration or webhook registration
 is needed. Browser checks cover the feed, refresh, SKU modal, Escape dismissal,
-desktop viewport fit, mobile layout and empty stores. 40 dashboard tests pass,
+desktop viewport fit, mobile layout and empty stores. 46 dashboard tests pass,
 including tenant boundaries, feed limits, item fields and SKU eligibility.
 
 ## Dashboard role restrictions
@@ -250,3 +250,48 @@ A future store login needs a verified store assignment plus an explicit all-stor
 permission before it can receive access. No placeholder role is granted access.
 This change does not alter access to the separate Orders Report or payroll pages.
 No additional database migration is needed.
+
+## Set up Store Display accounts
+
+1. Apply `alembic upgrade head` against the intended database, then restart/deploy.
+2. Sign in as an owner or organization manager. Open **Store Settings → Store Display
+   logins** (also available directly at `/settings/store-displays`).
+3. Enter a display name, a new login email, one active store, and a password of
+   10–128 characters. The email is a login identifier; no verification or reset
+   email is sent for this manager-provisioned account. Existing personal accounts
+   cannot be converted or reused. Create another account for another screen if needed.
+4. Sign in on the display using the normal login page. It opens the assigned store's
+   Today dashboard. It cannot browse all stores, historical dates, Orders Report,
+   payroll, employee pages, integrations, organization selection, or account settings.
+5. Managers can disable, re-enable, reset the password, or reassign the store on the
+   same settings page. Saving increments the assignment's session version: old
+   display sessions are invalid on their next request, normally the next 15-second
+   refresh. Sign in again after saving. Inactive stores cannot receive enabled logins.
+
+Architecture: organization membership roles remain owner/manager/payroll/member.
+A dedicated display User has account type `store_display`, a member-level organization
+membership, and exactly one StoreAssignment with role `store_display`. The assignment
+model also defines `store_manager` and `staff` for future person-to-store permissions;
+these roles have no additional powers or management UI in this release. Personal
+accounts may eventually have multiple store assignments. Display assignments are
+limited to one, and access fails closed if membership/assignment scope is inconsistent.
+A signed session carries assignment ID and version. A shared middleware guard restricts
+display accounts across the entire app, and dashboard endpoints independently check
+the assignment. Manager mutations require a session CSRF token. Self-service email
+verification/password-reset requests and token consumption exclude display accounts.
+
+Validation: 46 dashboard/access/migration tests pass, including manager provisioning,
+CSRF, cross-organization and cross-store isolation, login redirects, forbidden routes,
+Today-only access, disabling, reset/reassignment session invalidation, inactive stores,
+accidental organization-role elevation, and blocked self-service password reset.
+Three existing password-security tests pass. Desktop/mobile browser checks pass for
+settings forms, reset disclosure, display dashboard, SKU modal, revoked access, and
+existing organization dashboard behavior. Application import and template/syntax
+checks pass. The separate pre-existing account-security suite has three failures:
+two methods are in a class without a database fixture, and one encounters SQLite's
+naive timestamp conversion. Those tests are unchanged.
+
+Migration upgrade/downgrade was exercised only against an isolated SQLite database.
+Production PostgreSQL was not modified. Downgrade refuses while Store Display accounts
+exist, preventing them from silently becoming personal accounts after account_type
+is removed. Retire/remove those accounts before any deliberate rollback migration.

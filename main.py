@@ -32,6 +32,7 @@ from routers.stores import router as stores_router
 from routers.integrations import router as integrations_router
 from routers.live_dashboard import router as live_dashboard_router
 from live_dashboard_service import dashboard_worker
+from store_display_access import StoreDisplayMiddleware
 
 dotenv_file = os.getenv("DOTENV_FILE", ".env")
 load_dotenv(dotenv_file)
@@ -90,6 +91,8 @@ app.include_router(integrations_router)
 app.include_router(live_dashboard_router)
 
 is_production = os.getenv("ENVIRONMENT") == "production"
+# SessionMiddleware is added last so signed sessions exist before this guard.
+app.add_middleware(StoreDisplayMiddleware)
 app.add_middleware(
     SessionMiddleware,
     secret_key=os.environ["SESSION_SECRET"],

@@ -22,6 +22,8 @@ templates = Jinja2Templates(directory="templates")
 # The application already registers the store router; include event routes here.
 from routers.events import router as events_router
 router.include_router(events_router)
+from routers.store_displays import router as store_displays_router
+router.include_router(store_displays_router)
 
 
 def _manager_org(request: Request) -> int:

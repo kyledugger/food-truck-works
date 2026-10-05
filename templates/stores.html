@@ -4,6 +4,7 @@
 <section class="section"><div class="container" style="max-width: 850px">
   {% include "_app_brand.html" %}
   <h1 class="title">Organization stores</h1>
+  <a href="/settings/store-displays" class="button is-light mb-4">Store Display logins</a>
   <p class="subtitle is-6">Choose a type and timezone for each Poynt store. Tip settings are saved separately for each store.</p>
   {% if not stores %}<div class="notification is-warning">Poynt returned no stores for this connection.</div>{% endif %}
   {% for store in stores %}

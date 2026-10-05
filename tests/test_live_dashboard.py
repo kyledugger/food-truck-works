@@ -21,7 +21,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from alembic.migration import MigrationContext
 from alembic.operations import Operations
 from database import Base
-from models import User, Organization, OrganizationMember, OrganizationStore, PoyntConnection
+from models import User, Organization, OrganizationMember, OrganizationStore, PoyntConnection, StoreAssignment
 from live_dashboard_models import DashboardOrder, DashboardNotification, DashboardSync, DashboardDay
 from live_dashboard_metrics import summarize, money, instant, order_store, categories, store_details
 from live_dashboard_service import save_order, acquire, release, process_organization
@@ -30,6 +30,9 @@ from store_time import local_day_bounds, utc_now
 from zoneinfo import ZoneInfo
 from jinja2 import Environment, FileSystemLoader
 from permissions import role_can_view_dashboard_sales
+from routers import store_displays, auth_routes
+from store_display_access import StoreDisplayMiddleware
+from routers import account_security
 
 UTC = timezone.utc
 
@@ -196,7 +199,8 @@ class DatabaseAndRoutesTests(unittest.TestCase):
         Base.metadata.create_all(self.engine)
         self.factory=sessionmaker(self.engine,autoflush=False)
         self.patches=[patch(name,self.factory) for name in ["routers.live_dashboard.SessionLocal","live_dashboard_service.SessionLocal",
-            "poynt.connection.SessionLocal","organization_context.SessionLocal","permissions.SessionLocal"]]
+            "poynt.connection.SessionLocal","organization_context.SessionLocal","permissions.SessionLocal",
+            "routers.store_displays.SessionLocal", "routers.auth_routes.SessionLocal", "store_display_access.SessionLocal"]]
         for p in self.patches:p.start()
         self.env=patch.dict(os.environ,{"POYNT_APP_ID":"app","POYNT_WEBHOOK_SECRET":"s"*40,"POYNT_WEBHOOK_URL":"https://example.test/webhooks/poynt/orders"});self.env.start()
         now=utc_now()
@@ -207,7 +211,8 @@ class DatabaseAndRoutesTests(unittest.TestCase):
                 OrganizationStore(organization_id=1,store_id="truck",poynt_name="Truck",timezone_name="America/Phoenix"),
                 OrganizationStore(organization_id=2,store_id="truck",poynt_name="Other",timezone_name="America/Phoenix"),
                 DashboardSync(organization_id=1,business_id="business",last_reconciled_at=now,next_reconcile_at=now+timedelta(minutes=5))]);s.commit()
-        app=FastAPI();app.add_middleware(SessionMiddleware,secret_key="test-secret");app.include_router(routes.router)
+        app=FastAPI();app.add_middleware(StoreDisplayMiddleware);app.add_middleware(SessionMiddleware,secret_key="test-secret");app.include_router(routes.router)
+        app.include_router(store_displays.router);app.include_router(auth_routes.router)
         @app.get("/test-login")
         def login(request:Request):request.session.update(user_id=1,organization_id=1);return {}
         self.client=TestClient(app)
@@ -216,6 +221,90 @@ class DatabaseAndRoutesTests(unittest.TestCase):
         self.client.close();self.env.stop()
         for p in self.patches:p.stop()
         self.engine.dispose()
+
+    def provision_display(self, email="truck-display@example.com"):
+        import re
+        self.client.get("/test-login")
+        response=self.client.get("/settings/store-displays")
+        token=re.search(r'name="csrf_token" value="([^"]+)"',response.text).group(1)
+        response=self.client.post("/settings/store-displays",data={"csrf_token":token,"store_id":1,
+            "label":"Truck screen", "email":email,"password":"screen-password-123","confirm_password":"screen-password-123"},follow_redirects=False)
+        self.assertEqual(response.status_code,303,response.text)
+        with self.factory() as session:
+            user=session.scalar(select(User).where(User.email==email))
+            assignment=session.scalar(select(StoreAssignment).join(OrganizationMember).where(OrganizationMember.user_id==user.id))
+            return user.id,assignment.id,token
+
+    def test_display_login_is_store_scoped_and_blocks_other_application_routes(self):
+        user_id,assignment_id,token=self.provision_display()
+        self.client.post("/logout")
+        login=self.client.post("/login",data={"email":"truck-display@example.com","password":"screen-password-123"},follow_redirects=False)
+        self.assertEqual(login.status_code,303)
+        self.assertEqual(login.headers["location"],"/dashboard/stores/1")
+        page=self.client.get(login.headers["location"])
+        self.assertEqual(page.status_code,200)
+        self.assertNotIn("All stores",page.text)
+        self.assertIn("Log out",page.text)
+        self.assertEqual(self.client.get("/dashboard/data?store_id=1&date=today").status_code,200)
+        self.assertEqual(self.client.get("/dashboard",follow_redirects=False).headers["location"],"/dashboard/stores/1")
+        for url in ("/dashboard/data", "/dashboard/data?store_id=2&date=today", "/dashboard/data?store_id=1&date=yesterday",
+                    "/dashboard/data?store_id=1&store_id=2&date=today", "/dashboard/stores/2", "/poynt/orders",
+                    "/poynt/tip-submissions", "/employees", "/account", "/integrations", "/settings/stores", "/settings/store-displays", "/organizations/select"):
+            self.assertEqual(self.client.get(url).status_code,403,url)
+        self.assertEqual(self.client.post("/dashboard/webhook/enable").status_code,403)
+        with self.factory() as session:
+            self.assertEqual(session.get(User,user_id).account_type,"store_display")
+            self.assertEqual(session.scalar(select(OrganizationMember.role).where(OrganizationMember.user_id==user_id)),"member")
+
+    def test_display_disable_reset_and_reassignment_revoke_old_sessions(self):
+        user_id,assignment_id,token=self.provision_display()
+        screen=TestClient(self.client.app)
+        screen.post("/login",data={"email":"truck-display@example.com","password":"screen-password-123"})
+        with self.factory() as session:
+            session.add(OrganizationStore(id=3,organization_id=1,store_id="cart",poynt_name="Cart",timezone_name="America/Phoenix"));session.commit()
+        updated=self.client.post(f"/settings/store-displays/{assignment_id}",data={"csrf_token":token,"store_id":3,"is_active":"true",
+            "password":"replacement-password-123","confirm_password":"replacement-password-123"},follow_redirects=False)
+        self.assertEqual(updated.status_code,303)
+        self.assertEqual(screen.get("/dashboard/data?store_id=1&date=today").status_code,401)
+        self.assertEqual(screen.post("/login",data={"email":"truck-display@example.com","password":"screen-password-123"}).status_code,401)
+        login=screen.post("/login",data={"email":"truck-display@example.com","password":"replacement-password-123"},follow_redirects=False)
+        self.assertEqual(login.headers["location"],"/dashboard/stores/3")
+        disabled=self.client.post(f"/settings/store-displays/{assignment_id}",data={"csrf_token":token,"store_id":3},follow_redirects=False)
+        self.assertEqual(disabled.status_code,303)
+        self.assertEqual(screen.get("/dashboard/data?store_id=3&date=today").status_code,401)
+        self.assertEqual(screen.post("/login",data={"email":"truck-display@example.com","password":"replacement-password-123"}).status_code,401)
+        screen.close()
+
+    def test_display_provisioning_checks_csrf_store_ownership_and_existing_users(self):
+        import re
+        self.client.get("/test-login")
+        token=re.search(r'name="csrf_token" value="([^"]+)"',self.client.get("/settings/store-displays").text).group(1)
+        form={"csrf_token":token,"store_id":1,"label":"Screen","email":"screen@example.com",
+              "password":"screen-password-123","confirm_password":"screen-password-123"}
+        self.assertEqual(self.client.post("/settings/store-displays",data={**form,"csrf_token":"bad"}).status_code,403)
+        self.assertEqual(self.client.post("/settings/store-displays",data={**form,"store_id":2}).status_code,404)
+        self.assertEqual(self.client.post("/settings/store-displays",data={**form,"email":"one@example.test"}).status_code,400)
+        with self.factory() as session:
+            session.scalar(select(OrganizationMember).where(OrganizationMember.user_id==1)).role="payroll";session.commit()
+        self.assertEqual(self.client.get("/settings/store-displays").status_code,403)
+        self.assertEqual(self.client.post("/settings/store-displays",data=form).status_code,403)
+
+    def test_display_inactive_store_and_elevated_membership_fail_closed(self):
+        user_id,assignment_id,_=self.provision_display()
+        with self.factory() as session:
+            session.get(OrganizationStore,1).is_active=False;session.commit()
+        self.client.post("/logout")
+        self.assertEqual(self.client.post("/login",data={"email":"truck-display@example.com","password":"screen-password-123"}).status_code,403)
+        with self.factory() as session:
+            session.get(OrganizationStore,1).is_active=True
+            session.scalar(select(OrganizationMember).where(OrganizationMember.user_id==user_id)).role="owner";session.commit()
+        self.assertEqual(self.client.post("/login",data={"email":"truck-display@example.com","password":"screen-password-123"}).status_code,403)
+
+    def test_display_cannot_request_self_service_password_reset(self):
+        self.provision_display()
+        with patch("routers.account_security.SessionLocal",self.factory), patch("routers.account_security.send_password_reset_email") as send:
+            account_security._send_password_reset_if_eligible("truck-display@example.com")
+            send.assert_not_called()
 
     def test_single_store_page_and_data_enforce_organization_scope(self):
         self.assertEqual(self.client.get("/dashboard/stores/1").status_code,401)
@@ -428,6 +517,25 @@ class DatabaseAndRoutesTests(unittest.TestCase):
 
 
 class MigrationTests(unittest.TestCase):
+    def test_store_assignments_migration_preserves_personal_accounts(self):
+        engine=create_engine("sqlite:///:memory:")
+        spec=importlib.util.spec_from_file_location("store_display_migration","alembic/versions/d14f6b92a803_store_display_accounts.py")
+        module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+        with engine.begin() as connection:
+            connection.exec_driver_sql("CREATE TABLE users (id INTEGER PRIMARY KEY)")
+            connection.exec_driver_sql("INSERT INTO users (id) VALUES (1)")
+            connection.exec_driver_sql("CREATE TABLE organization_members (id INTEGER PRIMARY KEY)")
+            connection.exec_driver_sql("CREATE TABLE organization_stores (id INTEGER PRIMARY KEY)")
+            operations=Operations(MigrationContext.configure(connection))
+            with patch.object(module,"op",operations):
+                module.upgrade()
+                self.assertEqual(connection.exec_driver_sql("SELECT account_type FROM users WHERE id=1").scalar(),"person")
+                connection.exec_driver_sql("INSERT INTO users (id,account_type) VALUES (2,'store_display')")
+                with self.assertRaises(RuntimeError):module.downgrade()
+                connection.exec_driver_sql("DELETE FROM users WHERE id=2")
+                module.downgrade()
+                self.assertEqual(connection.exec_driver_sql("SELECT id FROM users").scalar(),1)
+        engine.dispose()
     def test_upgrade_and_downgrade_isolated_database(self):
         engine=create_engine("sqlite:///:memory:")
         path="alembic/versions/b92d7a10e643_live_dashboard.py"
