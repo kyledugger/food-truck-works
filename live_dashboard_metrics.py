@@ -86,6 +86,45 @@ def categories(order, sales):
     return result
 
 
+def order_pace(orders, start, end, now):
+    """Completed-order arrival gaps, attributed to the newer order's unit count.
+
+    Match the report's fastest-10%-median benchmark; recent medians include
+    quiet gaps. UTC elapsed seconds avoid local clock/DST ambiguity.
+    """
+    eligible = []
+    for order in orders:
+        if not completed(order):
+            continue
+        try:
+            at = instant(order.get("createdAt"))
+        except (ValueError, TypeError):
+            continue
+        if start <= at < end and at <= now:
+            eligible.append((at, order))
+    eligible.sort(key=lambda pair: pair[0])
+    samples = {size: [] for size in (1, 2, 3)}
+    recent = {size: [] for size in samples}
+    for (previous, _), (at, order) in zip(eligible, eligible[1:]):
+        quantity = sum((number(item.get("quantity")) for item in order.get("items") or []), Decimal(0))
+        if quantity not in samples:
+            continue
+        seconds = (at - previous).total_seconds()
+        samples[quantity].append(seconds)
+        if at >= now - timedelta(minutes=10):
+            recent[quantity].append(seconds)
+    def median(values):
+        values = sorted(values)
+        if not values:
+            return None
+        middle = len(values) // 2
+        return (values[middle] + values[~middle]) / 2
+    return [{"items": size, "recent_seconds": median(recent[size]),
+             "recent_samples": len(recent[size]), "today_samples": len(samples[size]),
+             "fast_seconds": median(sorted(samples[size])[:min(10, max(1, (len(samples[size]) + 9) // 10))])}
+            for size in samples]
+
+
 def store_details(orders, start, end, now):
     """Today's incoming orders, plus sold SKU quantities; no customer/payment fields."""
     rows = []
@@ -112,7 +151,7 @@ def store_details(orders, start, end, now):
                 if item["status"] != "RETURNED":
                     skus[item["sku"] or "Unknown SKU"] += number(item["quantity"])
     rows.sort(key=lambda row: (row["created_at"], row["id"]), reverse=True)
-    return {"latest_orders": rows[:20], "sku_counts": [{"sku": sku, "quantity": float(qty)}
+    return {"order_pace": order_pace(orders, start, end, now), "latest_orders": rows[:20], "sku_counts": [{"sku": sku, "quantity": float(qty)}
             for sku, qty in sorted(skus.items(), key=lambda pair: (-pair[1], pair[0]))]}
 
 

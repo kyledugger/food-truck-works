@@ -327,3 +327,17 @@ options, no email field on the display form, and desktop/mobile manager setup.
 Dashboard color refinement: store-name links use charcoal; active Today and all
 dashboard chart bars use matching emerald green. Hover and keyboard focus remain
 visible. This styling update requires no additional database migration.
+
+## Store display order pace
+Three cards show 1-, 2-, and 3-unit completed orders. Recent pace is the median
+arrival interval whose newer order was created in the last 10 minutes. The prior
+order may precede that window; quiet gaps remain included. Each card shows its
+recent sample count and today's fastest-10% median (rounded up, capped at 10),
+matching the report benchmark algorithm. Samples use all completed orders from
+this store's local day, before truncating the latest-order feed to 20. The first
+order of the day has no interval; missing samples display a dash. Timestamp
+differences use UTC instants. Refunds retain captured completed-order eligibility.
+This is store-level arrival pace, not kitchen preparation time or an individual
+cashier score. Registers can overlap; gaps include guest interaction and waits.
+The existing 15-second refresh updates both values and ages recent samples out.
+No new migration or permissions changes are required.
