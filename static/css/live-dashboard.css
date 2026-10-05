@@ -20,3 +20,7 @@
 .live-chart-title{font-size:.95rem;font-weight:600;margin-top:1rem}.live-empty{padding:1.3rem 0;color:#687980}
 .live-warning{font-size:.8rem;color:#936000;margin-top:.75rem}
 @media(max-width:600px){.live-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.live-kpis strong{font-size:1.2rem}.live-store{padding:1rem}}
+.live-store-link{color:#374151}.live-store-link:hover{color:#1f2937;text-decoration:underline}.live-store-link:focus-visible{outline:2px solid #16835f;outline-offset:4px;border-radius:3px}
+#live-today.live-today-active{background-color:#16835f;border-color:#16835f;color:#fff}
+#live-today.live-today-active:hover{background-color:#116b4d;border-color:#116b4d}
+#live-today:focus-visible{outline:3px solid #16835f;outline-offset:3px}

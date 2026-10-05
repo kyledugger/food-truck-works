@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{{ store.display_name or store.poynt_name }} · Live Store{% endblock %}
-{% block head %}<link rel="stylesheet" href="/static/css/live-dashboard.css?v=20261005-7"><link rel="stylesheet" href="/static/css/store-dashboard.css?v=20261005-1">{% endblock %}
+{% block head %}<link rel="stylesheet" href="/static/css/live-dashboard.css?v=20261005-8"><link rel="stylesheet" href="/static/css/store-dashboard.css?v=20261005-1">{% endblock %}
 {% block content %}
 <main class="store-screen">
     <header class="store-toolbar">
@@ -18,4 +18,4 @@
     <dialog id="store-skus" aria-labelledby="store-skus-title"><div class="store-modal-head"><h2 id="store-skus-title" class="title is-5 mb-0">Products sold today</h2><button id="store-skus-close" class="button is-small">Close</button></div><p class="is-size-7 mb-3">Completed USD sales, excluding returned items.</p><div class="store-sku-chart"><canvas id="store-sku-canvas" role="img" aria-label="Product SKU quantities"></canvas></div><table class="live-category"><thead><tr><th>SKU</th><th>Qty</th></tr></thead><tbody id="store-sku-rows"></tbody></table></dialog>
 </main>
 {% endblock %}
-{% block scripts %}<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.min.js"></script><script src="/static/js/store-dashboard.js?v=20261005-2" defer></script><script src="/static/js/live-dashboard.js?v=20261005-7" defer></script>{% endblock %}
+{% block scripts %}<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.min.js"></script><script src="/static/js/store-dashboard.js?v=20261005-3" defer></script><script src="/static/js/live-dashboard.js?v=20261005-8" defer></script>{% endblock %}

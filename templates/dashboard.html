@@ -48,7 +48,7 @@
             {% if can_view_dashboard_sales %}
             <div class="live-toolbar">
             <div class="live-date-controls">
-                <button id="live-today" class="button is-small is-link">Today</button>
+                <button id="live-today" class="button is-small live-today-active">Today</button>
                 <label for="live-date" class="is-size-7">Or choose a date</label>
                 <div class="live-date-stepper">
                     <button id="live-previous" type="button" class="button is-small is-light" aria-label="Previous day" title="Previous day" disabled>‹</button>
@@ -143,11 +143,11 @@
 {% endblock %}
 
 {% block head %}
-<link rel="stylesheet" href="/static/css/live-dashboard.css?v=20261005-7">
+<link rel="stylesheet" href="/static/css/live-dashboard.css?v=20261005-8">
 {% endblock %}
 {% block scripts %}
 {% if poynt_connection and can_view_dashboard_sales %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.min.js"></script>
-<script src="/static/js/live-dashboard.js?v=20261005-7" defer></script>
+<script src="/static/js/live-dashboard.js?v=20261005-8" defer></script>
 {% endif %}
 {% endblock %}

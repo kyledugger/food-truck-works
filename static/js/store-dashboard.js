@@ -14,7 +14,7 @@
     const canvas=document.getElementById('store-sku-canvas');canvas.parentElement.style.height=Math.max(160,counts.length*28)+'px';canvas.setAttribute('aria-label',counts.map(i=>i.sku+': '+i.quantity).join('; ')||'No items sold today');
     if(!window.Chart)return;
     if(chart){chart.data.labels=counts.map(i=>i.sku);chart.data.datasets[0].data=counts.map(i=>i.quantity);chart.update('none');return;}
-    chart=new Chart(canvas,{type:'bar',data:{labels:counts.map(i=>i.sku),datasets:[{label:'Items',data:counts.map(i=>i.quantity),backgroundColor:'#238b83',borderRadius:3}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,ticks:{precision:0},grid:{color:'#dbe4e8'}}}}});
+    chart=new Chart(canvas,{type:'bar',data:{labels:counts.map(i=>i.sku),datasets:[{label:'Items',data:counts.map(i=>i.quantity),backgroundColor:'#16835f',borderRadius:3}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,ticks:{precision:0},grid:{color:'#dbe4e8'}}}}});
   }
   document.addEventListener('store-data',event=>{
     store=event.detail.stores?.[0];if(!store)return;

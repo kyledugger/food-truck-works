@@ -24,7 +24,7 @@
     const root=el('article','live-store');
     const header=el('div','live-store-header'), info=el('div');
     const name=el('h2'), date=el('p','live-store-date'), badge=el('span','tag is-light');
-    const storeLink=el('a');storeLink.href='/dashboard/stores/'+id;storeLink.append(name);info.append(storeLink,date);header.append(info,badge);root.append(header);
+    const storeLink=el('a','live-store-link');storeLink.href='/dashboard/stores/'+id;storeLink.append(name);info.append(storeLink,date);header.append(info,badge);root.append(header);
     const message=el('p','live-empty');root.append(message);
     const body=el('div'),kpis=el('div','live-kpis');
     const fields={},labels={};
@@ -57,7 +57,7 @@
     canvas.setAttribute('aria-label',points.map((p,i)=>labels[i]+': '+(isMoney?money(p.sales_cents):p.orders+' orders')).join('; '));
     if(card.charts[key]){card.charts[key].data.labels=labels;card.charts[key].data.datasets[0].data=values;card.charts[key].update('none');return;}
     card.charts[key]=new Chart(canvas,{type:'bar',data:{labels,datasets:[{label:isMoney?'Sales':'Orders',data:values,
-      backgroundColor:isMoney?'#238b83':'#7ba8c4',borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,animation:false,
+      backgroundColor:'#16835f',borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,animation:false,
       plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>isMoney?money(Math.round(ctx.parsed.y*100)):ctx.parsed.y+' orders'}}},
       scales:{y:{beginAtZero:true,grid:{color:'#dbe4e8',lineWidth:1},ticks:{precision:0,callback:value=>isMoney?'$'+value:value}},x:{ticks:{maxRotation:0,autoSkip:true,maxTicksLimit:8}}}}});
   }
@@ -69,7 +69,7 @@
     if(mode){mode.textContent=data.historical_view?'Historical view · not live':delayed?'Updates delayed':data.initializing?'Loading sales':'Live · refresh every 15 seconds';mode.className='tag '+(data.historical_view?'is-info is-light':'is-success is-light');mode.classList.toggle('live-mode-active',!data.historical_view&&!delayed&&!data.initializing&&data.connected&&data.stores.some(s=>!s.setup_required));mode.title=data.webhook_registered?'Order webhooks enabled':'Periodic order sync';}
     if(dateInput){dateInput.min=data.earliest_date||'';dateInput.max=data.latest_date||'';dateInput.value=/^\d{4}-\d{2}-\d{2}$/.test(selection)?selection:selection==='today'?data.latest_date||'':data.stores.find(s=>s.date)?.date||'';}
     updateArrows();
-    if(todayButton)todayButton.className='button is-small '+(selection==='today'?'is-link':'is-light');
+    if(todayButton)todayButton.className='button is-small '+(selection==='today'?'live-today-active':'is-light');
     const alive=new Set();
     for(const s of data.stores){
       alive.add(s.id);const c=cards.get(s.id)||makeCard(s.id);c.name.textContent=s.name;

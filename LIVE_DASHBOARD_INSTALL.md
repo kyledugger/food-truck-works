@@ -323,3 +323,7 @@ POST `/login`.
 organizations, wrong-organization login denial, case normalization, personal login
 regression, and migration email/uniqueness checks. Browser checks confirm both sign-in
 options, no email field on the display form, and desktop/mobile manager setup.
+
+Dashboard color refinement: store-name links use charcoal; active Today and all
+dashboard chart bars use matching emerald green. Hover and keyboard focus remain
+visible. This styling update requires no additional database migration.
