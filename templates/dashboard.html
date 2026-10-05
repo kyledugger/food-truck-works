@@ -45,12 +45,8 @@
 
 
         {% if poynt_connection %}
-            <div class="live-heading">
-                <div><p id="live-day-heading" class="heading">STORE SALES</p><h1 id="live-title" class="title is-3">How's business?</h1></div>
-                <div class="has-text-right"><span id="live-mode" class="tag is-success is-light">Loading sales</span>
-                    <p id="live-refreshed" class="is-size-7 mt-2">Connecting…</p></div>
-            </div>
-            <div class="live-date-controls mt-4">
+            <div class="live-toolbar">
+            <div class="live-date-controls">
                 <button id="live-today" class="button is-small is-link">Today</button>
                 <label for="live-date" class="is-size-7">Or choose a date</label>
                 <div class="live-date-stepper">
@@ -62,6 +58,9 @@
                 {% if can_manage_poynt %}
                 <button id="enable-live-webhook" class="button is-small is-link is-light" hidden>Enable order webhooks</button>
                 {% endif %}
+            </div>
+                <div class="live-view-status has-text-right"><span id="live-mode" class="tag is-success is-light">Loading sales</span>
+                    <p id="live-refreshed" class="is-size-7 mt-2">Connecting…</p></div>
             </div>
             <div id="live-status" class="notification is-light mt-4" role="status" aria-live="polite">Loading sales…</div>
             <div id="live-stores" class="live-store-grid mt-5 mb-5"></div>
@@ -142,11 +141,11 @@
 {% endblock %}
 
 {% block head %}
-<link rel="stylesheet" href="/static/css/live-dashboard.css?v=20261005-4">
+<link rel="stylesheet" href="/static/css/live-dashboard.css?v=20261005-5">
 {% endblock %}
 {% block scripts %}
 {% if poynt_connection %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.min.js"></script>
-<script src="/static/js/live-dashboard.js?v=20261005-4" defer></script>
+<script src="/static/js/live-dashboard.js?v=20261005-5" defer></script>
 {% endif %}
 {% endblock %}

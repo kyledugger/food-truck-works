@@ -204,3 +204,9 @@ preserved panels, webhook enabling, stale-data warnings, historical selection,
 date persistence on reload, hiding live metrics for past dates, and returning
 to Today. The source ZIP
 does not include logo PNG assets, so branding images could not be checked.
+
+Latest presentation update: removed dashboard headings, combined date controls and
+right-aligned status in one toolbar, shortened Sales/Average sale/Hourly Sales labels,
+and clarified chart gridlines. The shared base template forces Bulma light mode and
+all logo templates use their normal artwork, regardless of device theme.
+No additional database migration is needed.
