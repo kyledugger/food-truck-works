@@ -5,8 +5,8 @@ each active configured Poynt store. Existing navigation, orders reporting,
 payroll and Square integration code are preserved.
 
 The latest update adds dedicated Store Display accounts and a reusable store-assignment
-model. **Apply the new migration `d14f6b92a803` before starting this version.** It follows
-`c03e5d9182a7`. Existing users receive account type `person`, preserving their roles.
+model. **Apply migrations through `e25a7c03b914` before starting this version.**
+`d14f6b92a803` adds display accounts; `e25a7c03b914` adds username sign-in. Existing users receive account type `person`, preserving their roles.
 
 ## Install
 
@@ -18,8 +18,8 @@ model. **Apply the new migration `d14f6b92a803` before starting this version.** 
    `b92d7a10e643` follows `a61f0d8c3b92` (the Square integration foundation).
    The permanent date picker adds `c03e5d9182a7` after `b92d7a10e643`.
    The Store Display migration `d14f6b92a803` follows `c03e5d9182a7`.
-   If all earlier dashboard migrations are applied, `upgrade head` adds only
-   the account-type field and store-assignment table.
+   The username migration `e25a7c03b914` follows `d14f6b92a803`.
+   `upgrade head` applies whichever of these revisions are still pending.
 3. Apply the migration in each environment you intend to use:
 
    ```powershell
@@ -193,7 +193,7 @@ in your deployment. Complete a test sale, verify one order appears, change
 the tip, and verify tips update without increasing the order count. Check
 sales against the POS's total including tax (excluding tips) and verify a second store stays separate.
 
-Validation completed for this patch: 46 dashboard tests, 4 existing store
+Validation completed for this patch: 48 dashboard tests, 4 existing store
 time tests, 6 existing tip report tests, and 9 existing integration tests
 passed. The existing integration migration test was excluded because it
 resolves its migration relative to the parent of the project directory;
@@ -232,7 +232,7 @@ Access is limited to owners and managers; this is not
 yet a separate restricted kiosk session or role. Both page and data endpoints check
 store ownership and active status. No additional migration or webhook registration
 is needed. Browser checks cover the feed, refresh, SKU modal, Escape dismissal,
-desktop viewport fit, mobile layout and empty stores. 46 dashboard tests pass,
+desktop viewport fit, mobile layout and empty stores. 48 dashboard tests pass,
 including tenant boundaries, feed limits, item fields and SKU eligibility.
 
 ## Dashboard role restrictions
@@ -256,11 +256,11 @@ No additional database migration is needed.
 1. Apply `alembic upgrade head` against the intended database, then restart/deploy.
 2. Sign in as an owner or organization manager. Open **Store Settings → Store Display
    logins** (also available directly at `/settings/store-displays`).
-3. Enter a display name, a new login email, one active store, and a password of
-   10–128 characters. The email is a login identifier; no verification or reset
-   email is sent for this manager-provisioned account. Existing personal accounts
+3. Enter a display name, a username, one active store, and a password of
+   10–128 characters. No email address or mailbox is needed. Existing personal accounts
    cannot be converted or reused. Create another account for another screen if needed.
-4. Sign in on the display using the normal login page. It opens the assigned store's
+4. Choose **Store Display sign-in** from the login page, then enter the organization
+   code shown on the setup page, its username, and password. It opens the assigned store's
    Today dashboard. It cannot browse all stores, historical dates, Orders Report,
    payroll, employee pages, integrations, organization selection, or account settings.
 5. Managers can disable, re-enable, reset the password, or reassign the store on the
@@ -280,7 +280,7 @@ display accounts across the entire app, and dashboard endpoints independently ch
 the assignment. Manager mutations require a session CSRF token. Self-service email
 verification/password-reset requests and token consumption exclude display accounts.
 
-Validation: 46 dashboard/access/migration tests pass, including manager provisioning,
+Validation: 48 dashboard/access/migration tests pass, including manager provisioning,
 CSRF, cross-organization and cross-store isolation, login redirects, forbidden routes,
 Today-only access, disabling, reset/reassignment session invalidation, inactive stores,
 accidental organization-role elevation, and blocked self-service password reset.
@@ -295,3 +295,31 @@ Migration upgrade/downgrade was exercised only against an isolated SQLite databa
 Production PostgreSQL was not modified. Downgrade refuses while Store Display accounts
 exist, preventing them from silently becoming personal accounts after account_type
 is removed. Retire/remove those accounts before any deliberate rollback migration.
+
+## Username-based Store Display sign-in (latest)
+
+Apply `alembic upgrade head` to the intended database before restarting. The new
+revision `e25a7c03b914` follows `d14f6b92a803`. This migration expects no existing
+email-based display accounts, as confirmed for this deployment; it refuses rather
+than silently changing existing display credentials. Personal accounts retain
+required unique emails and their normal email/password login.
+
+The setup page displays a stable organization code such as `ftw-1`. Managers create
+3–50 character usernames using letters, numbers, underscores or hyphens. Usernames
+are normalized to lowercase, unique per organization, and may be reused in another
+organization. Display User records have no email. Password resets remain manager-only.
+Login has two linked options: `/login` for personal accounts and `/login/store-display`
+for organization code + username + password. The existing store assignment, session
+revocation, and single-store/Today restrictions apply to username logins.
+
+Organization.display_login_code and OrganizationMember.display_username hold the
+new identifiers. Nullable User.email supports display accounts; a database check
+still requires an email for personal accounts. Both username and code uniqueness
+are enforced in the database. Downgrade refuses while email-less accounts exist.
+Apply the same production sign-in rate limiting to POST `/login/store-display` as
+POST `/login`.
+
+48 targeted tests pass, including duplicate username rejection, same username in two
+organizations, wrong-organization login denial, case normalization, personal login
+regression, and migration email/uniqueness checks. Browser checks confirm both sign-in
+options, no email field on the display form, and desktop/mobile manager setup.

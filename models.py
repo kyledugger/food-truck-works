@@ -15,7 +15,8 @@ logger = logging.getLogger(__name__)
 
 class User(Base):
     __tablename__ = "users"
-    __table_args__ = (CheckConstraint("account_type IN ('person', 'store_display')", name="ck_user_account_type"),)
+    __table_args__ = (CheckConstraint("account_type IN ('person', 'store_display')", name="ck_user_account_type"),
+                     CheckConstraint("account_type != 'person' OR email IS NOT NULL", name="ck_person_email_required"))
 
     id: Mapped[int] = mapped_column(primary_key=True)
     account_type: Mapped[str] = mapped_column(String(30), nullable=False, default="person", server_default="person")
@@ -30,11 +31,11 @@ class User(Base):
         nullable=True,
     )
 
-    email: Mapped[str] = mapped_column(
+    email: Mapped[str | None] = mapped_column(
         String(320),
         unique=True,
         index=True,
-        nullable=False
+        nullable=True
     )
 
     phone: Mapped[str | None] = mapped_column(
@@ -82,7 +83,7 @@ class User(Base):
 
     @property
     def display_name(self) -> str:
-        return self.full_name or self.email
+        return self.full_name or self.email or "Store Display"
 
 
 class UserSecurityToken(Base):
@@ -116,6 +117,7 @@ class Organization(Base):
     __tablename__ = "organizations"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    display_login_code: Mapped[str | None] = mapped_column(String(32), unique=True)
 
     name: Mapped[str] = mapped_column(
         String(200),
@@ -149,8 +151,10 @@ class Organization(Base):
 
 class OrganizationMember(Base):
     __tablename__ = "organization_members"
+    __table_args__ = (UniqueConstraint("organization_id", "display_username", name="uq_org_display_username"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    display_username: Mapped[str | None] = mapped_column(String(50))
 
     organization_id: Mapped[int] = mapped_column(
         ForeignKey("organizations.id"),

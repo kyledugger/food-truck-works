@@ -343,6 +343,37 @@ async def login_page(request: Request):
     )
 
 
+@router.get("/login/store-display", response_class=HTMLResponse)
+def display_login_page(request: Request):
+    return templates.TemplateResponse(request=request, name="display_login.html", headers={"Cache-Control": "no-store"})
+
+
+@router.post("/login/store-display")
+def display_login(request: Request, organization_code: str = Form(...), username: str = Form(...), password: str = Form(...)):
+    code, username = organization_code.strip().lower(), username.strip().lower()
+    with SessionLocal() as session:
+        user = session.scalar(select(User).join(OrganizationMember, OrganizationMember.user_id == User.id)
+            .join(Organization, Organization.id == OrganizationMember.organization_id)
+            .where(Organization.display_login_code == code, OrganizationMember.display_username == username,
+                   User.account_type == "store_display"))
+        valid = verify_password(password, user.password_hash if user else None)
+        display = display_assignment(session, user.id) if user and valid else None
+        if not display:
+            log_security_event(request, "store_display_login", "failed", user_id=user.id if user else None)
+            return templates.TemplateResponse(request=request, name="display_login.html",
+                context={"error": "Unable to sign in. Check your organization code, username and password, or contact a manager.",
+                         "organization_code": code, "username": username}, status_code=401, headers={"Cache-Control": "no-store"})
+        if password_needs_rehash(user.password_hash):
+            user.password_hash = hash_password(password)
+            session.commit()
+        assignment, store = display
+        request.session.clear()
+        request.session.update(user_id=user.id, organization_id=store.organization_id,
+            store_assignment_id=assignment.id, store_session_version=assignment.session_version)
+        log_security_event(request, "store_display_login", "succeeded", user_id=user.id, organization_id=store.organization_id)
+        return RedirectResponse(f"/dashboard/stores/{store.id}", status_code=303)
+
+
 @router.post("/login")
 async def login(
     request: Request,
@@ -361,7 +392,7 @@ async def login(
             user.password_hash if user else None,
         )
 
-        if not user or not password_valid or not user.is_active:
+        if not user or not password_valid or not user.is_active or user.account_type != "person":
             if user is None:
                 failure_reason = "unknown_account"
             elif not user.is_active:
@@ -434,11 +465,6 @@ async def login(
                 status_code=403
             )
 
-        display = display_assignment(session, user.id) if user.account_type == "store_display" else None
-        if user.account_type == "store_display" and display is None:
-            return templates.TemplateResponse(request=request, name="login.html",
-                context={"error": "This display is disabled or its store is unavailable. Contact a manager."}, status_code=403)
-
         if password_needs_rehash(user.password_hash):
             user.password_hash = hash_password(password)
             session.commit()
@@ -452,13 +478,7 @@ async def login(
         request.session.clear()
         request.session["user_id"] = user.id
 
-        if display:
-            assignment, store = display
-            request.session["organization_id"] = store.organization_id
-            request.session["store_assignment_id"] = assignment.id
-            request.session["store_session_version"] = assignment.session_version
-            destination = f"/dashboard/stores/{store.id}"
-        elif len(memberships) == 1:
+        if len(memberships) == 1:
             request.session["organization_id"] = memberships[0].organization_id
             destination = "/dashboard"
         else:

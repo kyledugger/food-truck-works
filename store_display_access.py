@@ -11,7 +11,7 @@ def display_assignment(session, user_id):
     if not user or not user.is_active or user.account_type != "store_display":
         return None
     members = session.scalars(select(OrganizationMember).where(OrganizationMember.user_id == user_id)).all()
-    if len(members) != 1 or members[0].role != "member":
+    if len(members) != 1 or members[0].role != "member" or not members[0].display_username:
         return None
     assignments = session.scalars(select(StoreAssignment).where(StoreAssignment.organization_member_id == members[0].id)).all()
     if len(assignments) != 1:
@@ -33,7 +33,7 @@ class StoreDisplayMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
         user_id = request.session.get("user_id")
         # Login/logout and static assets stay available for switching accounts.
-        if not user_id or request.url.path in {"/login", "/logout"} or request.url.path.startswith("/static/"):
+        if not user_id or request.url.path in {"/login", "/login/store-display", "/logout"} or request.url.path.startswith("/static/"):
             return await call_next(request)
         with SessionLocal() as session:
             user = session.get(User, user_id)

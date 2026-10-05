@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Store Display Sign-in - Food Truck Works{% endblock %}
+{% block content %}
+<section class="section"><div class="container" style="max-width:460px">
+{% include "_app_brand.html" %}<h1 class="title is-4">Store Display sign-in</h1>
+<p class="mb-4">Use the organization code and username provided by your manager.</p>
+{% if error %}<div class="notification is-danger is-light" role="alert">{{ error }}</div>{% endif %}
+<form method="post" action="/login/store-display">
+<div class="field"><label class="label" for="organization-code">Organization code</label><input id="organization-code" class="input" name="organization_code" required maxlength="32" autocapitalize="none" spellcheck="false" value="{{ organization_code or '' }}" placeholder="ftw-123"></div>
+<div class="field"><label class="label" for="username">Username</label><input id="username" class="input" name="username" required maxlength="50" autocomplete="username" autocapitalize="none" spellcheck="false" value="{{ username or '' }}" placeholder="truck-screen"></div>
+<div class="field"><label class="label" for="password">Password</label><input id="password" class="input" type="password" name="password" required autocomplete="current-password"></div>
+<button class="button is-primary is-fullwidth mt-5">Log In</button>
+</form><p class="help mt-3">For password resets or disabled displays, contact a manager.</p>
+<p class="has-text-centered mt-4"><a href="/login">Personal account sign-in</a></p>
+</div></section>
+{% endblock %}
