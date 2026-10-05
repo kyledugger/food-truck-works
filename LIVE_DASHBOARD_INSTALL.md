@@ -41,10 +41,12 @@ included files and restart/deploy to recalculate from the existing order cache.
 ## Choose a date, including yesterday for testing
 
 The date picker is permanent. No testing environment variable or code change
-is needed. Click **Yesterday** to load October 4, 2026 when testing on October
-5. That button pins the actual calendar date in the page URL, so you can
-reload/bookmark it and return to the same day's data for the next week.
-Alternatively choose October 4 directly in the calendar field.
+is needed. Choose October 4 directly in the calendar field to test yesterday's
+sales. Previous/next arrows move one calendar day. Every date change and Today
+click immediately refreshes the view. A past date is pinned in the URL for bookmarks.
+The normal status banner is hidden; loading, setup and sync warnings still appear.
+The top-right badge has a red dot during live operation. Items counts item quantities,
+excluding returned items, beside Orders on each store card.
 
 - **Today** uses each store's local day, updates automatically every fifteen
   seconds, and includes five-minute activity and current pace.
@@ -56,7 +58,7 @@ Alternatively choose October 4 directly in the calendar field.
   the chosen date has loaded, so an empty cache is not mistaken for zero sales.
   The page polls while loading, then stops automatic polling. **Refresh**
   checks for updates; full historical fetches are cached for five minutes.
-- Choose from the last 90 local calendar days, including today. **Yesterday**
+- Choose from the last 90 local calendar days, including today. Date navigation
   uses the stores' reported dates rather than guessing from the browser's
   timezone. Explicit dates apply to all stores. If that date is still today
   for one store and already a past day for another, only the current-day
@@ -191,7 +193,7 @@ in your deployment. Complete a test sale, verify one order appears, change
 the tip, and verify tips update without increasing the order count. Check
 sales against the POS's total including tax (excluding tips) and verify a second store stays separate.
 
-Validation completed for this patch: 35 new dashboard tests, 4 existing store
+Validation completed for this patch: 36 dashboard tests, 4 existing store
 time tests, 6 existing tip report tests, and 9 existing integration tests
 passed. The existing integration migration test was excluded because it
 resolves its migration relative to the parent of the project directory;

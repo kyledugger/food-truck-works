@@ -46,6 +46,16 @@ def store(zone="America/Phoenix"):
 
 
 class MetricsTests(unittest.TestCase):
+    def test_item_count_uses_quantities_and_excludes_returns_and_other_days(self):
+        now=datetime(2026,10,5,20,tzinfo=UTC)
+        order=sale(now,items=[{"quantity":3,"status":"FULFILLED"},
+                              {"quantity":2.5,"status":"FULFILLED"},
+                              {"quantity":4,"status":"RETURNED"}])
+        result=summarize(store(),[order,sale(now-timedelta(days=1))],now)
+        self.assertEqual(result["order_count"],1)
+        self.assertEqual(result["item_count"],5.5)
+        self.assertEqual(summarize(store(),[],now)["item_count"],0)
+
     def test_money_includes_tax_and_excludes_tips(self):
         self.assertEqual(money(sale(datetime.now(UTC))), (1083, 200))
 

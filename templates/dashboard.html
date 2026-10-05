@@ -52,16 +52,19 @@
             </div>
             <div class="live-date-controls mt-4">
                 <button id="live-today" class="button is-small is-link">Today</button>
-                <button id="live-yesterday" class="button is-small is-light">Yesterday</button>
                 <label for="live-date" class="is-size-7">Or choose a date</label>
-                <input id="live-date" class="input is-small" type="date" aria-label="Dashboard sales date">
+                <div class="live-date-stepper">
+                    <button id="live-previous" type="button" class="button is-small is-light" aria-label="Previous day" title="Previous day" disabled>‹</button>
+                    <input id="live-date" class="input is-small" type="date" aria-label="Dashboard sales date">
+                    <button id="live-next" type="button" class="button is-small is-light" aria-label="Next day" title="Next day" disabled>›</button>
+                </div>
                 <button id="live-refresh" class="button is-small is-light">Refresh</button>
+                {% if can_manage_poynt %}
+                <button id="enable-live-webhook" class="button is-small is-link is-light" hidden>Enable order webhooks</button>
+                {% endif %}
             </div>
             <div id="live-status" class="notification is-light mt-4" role="status" aria-live="polite">Loading sales…</div>
-            {% if can_manage_poynt %}
-            <div class="buttons"><button id="enable-live-webhook" class="button is-small is-link is-light" hidden>Enable order webhooks</button></div>
-            {% endif %}
-            <div id="live-stores" class="live-store-grid mb-5"></div>
+            <div id="live-stores" class="live-store-grid mt-5 mb-5"></div>
             <p class="is-size-7 has-text-grey mb-5">All sales figures include tax and exclude tips. Refunds, including refunded tax, reduce the original sale.
                 Category sales allocate tax and order adjustments by item value. Pace compares the last 5 minutes with the preceding 60 minutes, including quiet periods.
                 Activity uses order creation time. All dates and chart labels use each store's timezone.
@@ -139,11 +142,11 @@
 {% endblock %}
 
 {% block head %}
-<link rel="stylesheet" href="/static/css/live-dashboard.css?v=20261005-3">
+<link rel="stylesheet" href="/static/css/live-dashboard.css?v=20261005-4">
 {% endblock %}
 {% block scripts %}
 {% if poynt_connection %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.min.js"></script>
-<script src="/static/js/live-dashboard.js?v=20261005-3" defer></script>
+<script src="/static/js/live-dashboard.js?v=20261005-4" defer></script>
 {% endif %}
 {% endblock %}

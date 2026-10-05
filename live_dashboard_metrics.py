@@ -153,6 +153,8 @@ def summarize(store, orders, now, historical=False):
             "timezone": store.timezone_name, "date": day.isoformat(), "sales_cents": total_sales,
             "historical": historical,
             "tips_cents": sum(row[3] for row in today), "order_count": len(today),
+            "item_count": float(sum((number(item.get("quantity")) for _, order, _, _ in today
+                                      for item in (order.get("items") or []) if item.get("status") != "RETURNED"), Decimal(0))),
             "average_sale_cents": cents(Decimal(total_sales) / len(today)) if today else 0,
             "recent_orders": len(recent), "recent_sales_cents": sum(row[2] for row in recent),
             "pace": pace, "pace_ratio": round(ratio, 2) if ratio is not None else None,

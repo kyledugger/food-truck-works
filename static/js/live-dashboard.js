@@ -5,7 +5,7 @@
   const status = document.getElementById('live-status');
   const refreshed = document.getElementById('live-refreshed');
   const enable = document.getElementById('enable-live-webhook');
-  const dateInput=document.getElementById('live-date'),todayButton=document.getElementById('live-today'),yesterdayButton=document.getElementById('live-yesterday');
+  const dateInput=document.getElementById('live-date'),todayButton=document.getElementById('live-today'),previousButton=document.getElementById('live-previous'),nextButton=document.getElementById('live-next');
   let selection=new URL(location.href).searchParams.get('date')||'today', lastData=null,controller=null;
   const cards = new Map();
   let timer, inFlight = false;
@@ -26,7 +26,7 @@
     const message=el('p','live-empty');root.append(message);
     const body=el('div'),kpis=el('div','live-kpis');
     const fields={},labels={};
-    for (const [key,label] of [['sales','Sales incl. tax'],['tips','Tips today'],['orders','Orders today']]) {
+    for (const [key,label] of [['sales','Sales incl. tax'],['tips','Tips today'],['orders','Orders today'],['items','Items today']]) {
       const cell=el('div');fields[key]=el('strong');labels[key]=el('small','',label);cell.append(labels[key],fields[key]);kpis.append(cell);
     }
     body.append(kpis);
@@ -61,10 +61,12 @@
   function render(data) {
     lastData=data;
     const mode=document.getElementById('live-mode'),heading=document.getElementById('live-day-heading'),title=document.getElementById('live-title');
-    if(mode){mode.textContent=data.historical_view?'Historical view · not live':'Live · refresh every 15 seconds';mode.className='tag '+(data.historical_view?'is-info is-light':'is-success is-light');}
+    const delayed=data.error||data.stale||data.queue_delayed;
+    if(mode){mode.textContent=data.historical_view?'Historical view · not live':delayed?'Updates delayed':data.initializing?'Loading sales':'Live · refresh every 15 seconds';mode.className='tag '+(data.historical_view?'is-info is-light':'is-success is-light');mode.classList.toggle('live-mode-active',!data.historical_view&&!delayed&&!data.initializing&&data.connected&&data.stores.some(s=>!s.setup_required));mode.title=data.webhook_registered?'Order webhooks enabled':'Periodic order sync';}
     if(heading)heading.textContent=data.historical_view?'PAST SALES AT YOUR STORES':'TODAY AT YOUR STORES';
     if(title)title.textContent=data.historical_view?(selection==='yesterday'?"Yesterday's sales":'Sales for '+selection):"How's business?";
     if(dateInput){dateInput.min=data.earliest_date||'';dateInput.max=data.latest_date||'';dateInput.value=/^\d{4}-\d{2}-\d{2}$/.test(selection)?selection:selection==='today'?data.latest_date||'':data.stores.find(s=>s.date)?.date||'';}
+    updateArrows();
     if(todayButton)todayButton.className='button is-small '+(selection==='today'?'is-link':'is-light');
     const alive=new Set();
     for(const s of data.stores){
@@ -74,13 +76,13 @@
       c.data=s;c.date.textContent=s.date+' · '+s.timezone;
       const when=s.historical?'on this date':'today';
       c.badge.textContent=(s.loading??data.initializing)?'Loading sales':s.historical?'Historical view':s.order_count?'Trading today':s.currency_warning?'No USD sales today':'No sales today';
-      c.labels.sales.textContent='Sales incl. tax';c.labels.tips.textContent=s.historical?'Tips':'Tips today';c.labels.orders.textContent=s.historical?'Orders':'Orders today';
+      c.labels.sales.textContent='Sales incl. tax';c.labels.tips.textContent=s.historical?'Tips':'Tips today';c.labels.orders.textContent=s.historical?'Orders':'Orders today';c.labels.items.textContent=s.historical?'Items':'Items today';
       c.now.hidden=!!s.historical;c.activityWrap.hidden=!!s.historical;c.activityTitle.hidden=!!s.historical;
       if(s.historical&&c.charts.activity){c.charts.activity.destroy();delete c.charts.activity;}
       if(s.loading??data.initializing){c.body.hidden=true;c.message.hidden=false;c.message.textContent='Collecting orders for '+s.date+'…';continue;}
       if(!c.initialized){c.details.open=!!s.order_count;c.initialized=true;}
       if(!s.order_count){c.message.hidden=false;c.message.textContent=s.currency_warning?'No USD sales '+when+'. Other currencies are excluded.':'No sales '+when+'.';c.body.hidden=!s.recent_orders&&!s.currency_warning;}
-      c.fields.sales.textContent=money(s.sales_cents);c.fields.tips.textContent=money(s.tips_cents);c.fields.orders.textContent=s.order_count;
+      c.fields.sales.textContent=money(s.sales_cents);c.fields.tips.textContent=money(s.tips_cents);c.fields.orders.textContent=s.order_count;c.fields.items.textContent=new Intl.NumberFormat('en-US').format(s.item_count||0);
       if(!s.historical){c.recent.textContent=s.recent_orders+' orders · '+money(s.recent_sales_cents);
         c.pace.textContent=s.pace+(s.pace_ratio!==null?' · '+s.pace_ratio.toFixed(1)+'× recent average':'');c.last.textContent=ago(s.last_sale_at,data.generated_at);}
       c.avg.textContent='Average sale incl. tax: '+money(s.average_sale_cents)+(s.historical?' · Full day.':' · Current hour is partial.');
@@ -98,10 +100,10 @@
     else if(data.queue_delayed)text='Order updates are delayed. Displayed totals may be out of date.';
     else if(data.initializing)text='Collecting the selected day’s orders. This can take a moment on the first visit.';
     else if(data.stale)text='Waiting for an order sync. Displayed totals may be out of date.';
-    else if(data.historical_view)text='Historical view. Live activity is off. Sales loaded '+new Date(data.last_view_loaded_at).toLocaleTimeString()+'.';
-    else text=(data.webhook_registered?'Order webhooks enabled.':'Periodic sync active. Enable order webhooks for faster updates.')+' Last full sync: '+new Date(data.last_reconciled_at).toLocaleTimeString();
-    status.textContent=text;status.className='notification '+((data.error||data.stale||data.queue_delayed)?'is-warning is-light':'is-light');
-    refreshed.textContent='Page refreshed '+new Date(data.generated_at).toLocaleTimeString();
+    else text='';
+    status.hidden=!text;status.textContent=text;status.className='notification '+(delayed?'is-warning is-light':'is-light');
+    const loaded=data.historical_view?data.last_view_loaded_at:data.generated_at;
+    refreshed.textContent=(data.historical_view?'Sales loaded ':'Updated ')+(loaded?new Date(loaded).toLocaleTimeString():'—');
     if(enable)enable.hidden=!!data.historical_view||!data.can_enable_webhook||data.webhook_registered;
     if(data.polling_needed===false)clearInterval(timer);
   }
@@ -114,28 +116,39 @@
       const response=await fetch('/dashboard/data?'+new URLSearchParams({date:requestedSelection}),{credentials:'same-origin',cache:'no-store',signal:controller.signal});
       if(response.status===401){location.assign('/login');return;}
       const data=await response.json();if(!response.ok)throw new Error(data.detail||'Dashboard could not refresh.');if(requestedSelection===selection)render(data);
-    }catch(error){if(error.name!=='AbortError' || requestedSelection===selection){status.textContent=error.message+' Displayed totals may be out of date.';status.className='notification is-warning is-light';}}
+    }catch(error){if(error.name!=='AbortError' || requestedSelection===selection){status.hidden=false;document.getElementById('live-mode')?.classList.remove('live-mode-active');status.textContent=error.message+' Displayed totals may be out of date.';status.className='notification is-warning is-light';}}
     finally{clearTimeout(timeout);controller=null;inFlight=false;if(requestedSelection!==selection)refresh();}
   }
   if(enable)enable.addEventListener('click',async()=>{
     enable.disabled=true;enable.classList.add('is-loading');
     try{const response=await fetch('/dashboard/webhook/enable',{method:'POST',credentials:'same-origin',headers:{'X-Requested-With':'FoodTruckWorks'},signal:AbortSignal.timeout(45000)});
       const data=await response.json();if(!response.ok)throw new Error(data.detail||'Could not enable webhooks.');await refresh();
-    }catch(error){status.textContent=error.message;status.className='notification is-warning is-light';}
+    }catch(error){status.hidden=false;document.getElementById('live-mode')?.classList.remove('live-mode-active');status.textContent=error.message;status.className='notification is-warning is-light';}
     finally{enable.disabled=false;enable.classList.remove('is-loading');}
   });
   function start(){clearInterval(timer);refresh();timer=setInterval(refresh,15000);}
   function choose(value){
     selection=value;const url=new URL(location.href);if(value==='today')url.searchParams.delete('date');else url.searchParams.set('date',value);history.replaceState({},'',url);
     for(const c of cards.values()){Object.values(c.charts).forEach(chart=>chart.destroy());c.root.remove();}cards.clear();
-    if(controller)controller.abort();status.textContent='Loading selected date…';start();
+    if(dateInput)dateInput.value=value==='today'?lastData?.latest_date||'':value;updateArrows();
+    if(controller)controller.abort();status.hidden=false;status.className='notification is-light';status.textContent='Loading selected date…';document.getElementById('live-mode')?.classList.remove('live-mode-active');start();
   }
-  if(dateInput)dateInput.addEventListener('change',()=>{if(dateInput.value)choose(dateInput.value);});
+  if(dateInput)dateInput.addEventListener('change',()=>{if(dateInput.value)choose(dateInput.value===lastData?.latest_date?'today':dateInput.value);});
   if(todayButton)todayButton.addEventListener('click',()=>choose('today'));
-  if(yesterdayButton)yesterdayButton.addEventListener('click',()=>{
-    if(lastData?.latest_date){const d=new Date(lastData.latest_date+'T12:00:00Z');d.setUTCDate(d.getUTCDate()-1);choose(d.toISOString().slice(0,10));}
-    else choose('yesterday');
-  });
+  function updateArrows(){
+    const value=dateInput?.value;
+    if(previousButton)previousButton.disabled=!value||!dateInput.min||value<=dateInput.min;
+    if(nextButton)nextButton.disabled=!value||!dateInput.max||value>=dateInput.max;
+  }
+  function step(days){
+    if(!dateInput?.value)return;
+    const day=new Date(dateInput.value+'T12:00:00Z');day.setUTCDate(day.getUTCDate()+days);
+    const value=day.toISOString().slice(0,10);
+    if(value<dateInput.min||value>dateInput.max)return;
+    choose(value===lastData?.latest_date?'today':value);
+  }
+  previousButton?.addEventListener('click',()=>step(-1));
+  nextButton?.addEventListener('click',()=>step(1));
   document.getElementById('live-refresh')?.addEventListener('click',start);
   document.addEventListener('visibilitychange',()=>{if(document.hidden)clearInterval(timer);else start();});
   window.addEventListener('pageshow',start);window.addEventListener('pagehide',()=>clearInterval(timer));start();
