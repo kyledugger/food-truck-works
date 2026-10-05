@@ -118,6 +118,32 @@
             {% endif %}
         </div>
 
+        <div class="box mb-5">
+            <h2 class="title is-5">Employee totals for date range</h2>
+            <p class="mb-3">{{ tip_report_start_date }} to {{ tip_report_end_date }} · {{ tip_report_store_timezone }}<br>
+                Based on submission dates for the selected store. Payment and Status filters apply only to the list below.
+                Rejected payouts are excluded. Paid means confirmed paid in Food Truck Works.</p>
+            {% if tip_range_totals %}
+            <div class="table-container">
+                <table class="table is-fullwidth is-striped">
+                    <thead><tr><th>Employee</th><th>Total cash out</th><th>Cash confirmed paid</th><th>Cash pending</th><th>Total to paycheck</th><th>Paycheck confirmed paid</th><th>Paycheck pending</th></tr></thead>
+                    <tbody>
+                        {% for employee in tip_range_totals %}
+                        <tr><td>{{ employee.name }}</td>
+                            <td><strong>${{ "%.2f"|format(employee.cash_cents / 100) }}</strong></td>
+                            <td>${{ "%.2f"|format(employee.cash_paid_cents / 100) }}</td>
+                            <td>${{ "%.2f"|format(employee.cash_pending_cents / 100) }}</td>
+                            <td><strong>${{ "%.2f"|format(employee.paycheck_cents / 100) }}</strong></td>
+                            <td>${{ "%.2f"|format(employee.paycheck_paid_cents / 100) }}</td>
+                            <td>${{ "%.2f"|format(employee.paycheck_pending_cents / 100) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}<p>No eligible tip allocations for this date range.</p>{% endif %}
+        </div>
+
         {% if submissions %}
             <div class="table-container">
                 <table class="table is-fullwidth is-striped is-hoverable">
@@ -178,6 +204,10 @@
                                             {% if payout.paid_at %}<span class="tip-report-time is-size-7" data-value="{{ payout.paid_at }}"></span>{% endif %}
                                             {% if payout.status == "pending" and payout.can_confirm %}
                                             <form method="post" action="/poynt/tip-payouts/{{ payout.id }}/paid" class="is-inline-block">
+                                                <input type="hidden" name="return_start" value="{{ tip_report_start_date }}">
+                                                <input type="hidden" name="return_end" value="{{ tip_report_end_date }}">
+                                                <input type="hidden" name="return_payment" value="{{ tip_report_payment }}">
+                                                <input type="hidden" name="return_status" value="{{ tip_report_status }}">
                                                 <button class="button is-small is-success is-light" type="submit">Confirm paid</button>
                                             </form>
                                             {% endif %}
@@ -229,6 +259,10 @@
                                         {% if submission.payouts %}
                                             {% if tip_report_role in ["owner", "manager"] and submission.processing_status == "pending" %}
                                                 <form method="post" action="/poynt/tip-submissions/{{ submission.id }}/reject" onsubmit="return confirm('Reject this unpaid submission and release its orders?');">
+                                                    <input type="hidden" name="return_start" value="{{ tip_report_start_date }}">
+                                                    <input type="hidden" name="return_end" value="{{ tip_report_end_date }}">
+                                                    <input type="hidden" name="return_payment" value="{{ tip_report_payment }}">
+                                                    <input type="hidden" name="return_status" value="{{ tip_report_status }}">
                                                     <button class="button is-small is-danger is-light" type="submit">Reject unpaid</button>
                                                 </form>
                                             {% endif %}
