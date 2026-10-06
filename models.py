@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Boolean, CheckConstraint, DateTime, ForeignKey, Integer, String, UniqueConstraint, Index, text
+from sqlalchemy import Boolean, CheckConstraint, DateTime, ForeignKey, Integer, String, UniqueConstraint, Index, text, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from instant_type import UTCInstant
@@ -393,6 +393,30 @@ class PoyntConnection(Base):
     organization: Mapped["Organization"] = relationship(
         back_populates="poynt_connection"
     )
+
+
+class PricingProduct(Base):
+    """The organization's exact, authoritative SKU definitions."""
+    __tablename__ = "pricing_products"
+    __table_args__ = (UniqueConstraint("organization_id", "sku", name="uq_pricing_product_sku"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    organization_id: Mapped[int] = mapped_column(ForeignKey("organizations.id"), nullable=False, index=True)
+    sku: Mapped[str] = mapped_column(String(200), nullable=False)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    category: Mapped[str | None] = mapped_column(String(200), nullable=True)
+
+
+class ProductDiscovery(Base):
+    """Latest store discovery only; not a history or a pricing profile."""
+    __tablename__ = "product_discoveries"
+    __table_args__ = (UniqueConstraint("organization_id", "store_id", name="uq_product_discovery_store"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    organization_id: Mapped[int] = mapped_column(ForeignKey("organizations.id"), nullable=False, index=True)
+    store_id: Mapped[str] = mapped_column(String(100), nullable=False)
+    business_id: Mapped[str] = mapped_column(String(100), nullable=False)
+    token: Mapped[str] = mapped_column(String(64), nullable=False)
+    # Includes an explicit UTC ISO discovery instant and display-only product data.
+    payload: Mapped[dict] = mapped_column(JSON, nullable=False)
 
 
 class OrganizationStore(Base):

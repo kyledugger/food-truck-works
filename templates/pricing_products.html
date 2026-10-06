@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}Products - Food Truck Works{% endblock %}
+{% block content %}
+<section class="section"><div class="container">
+  <div class="is-flex is-justify-content-space-between is-align-items-center mb-4">
+    <div><h1 class="title mb-2">Pricing</h1><p class="subtitle is-6">Discover products and establish your authoritative SKU list.</p></div>
+    <a class="button is-light" href="/dashboard">Dashboard</a>
+  </div>
+  <div class="tabs"><ul><li class="is-active"><a href="/pricing/products">Products</a></li>
+    <li><span class="px-4 has-text-grey">Price Profiles · coming next</span></li>
+    <li><span class="px-4 has-text-grey">Apply Pricing · coming next</span></li></ul></div>
+  {% if notice %}<div class="notification is-success is-light" role="status">{{ notice }}</div>{% endif %}
+  {% if error %}<div class="notification is-danger is-light" role="alert">{{ error }}</div>{% endif %}
+  {% if stale %}<div class="notification is-warning is-light">Your Poynt connection changed. Refresh products before using this store's results.</div>{% endif %}
+  {% if not can_connect %}<div class="notification is-warning is-light">Connect Poynt in <a href="/integrations">Integrations</a> to discover products. Your FTW SKU list is retained.</div>{% endif %}
+  {% if not stores %}<div class="notification is-light">Set up an active store in <a href="/settings/stores">Store Settings</a> first.</div>{% endif %}
+  <div class="box">
+    <div class="columns is-vcentered">
+      <div class="column">
+        <form method="get" action="/pricing/products" class="field">
+          <label class="label" for="store">Store</label><div class="is-flex" style="gap:.75rem;flex-wrap:wrap">
+          <div class="select"><select name="store_id" id="store" required><option value="">Select a store</option>
+            {% for store in stores %}<option value="{{ store.store_id }}" {% if selected_store and selected_store.id == store.id %}selected{% endif %}>{{ store.display_name or store.poynt_name }}</option>{% endfor %}
+          </select></div><button class="button is-light">View Store</button></div>
+        </form>
+      </div>
+      <div class="column is-narrow">
+        {% if selected_store %}<form method="post" action="/pricing/products/discover" id="discover-form">
+          <input type="hidden" name="store_id" value="{{ selected_store.store_id }}"><input type="hidden" name="csrf" value="{{ csrf }}">
+          <button class="button is-primary" {% if not can_connect %}disabled{% endif %}>Fetch Latest Products from Poynt</button>
+        </form>{% endif %}
+      </div>
+    </div>
+    <p class="is-size-7 has-text-grey">Discovery reads Poynt products. It does not change prices, taxes, names, or SKUs. Add selected products to save their SKU definitions in FTW.</p>
+  </div>
+
+  {% if selected_store and not snapshot and not stale %}<div class="notification is-light">Click Fetch Latest Products from Poynt to load this store's products.</div>{% endif %}
+  {% if snapshot %}
+  <div class="box">
+    <h2 class="title is-5">{{ selected_store.display_name or selected_store.poynt_name }} products</h2>
+    <p class="has-text-weight-semibold mb-2">Saved discovery results</p>
+    <p class="mb-3">{{ rows|length }} active products · {{ rows|selectattr('matched')|list|length }} SKUs in your list · {{ missing|length }} authoritative SKUs missing from this store</p>
+    <p class="is-size-7 has-text-grey mb-4">Last successful discovery: <time id="discovered-time" datetime="{{ snapshot.payload.discovered_at }}">{{ snapshot.payload.discovered_at }} (UTC)</time>. Products and prices are from that discovery. Reloading this page does not fetch new data. Click Fetch Latest Products from Poynt to update these results.</p>
+    {% if not definitions %}<div class="notification is-info is-light">Start with a store whose SKUs are correct. Select its products below, then add them to your authoritative list.</div>{% endif %}
+    {% if not rows %}<div class="notification is-warning is-light">No active products could be associated with this store. Check its product ownership and catalog assignments in Poynt, then refresh.</div>{% endif %}
+    <div class="field"><label class="label" for="product-search">Search SKU, name, or category</label><input class="input" type="search" id="product-search" placeholder="Find a product"></div>
+    <label class="checkbox mb-4"><input type="checkbox" id="issues-only"> Show products needing correction or review</label>
+    <form method="post" action="/pricing/products/add" id="add-form">
+      <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="store_id" value="{{ selected_store.store_id }}"><input type="hidden" name="snapshot_token" value="{{ snapshot.token }}">
+      <div class="is-flex mb-3" style="gap:1rem;flex-wrap:wrap"><button class="button is-link" id="add-button" disabled>Add Selected SKUs to FTW</button>
+      <label class="checkbox"><input type="checkbox" id="select-visible"> Select all eligible visible products</label><span id="selection-count" aria-live="polite">0 selected</span></div>
+      <div class="table-container"><table class="table is-fullwidth is-hoverable"><thead><tr><th>Select</th><th>SKU</th><th>Product</th><th>Category</th><th>Current price</th><th>Review</th></tr></thead><tbody>
+      {% for row in rows %}<tr class="discovered-row" data-issues="{{ 'yes' if row.issues else 'no' }}">
+        <td>{% if row.can_add %}<input type="checkbox" name="product_ids" value="{{ row.id }}" aria-label="Add {{ row.sku }}">{% else %}<span class="has-text-grey">—</span>{% endif %}</td>
+        <td><strong>{{ row.sku or '(blank)' }}</strong></td><td>{{ row.name }}</td><td>{{ row.category or '—' }}</td>
+        <td class="is-nowrap">{% if row.amount is not none and row.currency %}{{ row.currency }} {{ '%.2f'|format(row.amount / 100) }}{% else %}Unavailable{% endif %}</td>
+        <td>{% for issue in row.issues %}<div class="has-text-warning-dark">{{ issue }}</div>{% else %}<span class="tag is-success is-light">Matched</span>{% endfor %}
+          {% if row.shared %}<div class="is-size-7 has-text-grey">Referenced outside this store's catalogs. Store isolation needs review before future price pushes.</div>{% endif %}</td>
+      </tr>{% endfor %}</tbody></table></div>
+    </form>
+    <p class="is-size-7 has-text-grey mt-3">Matching is exact, including case and leading zeros. Correct blank, duplicate, or inconsistent SKUs in Poynt, then refresh. Historical SKU aliases are not used.</p>
+  </div>
+  {% if missing %}<div class="box"><h2 class="title is-5">Missing from this store</h2><p class="mb-3">These authoritative SKUs were not found among this store's active products. Check the SKU and catalog assignment in Poynt.</p>
+    <div class="table-container"><table class="table is-fullwidth"><thead><tr><th>SKU</th><th>Reference name</th></tr></thead><tbody>{% for product in missing %}<tr><td>{{ product.sku }}</td><td>{{ product.name }}</td></tr>{% endfor %}</tbody></table></div>
+  </div>{% endif %}
+  {% endif %}
+  <details class="box" {% if not snapshot %}open{% endif %}><summary class="title is-5" style="cursor:pointer">Authoritative SKU list ({{ definitions|length }})</summary>
+    <p class="mb-4 mt-3">Shared across your organization's stores. Reference names may differ from current marketing names. Removing an entry only changes this FTW list.</p>
+    {% if definitions %}<div class="table-container"><table class="table is-fullwidth"><thead><tr><th>SKU</th><th>Reference name</th><th>Reference category</th><th></th></tr></thead><tbody>
+    {% for product in definitions %}<tr><td>{{ product.sku }}</td><td>{{ product.name }}</td><td>{{ product.category or '—' }}</td><td><form method="post" action="/pricing/products/remove" class="remove-form">
+      <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="definition_id" value="{{ product.id }}"><input type="hidden" name="store_id" value="{{ selected_store.store_id if selected_store else '' }}"><button class="button is-small is-light">Remove from FTW</button>
+    </form></td></tr>{% endfor %}</tbody></table></div>{% else %}<p>No SKU definitions yet. Discover a store and add selected products above.</p>{% endif %}
+  </details>
+</div></section>
+<script>
+(() => {
+  const rows = [...document.querySelectorAll('.discovered-row')];
+  const search = document.getElementById('product-search');
+  const issues = document.getElementById('issues-only');
+  const selected = () => [...document.querySelectorAll('input[name="product_ids"]:checked')];
+  const update = () => {
+    const button = document.getElementById('add-button');
+    if (button) button.disabled = selected().length === 0;
+    const count = document.getElementById('selection-count');
+    if (count) count.textContent = selected().length + ' selected';
+  };
+  const filter = () => { rows.forEach(row => {
+    row.hidden = !row.textContent.toLowerCase().includes(search.value.toLowerCase()) || (issues.checked && row.dataset.issues === 'no');
+  }); document.getElementById('select-visible').checked = false; };
+  search?.addEventListener('input', filter); issues?.addEventListener('change', filter);
+  document.getElementById('select-visible')?.addEventListener('change', event => {
+    rows.filter(row => !row.hidden).forEach(row => { const box = row.querySelector('input'); if (box) box.checked = event.target.checked; }); update();
+  });
+  document.getElementById('add-form')?.addEventListener('change', update);
+  document.getElementById('discover-form')?.addEventListener('submit', event => {
+    const button = event.target.querySelector('button'); button.disabled = true; button.classList.add('is-loading');
+  });
+  document.querySelectorAll('.remove-form').forEach(form => form.addEventListener('submit', event => {
+    if (!confirm('Remove this SKU from the authoritative FTW list? Poynt products will remain unchanged.')) event.preventDefault();
+  }));
+  const time = document.getElementById('discovered-time');
+  if (time) time.textContent = new Date(time.dateTime).toLocaleString() + ' (your local time)';
+  window.addEventListener('pageshow', () => { const button = document.querySelector('#discover-form button'); if (button) { button.classList.remove('is-loading'); button.disabled = {{ 'false' if can_connect else 'true' }}; } });
+})();
+</script>
+{% endblock %}

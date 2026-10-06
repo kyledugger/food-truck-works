@@ -1,0 +1,69 @@
+--- a/main.py
++++ b/main.py
+@@ -33,6 +33,7 @@
+ from routers.live_dashboard import router as live_dashboard_router
+ from routers.refresher import run_poynt_refresher
+ from routers.claim_tips import router as claim_tips_router
++from routers.pricing import router as pricing_router
+ from live_dashboard_service import dashboard_worker
+ from store_display_access import StoreDisplayMiddleware
+ 
+@@ -98,6 +99,7 @@
+ app.include_router(integrations_router)
+ app.include_router(live_dashboard_router)
+ app.include_router(claim_tips_router)
++app.include_router(pricing_router)
+ 
+ is_production = os.getenv("ENVIRONMENT") == "production"
+ # SessionMiddleware is added last so signed sessions exist before this guard.
+--- a/models.py
++++ b/models.py
+@@ -1,6 +1,6 @@
+ from datetime import datetime
+ 
+-from sqlalchemy import Boolean, CheckConstraint, DateTime, ForeignKey, Integer, String, UniqueConstraint, Index, text
++from sqlalchemy import Boolean, CheckConstraint, DateTime, ForeignKey, Integer, String, UniqueConstraint, Index, text, JSON
+ from sqlalchemy.orm import Mapped, mapped_column, relationship
+ 
+ from instant_type import UTCInstant
+@@ -393,6 +393,30 @@
+     organization: Mapped["Organization"] = relationship(
+         back_populates="poynt_connection"
+     )
++
++
++class PricingProduct(Base):
++    """The organization's exact, authoritative SKU definitions."""
++    __tablename__ = "pricing_products"
++    __table_args__ = (UniqueConstraint("organization_id", "sku", name="uq_pricing_product_sku"),)
++    id: Mapped[int] = mapped_column(primary_key=True)
++    organization_id: Mapped[int] = mapped_column(ForeignKey("organizations.id"), nullable=False, index=True)
++    sku: Mapped[str] = mapped_column(String(200), nullable=False)
++    name: Mapped[str] = mapped_column(String(200), nullable=False)
++    category: Mapped[str | None] = mapped_column(String(200), nullable=True)
++
++
++class ProductDiscovery(Base):
++    """Latest store discovery only; not a history or a pricing profile."""
++    __tablename__ = "product_discoveries"
++    __table_args__ = (UniqueConstraint("organization_id", "store_id", name="uq_product_discovery_store"),)
++    id: Mapped[int] = mapped_column(primary_key=True)
++    organization_id: Mapped[int] = mapped_column(ForeignKey("organizations.id"), nullable=False, index=True)
++    store_id: Mapped[str] = mapped_column(String(100), nullable=False)
++    business_id: Mapped[str] = mapped_column(String(100), nullable=False)
++    token: Mapped[str] = mapped_column(String(64), nullable=False)
++    # Includes an explicit UTC ISO discovery instant and display-only product data.
++    payload: Mapped[dict] = mapped_column(JSON, nullable=False)
+ 
+ 
+ class OrganizationStore(Base):
+--- a/templates/dashboard.html
++++ b/templates/dashboard.html
+@@ -30,6 +30,7 @@
+                     </a>
+                     {% if can_manage_poynt %}
+                     <a href="/integrations" class="button is-light">Integrations</a>
++                    <a href="/pricing/products" class="button is-light">Pricing</a>
+                     {% endif %}
+ 
+                     <form method="post" action="/logout">

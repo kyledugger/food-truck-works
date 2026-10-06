@@ -33,6 +33,7 @@ from routers.integrations import router as integrations_router
 from routers.live_dashboard import router as live_dashboard_router
 from routers.refresher import run_poynt_refresher
 from routers.claim_tips import router as claim_tips_router
+from routers.pricing import router as pricing_router
 from live_dashboard_service import dashboard_worker
 from store_display_access import StoreDisplayMiddleware
 
@@ -98,6 +99,7 @@ app.include_router(stores_router)
 app.include_router(integrations_router)
 app.include_router(live_dashboard_router)
 app.include_router(claim_tips_router)
+app.include_router(pricing_router)
 
 is_production = os.getenv("ENVIRONMENT") == "production"
 # SessionMiddleware is added last so signed sessions exist before this guard.
