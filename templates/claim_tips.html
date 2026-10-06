@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}Claim Tips - Food Truck Works{% endblock %}
+{% block content %}
+<section class="section"><div class="container" style="max-width:760px">
+<a href="/dashboard">← Dashboard</a>
+<h1 class="title mt-4">Claim Tips</h1>
+<p class="subtitle is-6">Choose your shift window, then divide the available tips.</p>
+{% if not display %}
+<form method="get" action="/poynt/claim-tips" class="box">
+    <input type="hidden" name="token" value="{{ token }}">
+    <label class="label" for="claim-store">Store</label>
+    <div class="select is-fullwidth"><select id="claim-store" name="store_id" required onchange="this.form.submit()">
+        <option value="">Choose a store</option>
+        {% for store in stores %}<option value="{{ store.id }}" {% if selected and selected.id == store.id %}selected{% endif %}>{{ store.name }}</option>{% endfor %}
+    </select></div>
+    {% if not stores %}<p class="help">No stores are assigned to you. Contact a manager.</p>{% endif %}
+</form>
+{% endif %}
+{% if selected %}
+<div class="box">
+<h2 class="title is-5">{{ selected.name }}</h2><p class="help">Times use {{ selected.timezone }}.</p>
+{% if manager %}<a class="button is-small is-light mt-3" href="/poynt/tip-settings?store_id={{ selected.id|urlencode }}">Tip Settings</a>{% endif %}
+{% if not selected.enabled %}<p class="notification is-warning mt-4">A manager must activate tip allocation in Tip Settings first.</p>{% else %}
+<p id="last-claim" class="notification is-light mt-4"></p>
+<form id="claim-window" method="post" action="/poynt/claim-tips/load">
+    <input type="hidden" name="token" value="{{ token }}">
+    <input type="hidden" name="store_id" value="{{ selected.id }}">
+    <div class="columns">
+    <div class="column"><label class="label" for="claim-date">Start date</label>
+    {% if manager %}<input id="claim-date" class="input" name="start_date" type="date" max="{{ selected.today }}" value="{{ selected.suggested_date }}" required>
+    {% else %}<div class="select is-fullwidth"><select id="claim-date" name="start_date">
+        <option value="{{ selected.today }}" {% if selected.suggested_date == selected.today %}selected{% endif %}>Today · {{ selected.today }}</option>
+        <option value="{{ selected.yesterday }}" {% if selected.suggested_date == selected.yesterday %}selected{% endif %}>Yesterday · {{ selected.yesterday }}</option>
+    </select></div>{% endif %}</div>
+    <div class="column"><label class="label" for="claim-time">Start time</label>
+        <input id="claim-time" class="input" name="start_time" type="time" step="60" value="{{ selected.suggested_time }}" required></div></div>
+    <label class="label">End boundary</label><p id="claim-end" class="input" style="height:auto" aria-live="polite"></p>
+    <p class="help mt-3">Accept the suggested start or choose a later time. Gaps between claims are allowed. Maximum window: 24 hours.</p>
+    <p class="help">The end is fixed when you launch Claim Tips, rounded down to the minute. The unfinished minute remains for the next claim.</p>
+    <p id="claim-validation" class="help mt-3" role="status"></p>
+    <button id="claim-load" class="button is-primary mt-4" disabled>Load tips</button>
+</form>
+{% endif %}
+</div>{% endif %}
+</div></section>
+{% endblock %}
+{% block scripts %}
+{% if selected and selected.enabled %}
+<script>
+const configuration = {{ selected|tojson }};
+const manager = {{ manager|tojson }};
+const zone = configuration.timezone;
+function parts(value) {
+    return Object.fromEntries(new Intl.DateTimeFormat('en-US', {timeZone:zone,
+        year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit',
+        second:'2-digit',hourCycle:'h23'}).formatToParts(new Date(value))
+        .filter(p=>p.type!=='literal').map(p=>[p.type,p.value]));
+}
+function localValue(value) { const p=parts(value); return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}`; }
+function instant(value) {
+    const [y,m,d,h,n] = value.match(/\d+/g).map(Number);
+    const wall = Date.UTC(y,m-1,d,h,n), candidates = new Set();
+    for (const delta of [-86400000,0,86400000]) {
+        const probe=wall+delta,p=parts(probe);
+        const offset=Date.UTC(+p.year,+p.month-1,+p.day,+p.hour,+p.minute,+p.second)-probe;
+        const candidate=wall-offset;
+        if(localValue(candidate)===value) candidates.add(candidate);
+    }
+    return candidates.size===1 ? [...candidates][0] : null;
+}
+function pretty(value) { return new Intl.DateTimeFormat(undefined,{timeZone:zone,month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'}).format(new Date(value)); }
+const launched=Date.parse(configuration.launched);
+const last=configuration.last ? Math.ceil(Date.parse(configuration.last)/60000)*60000 : null;
+const activation=configuration.activation ? Math.ceil(Date.parse(configuration.activation)/60000)*60000 : null;
+const dateInput=document.getElementById('claim-date'), timeInput=document.getElementById('claim-time');
+const load=document.getElementById('claim-load'), message=document.getElementById('claim-validation');
+document.getElementById('last-claim').textContent = last && launched-last <= 86400000
+    ? 'The last claim ended '+pretty(last)+'. Is that the right start? Accept the suggestion below or choose a later time.'
+    : 'No recent claim boundary. The default start is midnight today. Choose Yesterday for an overnight shift.';
+function update() {
+    load.disabled=true;
+    if(!dateInput.value || !timeInput.value) { message.textContent='Choose a start date and time.'; return; }
+    let end=launched;
+    const dayStart=instant(dateInput.value+'T00:00');
+    if(manager && dateInput.value < configuration.yesterday) {
+        const next=new Date(dateInput.value+'T00:00:00Z'); next.setUTCDate(next.getUTCDate()+1);
+        end=instant(next.toISOString().slice(0,10)+'T00:00');
+    }
+    if(end===null || dayStart===null) { message.textContent='This day has an ambiguous midnight. Contact management.'; return; }
+    let lower=Math.max(dayStart,end-86400000);
+    if(last!==null && end-86400000<=last && last<=end) lower=Math.max(lower,last);
+    if(activation!==null) lower=Math.max(lower,activation);
+    const start=instant(dateInput.value+'T'+timeInput.value);
+    document.getElementById('claim-end').textContent=pretty(end)+' · '+zone;
+    const valid=start!==null && lower<=start && start<end && end-start<=86400000 && dateInput.value<=configuration.today;
+    message.textContent=valid ? 'Window ready. Only unclaimed tips will be available.' : 'Choose a valid start at or after '+pretty(lower)+', before the end. Repeated or missing clock times are not accepted.';
+    load.disabled=!valid;
+}
+dateInput.addEventListener('change',() => {
+    const url=new URL('/poynt/claim-tips',window.location.origin);
+    url.searchParams.set('store_id',configuration.id);
+    url.searchParams.set('token',{{ token|tojson }});
+    url.searchParams.set('day',dateInput.value);
+    window.location.href=url.toString();
+});
+timeInput.addEventListener('input',update); update();
+document.getElementById('claim-window').addEventListener('submit', async event => {
+    event.preventDefault(); update(); if(load.disabled) return;
+    load.disabled=true; load.textContent='Loading tips…';
+    try {
+        const response=await fetch(event.target.action,{method:'POST',body:new FormData(event.target)});
+        if(!response.ok) { const body=await response.json().catch(()=>({})); throw new Error(body.detail || 'Could not load tips.'); }
+        const html=await response.text(); document.open(); document.write(html); document.close();
+    } catch(error) { message.textContent=error.message; load.textContent='Load tips'; load.disabled=false; }
+});
+</script>
+{% endif %}
+{% endblock %}

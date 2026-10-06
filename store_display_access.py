@@ -58,5 +58,10 @@ class StoreDisplayMiddleware(BaseHTTPMiddleware):
             if (request.query_params.getlist("store_id") == [str(store_id)]
                     and request.query_params.getlist("date") in ([], ["today"])):
                 return await call_next(request)
+        # Claim routes repeat assignment, store, date and signed-window checks.
+        if ((request.method == "GET" and request.url.path == "/poynt/claim-tips")
+                or (request.method == "POST" and request.url.path in {
+                    "/poynt/claim-tips/load", "/poynt/tip-submissions"})):
+            return await call_next(request)
         return JSONResponse({"detail": "Store Display accounts can only view their assigned store today."},
                             status_code=403, headers={"Cache-Control": "no-store"})

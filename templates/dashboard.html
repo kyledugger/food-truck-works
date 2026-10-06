@@ -72,7 +72,9 @@
 
             {% endif %}
             <div class="columns">
+                <div class="column"><a href="/poynt/claim-tips" class="button is-primary is-fullwidth">Claim Tips</a></div>
 
+                {% if can_manage_poynt %}
                 <div class="column">
                     <a
                         href="/poynt/orders"
@@ -81,6 +83,7 @@
                         Orders Report
                     </a>
                 </div>
+                {% endif %}
 
                 <div class="column">
                     <a

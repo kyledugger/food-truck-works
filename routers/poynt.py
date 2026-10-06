@@ -1281,8 +1281,7 @@ def _allocation_orders(orders: list[dict], ranges: list[dict]) -> tuple[list[dic
             continue
         moment = _parse_tip_submission_datetime(created)
         matches = [index for index, item in enumerate(parsed)
-                   if item[0] <= moment < item[1] or
-                   (index == len(parsed) - 1 and moment == item[1])]
+                   if item[0] <= moment < item[1]]
         if not matches:
             continue
         if order_id in seen:
@@ -1825,6 +1824,7 @@ async def submit_tip_record(
     total_tip_cents: int = Form(...),
     payout_choices: str = Form("{}"),
     submission_json: str = Form(...),
+    claim_token: str = Form(""),
 ):
     user_id = request.session.get("user_id")
     if not user_id:
@@ -1874,6 +1874,16 @@ async def submit_tip_record(
 
     role = get_organization_role(user_id, organization_id)
     with SessionLocal() as session:
+        from claim_tip_access import require_claim_store
+        require_claim_store(session, request, organization_id, store_id)
+        context = request.session.get("tip_claim")
+        if (not context or claim_token != context.get("token")
+                or context.get("organization_id") != organization_id
+                or context.get("user_id") != user_id
+                or context.get("store_id") != store_id
+                or context.get("start") != utc_iso(report_start)
+                or context.get("end") != utc_iso(report_end)):
+            raise HTTPException(409, "Launch Claim Tips and load the window again before submitting.")
         store = session.execute(select(OrganizationStore).where(
             OrganizationStore.organization_id == organization_id,
             OrganizationStore.store_id == store_id,
@@ -1899,6 +1909,38 @@ async def submit_tip_record(
         raise HTTPException(502, "Could not verify current Poynt tips.") from exc
     orders = [order for order in filter_completed_orders(orders)[0]
               if _active_store_order(order, store_id)]
+    # Match the loaded, signed claim session, then recheck store authority and boundaries.
+    from claim_tip_access import require_claim_store, latest_claim_end
+    from claim_tip_windows import window_bounds, validate_window
+    context = request.session.get("tip_claim")
+    if (not context or claim_token != context.get("token")
+            or context.get("organization_id") != organization_id
+            or context.get("user_id") != user_id
+            or context.get("store_id") != store_id
+            or context.get("start") != utc_iso(report_start)
+            or context.get("end") != utc_iso(report_end)):
+        raise HTTPException(409, "Launch Claim Tips and load the window again before submitting.")
+    with SessionLocal() as session:
+        store, manager, is_display = require_claim_store(session, request, organization_id, store_id)
+        store_name = store.display_name or store.poynt_name
+        day = report_start.astimezone(ZoneInfo(store.timezone_name)).date()
+        setting = _store_tip_setting(session, organization_id, store_id)
+        try:
+            lower, upper = window_bounds(_parse_tip_submission_datetime(context["launched"]),
+                store.timezone_name, day, manager,
+                latest_claim_end(session, organization_id, store_id, report_end),
+                setting.tip_allocation_start_at if setting else None)
+            validate_window(report_start, report_end, lower, upper)
+            for item in submission_data["ranges"]:
+                validate_window(_parse_tip_submission_datetime(item["start"]),
+                    _parse_tip_submission_datetime(item["end"]), report_start, report_end)
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from exc
+        claimed_ids = set(session.scalars(select(TipOrderClaim.poynt_order_id).where(
+            TipOrderClaim.organization_id == organization_id,
+            TipOrderClaim.poynt_business_id == credentials.business_id,
+            TipOrderClaim.poynt_order_id.in_([o["id"] for o in orders]))))
+    orders = [o for o in orders if o["id"] not in claimed_ids]
     claims, allocations = _allocation_orders(orders, submission_data["ranges"])
     if not claims or sum(tip for _, tip in claims) != total_tip_cents:
         raise HTTPException(409, "Tip total changed. Refresh the report and recalculate.")
@@ -1963,8 +2005,17 @@ async def submit_tip_record(
             session.commit()
         except IntegrityError as exc:
             session.rollback()
-            raise HTTPException(409, "One or more orders have already been allocated. Refresh the report.") from exc
+            constraint = getattr(getattr(exc.orig, "diag", None), "constraint_name", None)
+            logger.warning("Tip claim integrity failure: organization=%s store=%s constraint=%s",
+                           organization_id, store_id, constraint or "unknown")
+            if constraint == "uq_tip_order_once" or "tip_order_claims" in str(exc.orig):
+                raise HTTPException(409, "Another claim allocated one or more orders. Load tips again.") from exc
+            logger.exception("Could not save tip claim")
+            raise HTTPException(500, "Could not save this claim. Contact management; no changes were saved.") from exc
 
+    request.session.pop("tip_claim", None)
+    if is_display:
+        return RedirectResponse("/dashboard", status_code=303)
     return RedirectResponse(f"/poynt/tip-submissions?{urlencode({'store_id': store_id})}", status_code=303)
 
 @router.get("/poynt/orders", response_class=HTMLResponse)
@@ -1992,6 +2043,10 @@ async def poynt_orders(
             "/login",
             status_code=303
         )
+
+    role = get_organization_role(user_id, organization_id)
+    if not role_can_manage_organization(role):
+        raise HTTPException(403, "Only owners and managers can access the Orders Report.")
 
     with SessionLocal() as session:
         configured_stores = session.execute(select(OrganizationStore).where(
@@ -2361,46 +2416,6 @@ async def poynt_orders(
 
     stores_display = get_stores_display(store_ids, store_names)
 
-    tip_calculator_data = get_tip_calculator_data(orders)
-
-    tip_calculator_employees = get_tip_calculator_employees(
-        organization_id
-    )
-
-    tip_payout_policy = "choice"
-    tip_setting = None
-    if len(store_ids) == 1:
-        with SessionLocal() as session:
-            tip_setting = _store_tip_setting(session, organization_id, next(iter(store_ids)))
-            if tip_setting:
-                tip_payout_policy = tip_setting.payout_policy
-
-    tip_calculator_enabled = (
-        len(store_ids) == 1
-        and bool(tip_calculator_employees)
-        and tip_setting is not None
-        and tip_setting.tip_allocation_start_at is not None
-    )
-
-    tip_calculator_store_name = (
-        stores_display
-        if len(store_ids) == 1
-        else ""
-    )
-
-    if len(store_ids) != 1:
-        tip_calculator_disabled_reason = (
-            "Tip Calculator requires exactly one store in the report."
-        )
-    elif not tip_calculator_employees:
-        tip_calculator_disabled_reason = (
-            "Add an active employee before using the Tip Calculator."
-        )
-    elif tip_setting is None or tip_setting.tip_allocation_start_at is None:
-        tip_calculator_disabled_reason = "A manager must activate tip allocation in Tip Settings."
-    else:
-        tip_calculator_disabled_reason = ""
-
     return templates.TemplateResponse(
         request=request,
         name="orders.html",
@@ -2438,26 +2453,6 @@ async def poynt_orders(
             "revenue_per_hour_orders_display": revenue_per_hour_orders_display,
             "revenue_per_hour_report_display": revenue_per_hour_report_display,
             "profit_per_hour_display": profit_per_hour_display,
-            "tip_calculator_data": tip_calculator_data,
-            "tip_payout_policy": tip_payout_policy,
-            "tip_allocation_start_at": (
-                utc_iso(tip_setting.tip_allocation_start_at)
-                if tip_setting and tip_setting.tip_allocation_start_at else None
-            ),
-            "tip_employee_submission_hours": tip_setting.employee_submission_hours if tip_setting else 24,
-            "tip_employee_window_exempt": role_can_view_payroll_reports(
-                get_organization_role(user_id, organization_id)
-            ),
-            "tip_can_manage_settings": role_can_manage_organization(
-                get_organization_role(user_id, organization_id)
-            ),
-            "tip_calculator_employees": tip_calculator_employees,
-            "tip_calculator_enabled": tip_calculator_enabled,
-            "tip_calculator_store_name": tip_calculator_store_name,
-            "tip_calculator_store_id": next(iter(store_ids), "") if len(store_ids) == 1 else "",
-            "tip_calculator_disabled_reason": tip_calculator_disabled_reason,
-            "start_at_for_tip_calculator": start_at,
-            "end_at_for_tip_calculator": end_at,                  
         },
     )
 

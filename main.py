@@ -31,6 +31,7 @@ from routers.account_settings import router as account_settings_router
 from routers.stores import router as stores_router
 from routers.integrations import router as integrations_router
 from routers.live_dashboard import router as live_dashboard_router
+from routers.claim_tips import router as claim_tips_router
 from live_dashboard_service import dashboard_worker
 from store_display_access import StoreDisplayMiddleware
 
@@ -89,6 +90,7 @@ app.include_router(account_settings_router)
 app.include_router(stores_router)
 app.include_router(integrations_router)
 app.include_router(live_dashboard_router)
+app.include_router(claim_tips_router)
 
 is_production = os.getenv("ENVIRONMENT") == "production"
 # SessionMiddleware is added last so signed sessions exist before this guard.
