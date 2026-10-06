@@ -41,8 +41,7 @@
     details.append(el('p','live-chart-title','Hourly Sales'),hourlyWrap);
     const activityWrap=el('div','live-chart live-chart-small'),activity=el('canvas');activity.setAttribute('role','img');activityWrap.append(activity);
     const activityTitle=el('p','live-chart-title','Orders per 5 minutes · past hour');
-    details.append(activityTitle,activityWrap);
-    if(storeView){const charts=el('div','store-chart-grid'),hourlyPanel=el('div'),activityPanel=el('div');hourlyPanel.append(details.querySelector('.live-chart-title'),hourlyWrap);activityPanel.append(activityTitle,activityWrap);charts.append(hourlyPanel,activityPanel);details.append(charts);}
+    if(!storeView)details.append(activityTitle,activityWrap);
     if(storeView){const products=el('button','button is-small is-light','Category totals · View product SKU counts');products.type='button';products.addEventListener('click',()=>document.dispatchEvent(new CustomEvent('store-products')));details.append(products);}
     const table=el('table','live-category'),head=el('thead'),tr=el('tr');
     ['Category','Qty','Sales','Share'].forEach(label=>tr.append(el('th','',label)));head.append(tr);
@@ -61,7 +60,7 @@
       plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>isMoney?money(Math.round(ctx.parsed.y*100)):ctx.parsed.y+' orders'}}},
       scales:{y:{beginAtZero:true,grid:{color:'#dbe4e8',lineWidth:1},ticks:{precision:0,callback:value=>isMoney?'$'+value:value}},x:{ticks:{maxRotation:0,autoSkip:true,maxTicksLimit:8}}}}});
   }
-  function drawCharts(card,s){chart(card,'hourly',card.hourly,s.hourly,true);if(!s.historical)chart(card,'activity',card.activity,s.activity,false);}
+  function drawCharts(card,s){chart(card,'hourly',card.hourly,s.hourly,true);if(!storeView&&!s.historical)chart(card,'activity',card.activity,s.activity,false);}
   function render(data) {
     lastData=data;
     const mode=document.getElementById('live-mode');

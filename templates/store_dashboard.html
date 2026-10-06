@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{{ store.display_name or store.poynt_name }} · Live Store{% endblock %}
-{% block head %}<link rel="stylesheet" href="/static/css/live-dashboard.css?v=20261005-8"><link rel="stylesheet" href="/static/css/store-dashboard.css?v=20261006-kitchen-1">{% endblock %}
+{% block head %}<link rel="stylesheet" href="/static/css/live-dashboard.css?v=20261005-8"><link rel="stylesheet" href="/static/css/store-dashboard.css?v=20261006-flow-1">{% endblock %}
 {% block content %}
 <main class="store-screen">
     <header class="store-toolbar">
@@ -13,11 +13,18 @@
     <div class="store-layout">
     <div class="store-left-column">
     <section id="live-stores" class="live-store-grid" data-store-id="{{ store.id }}" aria-label="Today's store sales"></section>
+    <div class="store-flow-pair">
     <section class="store-intake" aria-labelledby="store-intake-title">
         <h2 id="store-intake-title" class="has-text-weight-semibold">Kitchen intake</h2>
         <div id="store-intake-data"><p class="store-pace-note">Collecting item flow…</p></div>
-        <p class="store-pace-note">Completed-order items, last 5 minutes. Quiet time counts. Incoming demand, not kitchen backlog.</p>
     </section>
+    <section class="store-intake" aria-labelledby="store-completion-title">
+        <h2 id="store-completion-title" class="has-text-weight-semibold">Kitchen completion</h2>
+        <div id="store-completion-data"><p class="store-pace-note">Collecting item flow…</p></div>
+        <p class="store-pace-note">Items marked Done, not delivered.</p>
+    </section>
+    </div>
+    <p class="store-pace-note">Both rates use the last 15 minutes, including quiet time.</p>
     <section class="store-pace" aria-labelledby="store-pace-title">
         <div><h2 id="store-pace-title" class="has-text-weight-semibold">Time between orders</h2><p class="store-pace-note">Recent: median over the last 10 minutes. Fast today: fastest 10%, up to 10 samples. Completed orders; gap belongs to the newer order. Includes guest interaction and quiet gaps; multiple registers may overlap.</p></div>
         <div id="store-pace-cards" class="store-pace-cards"><p class="store-pace-note">Collecting order intervals…</p></div>
@@ -37,4 +44,4 @@ window.addEventListener('pagehide', () => { document.body.style.visibility = 'hi
 window.addEventListener('pageshow', event => {
     if (event.persisted) window.location.replace(hidePerformance.href);
 });
-</script><script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.min.js"></script><script src="/static/js/store-dashboard.js?v=20261006-kitchen-1" defer></script><script src="/static/js/kitchen-display.js?v=20261006-1" defer></script><script src="/static/js/live-dashboard.js?v=20261006-kitchen-1" defer></script>{% endblock %}
+</script><script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.min.js"></script><script src="/static/js/store-dashboard.js?v=20261006-flow-1" defer></script><script src="/static/js/kitchen-display.js?v=20261006-flow-1" defer></script><script src="/static/js/live-dashboard.js?v=20261006-flow-1" defer></script>{% endblock %}

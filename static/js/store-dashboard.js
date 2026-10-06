@@ -5,18 +5,24 @@
   let store=null,chart=null,fingerprint='';
   const paceCards=document.getElementById('store-pace-cards');
   const intakeData=document.getElementById('store-intake-data');
+  const completionData=document.getElementById('store-completion-data');
+  let flow=null,flowUnavailable=false;
   function intake(){
-    intakeData.replaceChildren();
-    if(!store||store.setup_required||store.loading||!store.kitchen_intake){intakeData.append(el('p','store-pace-note',store?.setup_required?'Store setup required.':'Collecting item flow…'));return;}
-    const metric=store.kitchen_intake,number=new Intl.NumberFormat('en-US',{maximumFractionDigits:1});
+    intakeData.replaceChildren();completionData.replaceChildren();
+    if(!flow){for(const target of [intakeData,completionData])target.append(el('p','store-pace-note',flowUnavailable?'Flow temporarily unavailable.':'Collecting item flow…'));return;}
+    const metric=flow.intake,number=new Intl.NumberFormat('en-US',{maximumFractionDigits:1}),minutes=flow.window_minutes;
     intakeData.append(el('strong','store-intake-value',metric.items_per_minute.toFixed(1)+' items/min'));
-    intakeData.append(el('p','store-intake-detail',metric.recent_items?number.format(metric.recent_items)+' items · '+metric.recent_orders+' orders in the last 5 minutes':'No items in the last 5 minutes.'));
+    intakeData.append(el('p','store-intake-detail',number.format(metric.recent_items)+' items · '+metric.recent_orders+' orders in the last '+minutes+' minutes'));
+    completionData.append(el('strong','store-intake-value',flow.completion.items_per_minute.toFixed(1)+' items/min'));
+    completionData.append(el('p','store-intake-detail',number.format(flow.completion.completed_items)+' items marked done in the last '+minutes+' minutes'));
     const labels={rising:'↑ Rising',steady:'→ Steady',falling:'↓ Falling'};
     const trend=el('p','store-intake-detail',(labels[metric.trend]||labels.steady)+' · Preceding 15 min: '+metric.baseline_items_per_minute.toFixed(1)+' items/min');
     trend.title='Rising or falling means more than 20% above or below the preceding 15-minute rate.';
     intakeData.append(trend);
   }
-  document.addEventListener('store-access-denied',()=>intakeData.replaceChildren());
+  document.addEventListener('kitchen-flow',event=>{flow=event.detail;flowUnavailable=false;intake();});
+  document.addEventListener('kitchen-flow-unavailable',()=>{flow=null;flowUnavailable=true;intake();});
+  document.addEventListener('store-access-denied',()=>{flow=null;intakeData.replaceChildren();completionData.replaceChildren();});
   function pace(){
     paceCards.replaceChildren();
     if(!store||store.setup_required||store.loading){paceCards.append(el('p','store-pace-note',store?.setup_required?'Store setup required.':'Collecting order intervals…'));return;}

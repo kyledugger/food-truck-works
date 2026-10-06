@@ -17,7 +17,7 @@
 @media(max-width:800px){.store-layout{grid-template-columns:1fr}.store-toolbar-actions{width:100%}.store-orders{max-height:65dvh}.store-left-column{overflow:visible}}
 @media(min-width:1000px){
 .store-screen .live-store-header h2{display:none}.store-screen .live-store-date{margin-top:0}
-.store-chart-grid{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:1rem}
+.store-flow-pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.65rem;flex-shrink:0}
 .store-screen .live-chart-title{margin-top:.5rem;font-size:.85rem}.store-screen .live-chart{height:145px}
 .store-screen .live-now strong{font-size:1.15rem}.store-screen .live-store details>button{justify-self:start;margin-top:.5rem}
 }

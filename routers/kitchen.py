@@ -15,9 +15,25 @@ from models import OrganizationStore, PoyntConnection
 from live_dashboard_models import DashboardOrder
 from kitchen_models import KitchenTicket
 from kitchen_service import sync_ticket, transition, serialize
+from live_dashboard_metrics import kitchen_intake, instant
 from store_time import utc_now, utc_iso, local_day_bounds
 
 router = APIRouter()
+
+
+def completion_rate(tickets, now, minutes=15):
+    """Count current done quantities once; undo removes them from the window."""
+    total = 0.0
+    for ticket in tickets:
+        if ticket.state == "cancelled":
+            continue
+        for item in ticket.items:
+            if item.get("state") != "done" or not item.get("done_at"):
+                continue
+            at = instant(item["done_at"])
+            if now-timedelta(minutes=minutes) <= at <= now:
+                total += max(0, float(item.get("quantity", 0)))
+    return {"completed_items": total, "items_per_minute": total/minutes}
 
 
 def scope(request, session, store_id):
@@ -64,8 +80,17 @@ def queue(request: Request, store_id: int):
                 .order_by(KitchenTicket.created_at, KitchenTicket.id)).all()
             recent = session.scalars(select(KitchenTicket).where(*filters(store, connection), KitchenTicket.state == "ready",
                 KitchenTicket.ready_at >= now-timedelta(hours=2)).order_by(KitchenTicket.ready_at.desc()).limit(20)).all()
+            flow_orders = session.scalars(select(DashboardOrder).where(
+                DashboardOrder.organization_id == store.organization_id,
+                DashboardOrder.business_id == connection.business_id, DashboardOrder.store_id == store.store_id,
+                DashboardOrder.created_at >= now-timedelta(minutes=30), DashboardOrder.created_at <= now)).all()
+            completed_tickets = session.scalars(select(KitchenTicket).where(*filters(store, connection),
+                KitchenTicket.state.in_(["active", "ready"]), KitchenTicket.updated_at >= now-timedelta(minutes=15))).all()
             result = {"active": [serialize(t) for t in active], "recent": [serialize(t) for t in recent],
-                      "generated_at": utc_iso(now), "timezone": store.timezone_name}
+                      "generated_at": utc_iso(now), "timezone": store.timezone_name,
+                      "flow": {"window_minutes": 15,
+                               "intake": kitchen_intake([o.payload for o in flow_orders], now, 15),
+                               "completion": completion_rate(completed_tickets, now)}}
             session.commit()
         return JSONResponse(result, headers={"Cache-Control": "no-store"})
     except SQLAlchemyError:

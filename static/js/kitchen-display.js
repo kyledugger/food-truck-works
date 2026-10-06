@@ -53,6 +53,7 @@
     table.append(body);root.append(table);return root;
   }
   function render(data){
+    document.dispatchEvent(new CustomEvent('kitchen-flow',{detail:data.flow}));
     serverTime=Date.parse(data.generated_at);observed=performance.now();snapshot=data;
     const next=JSON.stringify([data.active,data.recent]);
     if(next!==fingerprint){
@@ -80,7 +81,7 @@
       if(response.status===401||response.status===403){revoke();document.dispatchEvent(new Event('store-access-denied'));return;}
       const data=await response.json();if(!response.ok)throw new Error(data.detail||'Queue could not refresh.');
       available=true;render(data);status.textContent=live?'Live kitchen updates':'Kitchen updates · polling fallback every 5 seconds';
-    }catch(error){if(!stopped){available=false;buttonsEnabled();status.textContent=(error.name==='AbortError'?'Queue refresh timed out.':error.message)+' Actions paused until the queue reconnects.';}}
+    }catch(error){if(!stopped){available=false;document.dispatchEvent(new Event('kitchen-flow-unavailable'));buttonsEnabled();status.textContent=(error.name==='AbortError'?'Queue refresh timed out.':error.message)+' Actions paused until the queue reconnects.';}}
     finally{clearTimeout(timeout);controller=null;loading=false;if(queued){queued=false;refresh();}}
   }
   async function act(ticket,action,key){

@@ -52,6 +52,33 @@ class KitchenTests(unittest.TestCase):
             headers={"X-Kitchen-CSRF":self.csrf if csrf is None else csrf},
             json={"revision":ticket["revision"],"action":action,"item_key":key})
 
+    def test_matching_flow_windows_partial_completion_and_undo(self):
+        self.seed()
+        data=self.queue()
+        self.assertEqual(data["flow"]["window_minutes"],15)
+        self.assertEqual(data["flow"]["intake"]["recent_items"],3)
+        self.assertEqual(data["flow"]["intake"]["items_per_minute"],3/15)
+        ticket=data["active"][0]
+        self.action(ticket,"done",ticket["items"][0]["key"])
+        data=self.queue()
+        self.assertEqual(data["flow"]["completion"]["completed_items"],2)
+        self.assertEqual(data["flow"]["completion"]["items_per_minute"],2/15)
+        ticket=data["active"][0]
+        self.action(ticket,"done")
+        data=self.queue()
+        self.assertEqual(data["flow"]["completion"]["completed_items"],3)
+        self.action(data["recent"][0],"undo")
+        self.assertEqual(self.queue()["flow"]["completion"]["completed_items"],0)
+
+    def test_completion_window_uses_done_time_and_quantity(self):
+        def item(minutes,qty,state="done"):
+            return {"state":state,"quantity":qty,"done_at":(self.now-timedelta(minutes=minutes)).isoformat()}
+        ticket=SimpleNamespace(state="active",items=[item(14,4),item(16,9),item(-1,8),item(1,5,"claimed")])
+        cancelled=SimpleNamespace(state="cancelled",items=[item(1,20)])
+        result=kitchen.completion_rate([ticket,cancelled],self.now)
+        self.assertEqual(result["completed_items"],4)
+        self.assertEqual(result["items_per_minute"],4/15)
+
     def test_item_claim_complete_release_and_undo(self):
         self.seed()
         ticket=self.queue()["active"][0]

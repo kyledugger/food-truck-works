@@ -86,3 +86,15 @@ is covered separately in backend tests.
 Run from the application directory:
 `python -m unittest discover -s tests -p test_kitchen.py`
 `python -m unittest discover -s tests -p test_live_dashboard.py`
+
+## Kitchen flow comparison
+
+The store display replaces the orders-per-five-minutes chart with paired Kitchen
+intake and Kitchen completion rates. Both use the same rolling 15-minute window,
+including quiet time, and update with every kitchen queue refresh. Intake counts
+arriving completed POS order quantities. Completion counts item quantities marked
+Done, including partially prepared orders; Undo removes those quantities. Rates
+span midnight and exclude cancelled tickets and completions outside the window.
+The completion query is independent of the recent-orders display limit. Completion
+means ready, not delivered, and the rate comparison does not measure backlog.
+No additional database migration is needed beyond the kitchen queue migration.

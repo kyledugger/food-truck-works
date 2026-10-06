@@ -125,10 +125,10 @@ def order_pace(orders, start, end, now):
             for size in samples]
 
 
-def kitchen_intake(orders, now):
+def kitchen_intake(orders, now, window_minutes=5):
     """Rolling arrival quantities, independent of midnight and order-size groups."""
-    recent_start = now - timedelta(minutes=5)
-    baseline_start = now - timedelta(minutes=20)
+    recent_start = now - timedelta(minutes=window_minutes)
+    baseline_start = recent_start - timedelta(minutes=15)
     recent_items = Decimal(0)
     baseline_items = Decimal(0)
     recent_orders = 0
@@ -149,7 +149,7 @@ def kitchen_intake(orders, now):
             recent_orders += 1
         else:
             baseline_items += quantity
-    rate = recent_items / 5
+    rate = recent_items / window_minutes
     baseline = baseline_items / 15
     trend = "steady"
     if rate > baseline * Decimal("1.2"):
