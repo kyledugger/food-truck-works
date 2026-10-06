@@ -10,6 +10,64 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+class PoyntTokenError(Exception):
+    """Token request failed without proof that merchant consent was revoked."""
+
+
+class PoyntTokenTemporaryError(PoyntTokenError):
+    """A later refresher pass may retry this request."""
+
+
+class PoyntRefreshRejected(PoyntTokenError):
+    """The refresh endpoint explicitly rejected the refresh credentials."""
+
+
+def _check_refresh_response(response: httpx.Response) -> dict:
+    # Never log response bodies or free-text messages: they may contain tokens.
+    if not response.is_success:
+        codes = []
+        try:
+            body = response.json()
+        except ValueError:
+            body = None
+        if isinstance(body, dict):
+            for key in ("error", "code", "errorCode"):
+                value = body.get(key)
+                if isinstance(value, str):
+                    codes.append(value)
+                elif isinstance(value, dict):
+                    for field in ("code", "errorCode"):
+                        if isinstance(value.get(field), str):
+                            codes.append(value[field])
+        rejected = {"invalid_grant", "INVALID_REFRESH_TOKEN"}
+        recognized = rejected | {
+            "invalid_client", "unauthorized_client", "invalid_request",
+            "unsupported_grant_type", "temporarily_unavailable", "server_error",
+        }
+        safe_code = next((c for c in codes if c in recognized), "unrecognized")
+        status = response.status_code
+        logger.warning("Poynt refresh failed: HTTP %d; code=%s", status, safe_code)
+        # Status takes precedence: never mark consent revoked for rate limits
+        # or provider failures, even when a misleading body contains a code.
+        if status in (408, 425, 429) or status >= 500:
+            raise PoyntTokenTemporaryError(
+                f"Poynt refresh temporarily failed (HTTP {status}); retry later."
+            )
+        if status in (400, 401, 403) and any(c in rejected for c in codes):
+            raise PoyntRefreshRejected("Poynt rejected the refresh credentials.")
+        raise PoyntTokenError(
+            f"Poynt refresh failed (HTTP {status}; code={safe_code}); "
+            "authorization rejection was not confirmed."
+        )
+    try:
+        body = response.json()
+    except ValueError:
+        raise PoyntTokenError("Poynt refresh returned invalid JSON.") from None
+    if not isinstance(body, dict):
+        raise PoyntTokenError("Poynt refresh returned an unexpected response.")
+    return body
+
+
 PRIVATE_KEY_PATH = (
     Path(__file__).resolve().parent.parent
     / "jwt"
@@ -95,11 +153,6 @@ async def exchange_authorization_code(
             response.status_code,
         )
 
-        logger.debug(
-            "Poynt token request error response: %s",
-            response.text,
-        )        
-
         response.raise_for_status()
 
     return response.json()
@@ -132,23 +185,15 @@ async def refresh_access_token(
 
     logger.info("Refreshing Poynt access token with refresh token" )
 
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        response = await client.post(
-            poynt_token_url,
-            headers=headers,
-            data=data,
-        )
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(
+                poynt_token_url, headers=headers, data=data,
+            )
+    except httpx.RequestError:
+        logger.warning("Poynt refresh transport failed; retry later.")
+        raise PoyntTokenTemporaryError(
+            "Poynt refresh could not reach the provider; retry later."
+        ) from None
 
-    if not response.is_success:
-        logger.error(
-            "Poynt token exchange failed: HTTP %d",
-            response.status_code,
-        )
-        logger.debug(
-            "Poynt token exchange error response: %s",
-            response.text,
-        )        
-
-        response.raise_for_status()
-
-    return response.json()
+    return _check_refresh_response(response)

@@ -6,7 +6,7 @@ from zoneinfo import ZoneInfo
 import httpx
 
 from poynt.connection import PoyntCredentials, locked_poynt_connection
-from poynt.token import refresh_access_token
+from poynt.token import refresh_access_token, PoyntRefreshRejected, PoyntTokenError
 
 import logging
 
@@ -18,7 +18,7 @@ class PoyntAPIError(Exception):
 
 
 class PoyntReauthorizationRequired(PoyntAPIError):
-    """Raised when the Poynt authorization has expired."""
+    """Raised when Poynt must be connected or explicitly reauthorized."""
 
 
 class PoyntClient:
@@ -161,17 +161,14 @@ class PoyntClient:
                 "The merchant must reconnect Poynt."
             )
 
-        token_response = await refresh_access_token(
-            self.refresh_token
-        )
-
-        expires_in = int(token_response["expiresIn"])
-
-        logger.info(
-            "Poynt token refreshed: expiresIn=%s seconds (%s hours)",
-            expires_in,
-            expires_in / 3600,
-        )        
+        try:
+            token_response = await refresh_access_token(self.refresh_token)
+        except PoyntRefreshRejected as exc:
+            raise PoyntReauthorizationRequired(
+                "Poynt rejected the refresh credentials. Please reconnect Poynt."
+            ) from exc
+        except PoyntTokenError as exc:
+            raise PoyntAPIError(str(exc)) from exc
 
         access_token = token_response.get("accessToken")
         refresh_token = token_response.get("refreshToken")
@@ -195,6 +192,15 @@ class PoyntClient:
                 "Poynt refresh response did not contain "
                 "expiresIn."
             )
+
+        try:
+            if isinstance(expires_in, bool):
+                raise ValueError
+            expires_in = int(expires_in)
+            if expires_in <= 0:
+                raise ValueError
+        except (TypeError, ValueError, OverflowError):
+            raise PoyntAPIError("Poynt refresh returned invalid expiresIn.") from None
 
         expires_at = (
             datetime.now(timezone.utc)
