@@ -1,10 +1,11 @@
 import os
+import asyncio
 from datetime import datetime, timedelta, timezone, time
 from zoneinfo import ZoneInfo
 
 import httpx
 
-from poynt.connection import PoyntCredentials, save_poynt_connection
+from poynt.connection import PoyntCredentials, locked_poynt_connection
 from poynt.token import refresh_access_token
 
 import logging
@@ -113,6 +114,39 @@ class PoyntClient:
         return "valid"
 
     async def _refresh_if_needed(self) -> None:
+        # Always reread under the lock, including for apparently valid clients:
+        # another worker or OAuth reconnect may already have replaced this token.
+        credentials = await asyncio.to_thread(self._refresh_in_worker)
+        self.business_id = credentials.business_id
+        self.access_token = credentials.access_token
+        self.refresh_token = credentials.refresh_token
+        self.token_type = credentials.token_type or "BEARER"
+        self.expires_at = credentials.expires_at
+
+    def _refresh_in_worker(self) -> PoyntCredentials:
+        with locked_poynt_connection(self.organization_id) as connection:
+            if connection is None:
+                raise PoyntReauthorizationRequired("Poynt is not connected.")
+            current = PoyntCredentials(
+                connection.business_id, connection.access_token,
+                connection.refresh_token, connection.token_type,
+                connection.expires_at,
+            )
+            client = PoyntClient(current, self.organization_id)
+            client.refresh_window = self.refresh_window
+            asyncio.run(client._refresh_locked())
+            connection.access_token = client.access_token
+            connection.refresh_token = client.refresh_token
+            connection.token_type = client.token_type
+            connection.expires_at = client.expires_at
+            result = PoyntCredentials(
+                client.business_id, client.access_token, client.refresh_token,
+                client.token_type, client.expires_at,
+            )
+        # The context commits before the caller adopts the new credentials.
+        return result
+
+    async def _refresh_locked(self) -> None:
         state = self._expiration_state()
 
         if state == "valid":
@@ -195,15 +229,7 @@ class PoyntClient:
         self.token_type = token_type or self.token_type
         self.expires_at = expires_at
 
-        # Then persist the complete new credential set.
-        save_poynt_connection(
-            organization_id=self.organization_id,
-            business_id=self.business_id,
-            access_token=self.access_token,
-            refresh_token=self.refresh_token,
-            token_type=self.token_type,
-            expires_at=self.expires_at,
-        )
+        # The worker persists this complete set in its locked transaction.
 
     async def refresh(self) -> None:
         """Refresh the organization's Poynt token when it enters the refresh window."""

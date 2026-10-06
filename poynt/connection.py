@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime
+from contextlib import contextmanager
+from threading import Lock
 
 from database import SessionLocal
 from models import PoyntConnection
@@ -7,6 +9,25 @@ from models import PoyntConnection
 import logging
 
 logger = logging.getLogger(__name__)
+
+# Bounded local locks also serialize SQLite development sessions. PostgreSQL's
+# row lock below provides coordination across processes and app instances.
+_refresh_locks = [Lock() for _ in range(64)]
+
+
+@contextmanager
+def locked_poynt_connection(organization_id: int):
+    """Hold the connection row until refresh and persistence have finished.
+
+    Call from a worker thread: acquiring a database lock can block.
+    """
+    with _refresh_locks[organization_id % len(_refresh_locks)]:
+        with SessionLocal() as session:
+            with session.begin():
+                connection = session.query(PoyntConnection).filter(
+                    PoyntConnection.organization_id == organization_id
+                ).with_for_update().one_or_none()
+                yield connection
 
 
 @dataclass

@@ -43,3 +43,28 @@ that signed browser session for 30 minutes. Do not put the access code in a URL,
 source code, logs, or this repository. Local development registration remains
 available without the access code. Generate a suitable value with
 `python -c "import secrets; print(secrets.token_urlsafe(32))"`.
+
+
+Concurrent Poynt refresh protection
+
+Copy poynt/client.py and poynt/connection.py into your application, replacing
+those two files, then restart/redeploy. No migration or environment change.
+The tests folder is optional.
+
+Refresh checks reread the organization's current credentials under a database
+row lock, hold that lock through the provider request and commit, and adopt the
+result only after commit. PostgreSQL coordinates across workers/instances;
+bounded thread locks additionally coordinate same-process development calls.
+Blocking database waits and refresh requests run in a worker thread.
+
+Four isolated concurrency/failure tests passed. No live Poynt or PostgreSQL
+connection was used. PostgreSQL cross-process locking should be verified in
+staging. SQLite does not provide cross-process SELECT FOR UPDATE protection.
+
+This patch does not start the background refresher, change expired-token
+behavior, or change the OAuth callback. Keep the lifespan change discussed
+separately. A provider success followed by a failed database commit still
+requires investigation because the rotated token may not have been saved.
+
+Test from project root:
+python -m unittest discover -s tests -p test_poynt_refresh_concurrency.py
