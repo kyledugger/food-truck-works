@@ -406,6 +406,21 @@ class PricingProduct(Base):
     category: Mapped[str | None] = mapped_column(String(200), nullable=True)
 
 
+class PricingProductLink(Base):
+    """Provider identity for one FTW product in one store and business."""
+    __tablename__ = "pricing_product_links"
+    __table_args__ = (
+        UniqueConstraint("organization_id", "business_id", "store_id", "provider_product_id", name="uq_pricing_link_provider"),
+        UniqueConstraint("organization_id", "business_id", "store_id", "pricing_product_id", name="uq_pricing_link_definition"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    organization_id: Mapped[int] = mapped_column(ForeignKey("organizations.id"), nullable=False)
+    business_id: Mapped[str] = mapped_column(String(100), nullable=False)
+    store_id: Mapped[str] = mapped_column(String(100), nullable=False)
+    provider_product_id: Mapped[str] = mapped_column(String(100), nullable=False)
+    pricing_product_id: Mapped[int] = mapped_column(ForeignKey("pricing_products.id"), nullable=False)
+
+
 class ProductDiscovery(Base):
     """Latest store discovery only; not a history or a pricing profile."""
     __tablename__ = "product_discoveries"
