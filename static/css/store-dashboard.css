@@ -18,8 +18,6 @@
 @media(min-width:1000px){
 .store-screen .live-store-header h2{display:none}.store-screen .live-store-date{margin-top:0}
 .store-flow-pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.65rem;flex-shrink:0}
-.kitchen-callout{font-size:1.15rem;font-weight:700;padding:.4rem .6rem;background:#fff4d6;border-left:4px solid #9b6b12;white-space:pre-wrap;overflow-wrap:anywhere;margin:.4rem 0}
-.kitchen-modifier{font-size:.9rem;font-weight:600;white-space:pre-wrap;overflow-wrap:anywhere;margin-top:.2rem;color:#374151}
 .store-screen .live-chart-title{margin-top:.5rem;font-size:.85rem}.store-screen .live-chart{height:145px}
 .store-screen .live-now strong{font-size:1.15rem}.store-screen .live-store details>button{justify-self:start;margin-top:.5rem}
 }
@@ -50,7 +48,17 @@
 .kitchen-done .kitchen-item-name{text-decoration:line-through;color:#53606d}
 .kitchen-available{border-left:4px solid #dbe4e8}
 .store-order .kitchen-item-actions{width:45%;text-align:left}.kitchen-item-actions button{margin:.2rem .3rem .2rem 0;min-height:36px}
-.kitchen-sku{display:block;text-decoration:none;font-size:.7rem}.kitchen-elapsed{font-variant-numeric:tabular-nums;color:#374151;font-size:.9rem}
+.kitchen-elapsed{font-variant-numeric:tabular-nums;color:#374151;font-size:1.1rem}
+.kitchen-ticket .store-order-head{font-size:1.2rem}
+.kitchen-ticket table{font-size:1.15rem;line-height:1.3}
+.kitchen-ticket .kitchen-item-name{width:60%;font-weight:600;text-align:left}
+.kitchen-ticket .kitchen-item-actions{width:40%;text-align:left}
+.kitchen-ticket td{padding:.4rem .3rem;vertical-align:top}
+.kitchen-ticket th{font-size:.75rem;text-align:left}
+.kitchen-ticket .kitchen-action{font-size:.95rem;min-height:38px}
+.kitchen-ticket .kitchen-state{font-size:.9rem}
+.kitchen-callout{font-size:1.25rem;font-weight:700;padding:.35rem .6rem;background:#fff4d6;border-left:4px solid #9b6b12;white-space:pre-wrap;overflow-wrap:anywhere;margin:.35rem 0}
+.kitchen-modifier{font-size:1.05rem;font-weight:600;white-space:pre-wrap;overflow-wrap:anywhere;margin-top:.2rem;color:#374151}
 .store-orders #kitchen-recent{margin-top:1rem;border-top:1px solid #dbe4e8;padding-top:.75rem}
 #kitchen-recent summary{cursor:pointer;font-weight:600}#kitchen-status{color:#53606d}
 .kitchen-action:focus-visible{outline:3px solid #355fa8;outline-offset:2px}

@@ -37,12 +37,11 @@
     }
     root.append(controls);
     const table=el('table');table.setAttribute('aria-label','Order '+ticket.number+' preparation');
-    const header=el('tr');['Item','Qty','Preparation'].forEach(t=>header.append(el('th','',t)));
+    const header=el('tr');['Item','Preparation'].forEach(t=>header.append(el('th','',t)));
     const thead=el('thead');thead.append(header);table.append(thead);
     const body=el('tbody');
     for(const item of ticket.items){
-      const row=el('tr','kitchen-'+item.state),name=el('td','kitchen-item-name',item.name);
-      if(item.sku)name.append(el('small','kitchen-sku',item.sku));
+      const row=el('tr','kitchen-'+item.state),name=el('td','kitchen-item-name',item.quantity+' × '+item.name);
       for(const group of item.modifiers||[])name.append(el('div','kitchen-modifier',group.attribute.replaceAll('_',' ')+': '+group.values.map(value=>value.replaceAll('_',' ')).join(', ')));
       const actions=el('td','kitchen-item-actions');actions.append(el('span','kitchen-state',states[item.state]||states.available));
       if(!finished){
@@ -50,7 +49,7 @@
         if(item.state==='claimed')actions.append(button('Done',ticket,'done',item.key),button('Release',ticket,'release',item.key));
         if(item.state==='done')actions.append(button('Undo',ticket,'undo',item.key));
       }
-      row.append(name,el('td','',item.quantity),actions);body.append(row);
+      row.append(name,actions);body.append(row);
     }
     table.append(body);root.append(table);return root;
   }

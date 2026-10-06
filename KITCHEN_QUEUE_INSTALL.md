@@ -115,3 +115,12 @@ applied, only this additional migration is needed. Modifiers use existing JSON
 storage. Previously cached orders omitted these fields and must be fetched again
 from Poynt; historical reports can fetch them without admitting historical tickets
 to the active kitchen queue. No customer/payment objects are newly collected.
+
+## Compact kitchen tickets
+
+Kitchen tickets show order number, elapsed time, order note, quantity beside the
+item name, selected modifiers, and preparation controls. SKU, POS status, prices,
+and calendar timestamps are omitted. Item text is approximately 18px, modifier
+text 17px, and callout notes 20px at the default browser font size. Preparation
+state labels remain visible to coordinate claims and completions. No additional
+migration is required for this layout update.
