@@ -11,7 +11,7 @@ store home, sales metrics and role restrictions are preserved.
 2. Copy files to the matching locations in your application.
 3. Check the intended database environment and its Alembic revision. This
    migration follows e25a7c03b914. In that selected environment, apply
-   `python -m alembic upgrade f36b8d14c025` before restarting workers.
+   `python -m alembic upgrade a47c9e25d136` before restarting workers.
 4. Restart the app. No new dependency or environment variable is required.
 5. Open Store Performance from the store home screen and test with two displays.
 
@@ -97,4 +97,21 @@ Done, including partially prepared orders; Undo removes those quantities. Rates
 span midnight and exclude cancelled tickets and completions outside the window.
 The completion query is independent of the recent-orders display limit. Completion
 means ready, not delivered, and the rate comparison does not measure backlog.
-No additional database migration is needed beyond the kitchen queue migration.
+The flow comparison itself needs no migration; the customer-callout notes update below does.
+
+## Modifiers and customer callouts
+
+Selected modifiers are preserved from Poynt and shown below each item in the
+kitchen queue and orders report. Multiple selected values are supported; display
+labels replace underscores with spaces. Modifiers remain part of their parent
+item and do not inflate item flow counts. A modifier change resets only the
+affected row to Available, including reopening a Ready order. Order-level notes
+are labeled Order note and displayed prominently for customer callouts on active
+and recent tickets. Name/note edits preserve preparation progress.
+
+Apply the additional a47c9e25d136 migration, which follows f36b8d14c025 and adds
+a nullable notes column to kitchen_tickets. If the kitchen migration is already
+applied, only this additional migration is needed. Modifiers use existing JSON
+storage. Previously cached orders omitted these fields and must be fetched again
+from Poynt; historical reports can fetch them without admitting historical tickets
+to the active kitchen queue. No customer/payment objects are newly collected.

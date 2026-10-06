@@ -1,6 +1,6 @@
 """Anonymous preparation state, independent of POS payment/fulfillment state."""
 from datetime import datetime
-from sqlalchemy import ForeignKey, String, JSON, UniqueConstraint, Index
+from sqlalchemy import ForeignKey, String, Text, JSON, UniqueConstraint, Index
 from sqlalchemy.orm import Mapped, mapped_column
 from database import Base
 from instant_type import UTCInstant
@@ -23,6 +23,7 @@ class KitchenTicket(Base):
     state: Mapped[str] = mapped_column(String(20), default="active")
     revision: Mapped[int] = mapped_column(default=1)
     items: Mapped[list] = mapped_column(JSON)
+    notes: Mapped[str | None] = mapped_column(Text)
 
 
 class KitchenAction(Base):

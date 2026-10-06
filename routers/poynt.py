@@ -46,6 +46,8 @@ POYNT_AUTHORIZE_URL = os.environ["POYNT_AUTHORIZE_URL"]
 router = APIRouter()
 
 templates = Jinja2Templates(directory="templates")
+from order_preparation import modifiers as preparation_modifiers
+templates.env.filters["preparation_modifiers"] = preparation_modifiers
 
 
 @router.get("/settings/integrations/poynt", response_class=HTMLResponse)

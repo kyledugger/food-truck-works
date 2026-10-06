@@ -10,6 +10,7 @@ from fastapi import HTTPException
 from models import OrganizationStore
 from kitchen_models import KitchenTicket, KitchenAction
 from live_dashboard_metrics import completed, number
+from order_preparation import modifiers
 from store_time import utc_now, utc_iso, as_utc, local_day_bounds
 
 
@@ -25,6 +26,7 @@ def lines(payload):
         result.append({"key": key, "provider_id": str(item.get("id")) if item.get("id") else None,
                        "name": str(item.get("name") or item.get("sku") or "Unnamed item"),
                        "sku": str(item.get("sku") or ""), "quantity": float(number(item.get("quantity"))),
+                       "modifiers": modifiers(item),
                        "state": "available", "claimed_at": None, "done_at": None})
     return result
 
@@ -43,6 +45,7 @@ def sync_ticket(session, order, now=None):
         KitchenTicket.business_id == order.business_id, KitchenTicket.order_id == order.order_id)
         .execution_options(populate_existing=True).with_for_update())
     incoming = lines(order.payload)
+    notes = str(order.payload.get("notes") or "") or None
     eligible = completed(order.payload) and bool(incoming)
     if ticket is None:
         start, end = local_day_bounds(now.astimezone(ZoneInfo(store.timezone_name)).date(), ZoneInfo(store.timezone_name))
@@ -53,7 +56,7 @@ def sync_ticket(session, order, now=None):
             with session.begin_nested():
                 ticket = KitchenTicket(organization_id=order.organization_id, store_id=store.id, business_id=order.business_id,
                     order_id=order.order_id, number=str(order.payload.get("orderNumber") or order.order_id)[:100],
-                    created_at=as_utc(order.created_at), updated_at=now, items=incoming, state="active", revision=1)
+                    created_at=as_utc(order.created_at), updated_at=now, items=incoming, notes=notes, state="active", revision=1)
                 session.add(ticket)
                 session.flush()
         except IntegrityError:
@@ -76,13 +79,15 @@ def sync_ticket(session, order, now=None):
         if old:
             consumed.add(old["key"])
         # Quantity changes require preparing the row again; unchanged rows retain progress.
-        if old and (old["quantity"], old["sku"], old["name"]) == (item["quantity"], item["sku"], item["name"]):
+        if old and (old["quantity"], old["sku"], old["name"], old.get("modifiers", [])) == (item["quantity"], item["sku"], item["name"], item["modifiers"]):
             for field in ("state", "claimed_at", "done_at"):
                 item[field] = old[field]
     state = ticket_state(incoming) if eligible else "cancelled"
-    if ticket.items != incoming or ticket.state != state or ticket.store_id != store.id:
-        details = {"before": ticket.items, "after": incoming, "before_state": ticket.state, "after_state": state}
+    if ticket.items != incoming or ticket.state != state or ticket.store_id != store.id or ticket.notes != notes:
+        details = {"before": ticket.items, "after": incoming, "before_state": ticket.state, "after_state": state,
+                   "before_notes": ticket.notes, "after_notes": notes}
         ticket.items = incoming
+        ticket.notes = notes
         ticket.state = state
         ticket.store_id = store.id
         ticket.updated_at = now
@@ -133,4 +138,5 @@ def transition(session, ticket, action, item_key, expected_revision, actor_user_
 
 def serialize(ticket):
     return {"id": ticket.id, "number": ticket.number, "created_at": utc_iso(ticket.created_at),
-            "ready_at": utc_iso(ticket.ready_at), "state": ticket.state, "revision": ticket.revision, "items": ticket.items}
+            "ready_at": utc_iso(ticket.ready_at), "state": ticket.state, "revision": ticket.revision, "items": ticket.items,
+            "notes": ticket.notes}

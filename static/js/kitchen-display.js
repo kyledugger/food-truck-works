@@ -28,6 +28,7 @@
     const timer=el('strong','kitchen-elapsed');timer.dataset.orderCreated=ticket.created_at;
     if(finished)timer.dataset.orderReady=ticket.ready_at;
     head.append(el('strong','','Order '+ticket.number),timer);root.append(head);
+    if(ticket.notes)root.append(el('p','kitchen-callout','Order note: '+ticket.notes));
     const controls=el('div','kitchen-order-actions');
     if(finished){controls.append(el('span','kitchen-state kitchen-done','✓ Ready'),button('Undo order',ticket,'undo'));}
     else{
@@ -42,6 +43,7 @@
     for(const item of ticket.items){
       const row=el('tr','kitchen-'+item.state),name=el('td','kitchen-item-name',item.name);
       if(item.sku)name.append(el('small','kitchen-sku',item.sku));
+      for(const group of item.modifiers||[])name.append(el('div','kitchen-modifier',group.attribute.replaceAll('_',' ')+': '+group.values.map(value=>value.replaceAll('_',' ')).join(', ')));
       const actions=el('td','kitchen-item-actions');actions.append(el('span','kitchen-state',states[item.state]||states.available));
       if(!finished){
         if(item.state==='available')actions.append(button('Claim',ticket,'claim',item.key));

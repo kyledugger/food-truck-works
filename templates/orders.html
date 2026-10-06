@@ -1001,7 +1001,11 @@
                                     {% for item in order["items"] %}
 
                                         <tr>
-                                            <td>{{item.name}}</td>
+                                            <td>{{item.name}}
+                                                {% for modifier in item|preparation_modifiers %}
+                                                <div class="is-size-7 has-text-weight-semibold">{{ modifier.attribute|replace('_', ' ') }}: {{ modifier['values']|join(', ')|replace('_', ' ') }}</div>
+                                                {% endfor %}
+                                            </td>
                                             <td>{{item.quantity}}</td>
                                             <td>{{item.sku}}</td>
                                             <td>{{item.status}}</td>

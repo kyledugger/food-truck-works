@@ -79,6 +79,34 @@ class KitchenTests(unittest.TestCase):
         self.assertEqual(result["completed_items"],4)
         self.assertEqual(result["items_per_minute"],4/15)
 
+    def test_modifiers_notes_roundtrip_and_changed_preparation_reopens(self):
+        choices=[{"selectableVariations":[{"attribute":"Drink_Flavors", "values":[{"name":"Blue_Raspberry"},{"name":"Coconut"}]}]}]
+        self.seed(items=[{"id":"bar","name":"Custom Energy Drink","sku":"N-CSTM","quantity":1,"selectedVariants":choices}],notes="victoria")
+        ticket=self.queue()["active"][0]
+        self.assertEqual(ticket["notes"],"victoria")
+        self.assertEqual(ticket["items"][0]["modifiers"],[{"attribute":"Drink_Flavors","values":["Blue_Raspberry","Coconut"]}])
+        self.action(ticket,"done")
+        self.seed(items=[{"id":"bar","name":"Custom Energy Drink","sku":"N-CSTM","quantity":1,"selectedVariants":choices}],notes="Victoria Smith")
+        data=self.queue()
+        self.assertEqual(data["recent"][0]["notes"],"Victoria Smith")
+        self.assertEqual(data["recent"][0]["items"][0]["state"],"done")
+        choices[0]["selectableVariations"][0]["values"]=[{"name":"Caffeine_Free"}]
+        self.seed(items=[{"id":"bar","name":"Custom Energy Drink","sku":"N-CSTM","quantity":1,"selectedVariants":choices}],notes="Victoria Smith")
+        data=self.queue()
+        self.assertEqual(data["active"][0]["items"][0]["state"],"available")
+        self.assertEqual(data["active"][0]["items"][0]["done_at"],None)
+        self.assertEqual(data["flow"]["completion"]["completed_items"],0)
+
+    def test_notes_migration_roundtrip(self):
+        spec=importlib.util.spec_from_file_location("notes_migration","alembic/versions/a47c9e25d136_kitchen_notes.py")
+        module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+        with self.engine.begin() as connection:
+            with Operations.context(MigrationContext.configure(connection)):
+                module.downgrade()
+                self.assertNotIn("notes",[c["name"] for c in inspect(connection).get_columns("kitchen_tickets")])
+                module.upgrade()
+                self.assertIn("notes",[c["name"] for c in inspect(connection).get_columns("kitchen_tickets")])
+
     def test_item_claim_complete_release_and_undo(self):
         self.seed()
         ticket=self.queue()["active"][0]
