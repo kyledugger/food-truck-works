@@ -31,6 +31,7 @@ from routers.account_settings import router as account_settings_router
 from routers.stores import router as stores_router
 from routers.integrations import router as integrations_router
 from routers.live_dashboard import router as live_dashboard_router
+from routers.refresher import run_poynt_refresher
 from routers.claim_tips import router as claim_tips_router
 from live_dashboard_service import dashboard_worker
 from store_display_access import StoreDisplayMiddleware
@@ -68,13 +69,19 @@ POYNT_AUTHORIZE_URL = os.environ["POYNT_AUTHORIZE_URL"]
 
 @asynccontextmanager
 async def lifespan(app):
-    task = asyncio.create_task(dashboard_worker())
+    tasks = [
+        asyncio.create_task(dashboard_worker()),
+        asyncio.create_task(run_poynt_refresher()),
+    ]
     try:
         yield
     finally:
-        task.cancel()
-        with suppress(asyncio.CancelledError):
-            await task
+        for task in tasks:
+            task.cancel()
+
+        for task in tasks:
+            with suppress(asyncio.CancelledError):
+                await task
 
 
 app = FastAPI(title="Food Truck Works", lifespan=lifespan)
