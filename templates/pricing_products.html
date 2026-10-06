@@ -54,11 +54,17 @@
         <td>{% if row.can_add %}<input type="checkbox" name="product_ids" value="{{ row.id }}" aria-label="Add {{ row.sku }}">{% else %}<span class="has-text-grey">—</span>{% endif %}</td>
         <td><strong>{{ row.sku or '(blank)' }}</strong></td><td>{{ row.name }}</td><td>{{ row.category or '—' }}</td>
         <td class="is-nowrap">{% if row.amount is not none and row.currency %}{{ row.currency }} {{ '%.2f'|format(row.amount / 100) }}{% else %}Unavailable{% endif %}</td>
-        <td>{% for issue in row.issues %}<div class="has-text-warning-dark">{{ issue }}</div>{% else %}<span class="tag is-success is-light">Matched</span>{% endfor %}
+        <td>{% if row.definition %}<div class="tag is-success is-light">Linked to {{ row.definition.sku }}</div>{% elif row.can_link and row.link_choices %}
+          <div class="select is-small"><select name="definition_id" form="link-{{ loop.index }}" required aria-label="FTW product for {{ row.name }}"><option value="">Choose FTW product</option>{% for definition in row.link_choices %}<option value="{{ definition.id }}" {% if row.candidate and row.candidate.id == definition.id %}selected{% endif %}>{{ definition.sku }} · {{ definition.name }}</option>{% endfor %}</select></div>
+          <button class="button is-small is-link" form="link-{{ loop.index }}">Link Product</button>
+          {% endif %}{% for issue in row.issues %}<div class="has-text-warning-dark">{{ issue }}</div>{% else %}<span class="tag is-success is-light">Matched</span>{% endfor %}
           {% if row.shared %}<div class="is-size-7 has-text-grey">Referenced outside this store's catalogs. Store isolation needs review before future price pushes.</div>{% endif %}</td>
       </tr>{% endfor %}</tbody></table></div>
     </form>
-    <p class="is-size-7 has-text-grey mt-3">Matching is exact, including case and leading zeros. Correct blank, duplicate, or inconsistent SKUs in Poynt, then refresh. Historical SKU aliases are not used.</p>
+    {% for row in rows %}{% if row.can_link and row.link_choices %}<form id="link-{{ loop.index }}" method="post" action="/pricing/products/link">
+      <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="store_id" value="{{ selected_store.store_id }}"><input type="hidden" name="snapshot_token" value="{{ snapshot.token }}"><input type="hidden" name="product_id" value="{{ row.id }}">
+    </form>{% endif %}{% endfor %}
+    <p class="is-size-7 has-text-grey mt-3">Saved product IDs identify linked products even if GoDaddy changes their SKUs. Refresh automatically links unique exact SKUs to unlinked FTW products. Use Link Product when SKUs differ. Historical SKU aliases are not used.</p>
   </div>
   {% if missing %}<div class="box"><h2 class="title is-5">Missing from this store</h2><p class="mb-3">These authoritative SKUs were not found among this store's active products. Check the SKU and catalog assignment in Poynt.</p>
     <div class="table-container"><table class="table is-fullwidth"><thead><tr><th>SKU</th><th>Reference name</th></tr></thead><tbody>{% for product in missing %}<tr><td>{{ product.sku }}</td><td>{{ product.name }}</td></tr>{% endfor %}</tbody></table></div>

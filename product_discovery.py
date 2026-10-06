@@ -1,5 +1,4 @@
 """Read-only Poynt discovery and exact SKU comparison. No historical aliases."""
-import os, json
 from collections import Counter
 from urllib.parse import quote, urlsplit, parse_qs
 import httpx
@@ -77,11 +76,6 @@ async def discover_products(client, store_id):
     prefix = f"/businesses/{business}"
     store_body = await client.get_stores()
     stores = store_body if isinstance(store_body, list) else store_body.get("stores", store_body.get("content", [])) if isinstance(store_body, dict) else None
-    ENVIRONMENT = os.getenv("ENVIRONMENT", "local")
-    if ENVIRONMENT == "local-prod-db":
-        with open("get_stores_response.json", "w", encoding="utf-8") as file:
-            json.dump(stores, file, indent=4)  # indent=4 makes it pretty and human-readable     
-
     if not isinstance(stores, list) or any(not isinstance(store, dict) for store in stores):
         raise PoyntAPIError("Poynt returned an unexpected store list.")
     if not any(str(store.get("id") or "").lower() == store_id.lower() for store in stores):
@@ -154,9 +148,14 @@ async def discover_products(client, store_id):
     return sorted(rows, key=lambda p: (p["sku"], p["name"], p["id"]))
 
 
-def compare_products(products, definitions):
+def compare_products(products, definitions, links=()):
     counts = Counter(p["sku"] for p in products if p["sku"])
+    definitions = list(definitions)
     known = {p.sku for p in definitions}
+    by_definition = {getattr(p, "id", None): p for p in definitions}
+    by_provider = {link.provider_product_id: link for link in links}
+    linked_definitions = {link.pricing_product_id for link in links}
+    present_definitions = set()
     rows = []
     for p in products:
         sku, issues = p["sku"], []
@@ -166,13 +165,24 @@ def compare_products(products, definitions):
             issues.append("Invalid SKU: correct whitespace or length in Poynt")
         if sku and counts[sku] > 1:
             issues.append("Duplicate SKU in this store")
-        if sku and sku not in known:
+        link = by_provider.get(p["id"])
+        definition = by_definition.get(link.pricing_product_id) if link else None
+        if definition:
+            present_definitions.add(definition.id)
+            if sku != definition.sku:
+                issues.append("SKU differs from FTW; saved product ID still matches")
+        if sku and sku not in known and not definition:
             issues.append("Not in authoritative list")
         if p.get("scope_conflict"):
             issues.append("Product ownership conflicts with selected store")
         can_add = bool(sku.strip() and len(sku) <= 200 and sku == sku.strip()
-                       and counts[sku] == 1 and sku not in known and not p.get("scope_conflict"))
-        rows.append(dict(p, issues=issues, can_add=can_add, matched=sku in known))
+                       and counts[sku] == 1 and sku not in known and not definition and not p.get("scope_conflict"))
+        candidate = next((d for d in definitions if d.sku == sku and getattr(d, "id", None) not in linked_definitions), None)
+        rows.append(dict(p, issues=issues, can_add=can_add, matched=bool(definition) or sku in known,
+                         definition=definition, candidate=candidate,
+                         link_choices=[d for d in definitions if getattr(d, "id", None) not in linked_definitions],
+                         can_link=not definition and not p.get("scope_conflict")))
     present = {p["sku"] for p in products}
-    missing = [p for p in definitions if p.sku not in present]
+    missing = [p for p in definitions if getattr(p, "id", None) not in present_definitions and
+               (getattr(p, "id", None) in linked_definitions or p.sku not in present)]
     return rows, missing

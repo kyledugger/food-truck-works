@@ -15,7 +15,7 @@ from sqlalchemy.pool import StaticPool
 from alembic.migration import MigrationContext
 from alembic.operations import Operations
 from database import Base
-from models import Organization, OrganizationStore, PricingProduct, ProductDiscovery
+from models import Organization, OrganizationStore, PricingProduct, ProductDiscovery, PricingProductLink
 from poynt.connection import PoyntCredentials
 from poynt.client import PoyntAPIError
 from product_discovery import compare_products, collection, discover_products, read_json
@@ -140,7 +140,7 @@ class RouteTests(unittest.TestCase):
     def setUp(self):
         self.engine=create_engine('sqlite://',connect_args={'check_same_thread':False},poolclass=StaticPool)
         # Only new tables and their organization/store parents are needed.
-        for table in (Organization.__table__, OrganizationStore.__table__, PricingProduct.__table__, ProductDiscovery.__table__):
+        for table in (Organization.__table__, OrganizationStore.__table__, PricingProduct.__table__, ProductDiscovery.__table__, PricingProductLink.__table__):
             table.create(self.engine)
         self.factory=sessionmaker(self.engine)
         with self.factory() as s:
@@ -189,6 +189,37 @@ class RouteTests(unittest.TestCase):
             with patch('routers.pricing.get_organization_role',return_value=role):
                 self.assertEqual(self.client.get('/pricing/products').status_code,403)
                 self.assertEqual(self.add().status_code,403)
+
+    def test_saved_identity_survives_sku_change_and_missing_id(self):
+        self.snapshot();self.assertEqual(self.add().status_code,303)
+        with self.factory() as s:
+            snap=s.scalar(select(ProductDiscovery))
+            snap.payload=dict(snap.payload,products=[product('p1','STRPPD')]);s.commit()
+        response=self.client.get('/pricing/products?store_id=a')
+        self.assertIn('Linked to 001',response.text)
+        self.assertIn('saved product ID still matches',response.text)
+        self.assertNotIn('Missing from this store',response.text)
+        with self.factory() as s:
+            snap=s.scalar(select(ProductDiscovery))
+            snap.payload=dict(snap.payload,products=[product('replacement','001')]);s.commit()
+        response=self.client.get('/pricing/products?store_id=a')
+        self.assertIn('Missing from this store',response.text)
+        with self.factory() as s:self.assertEqual(s.scalar(select(PricingProductLink)).provider_product_id,'p1')
+
+    def test_manual_link_validation_and_duplicate_protection(self):
+        self.snapshot()
+        with self.factory() as s:
+            s.add_all([PricingProduct(id=1,organization_id=1,sku='CANONICAL',name='Bar'),
+                       PricingProduct(id=2,organization_id=2,sku='OTHER',name='Other')]);s.commit()
+        data=dict(store_id='a',csrf=self.csrf,snapshot_token='snap',product_id='p1',definition_id=2)
+        self.assertEqual(self.client.post('/pricing/products/link',data=data).status_code,400)
+        data['definition_id']=1;data['csrf']='bad'
+        self.assertEqual(self.client.post('/pricing/products/link',data=data).status_code,403)
+        data['csrf']=self.csrf;data['snapshot_token']='old'
+        self.assertEqual(self.client.post('/pricing/products/link',data=data).status_code,409)
+        data['snapshot_token']='snap'
+        self.assertEqual(self.client.post('/pricing/products/link',data=data,follow_redirects=False).status_code,303)
+        self.assertEqual(self.client.post('/pricing/products/link',data=data).status_code,400)
 
     def test_anonymous_access_denied(self):
         self.client.cookies.clear()
@@ -246,6 +277,21 @@ class RouteTests(unittest.TestCase):
 
 
 class MigrationTests(unittest.TestCase):
+    def test_links_migration(self):
+        engine=create_engine('sqlite://')
+        with engine.begin() as conn:
+            conn.exec_driver_sql('CREATE TABLE organizations (id INTEGER PRIMARY KEY)')
+            conn.exec_driver_sql('CREATE TABLE pricing_products (id INTEGER PRIMARY KEY)')
+            spec=importlib.util.spec_from_file_location('links_migration','alembic/versions/b81e742d9c30_pricing_product_links.py')
+            migration=importlib.util.module_from_spec(spec);spec.loader.exec_module(migration)
+            with patch.object(migration,'op',Operations(MigrationContext.configure(conn))):
+                migration.upgrade()
+                constraints=inspect(conn).get_unique_constraints('pricing_product_links')
+                self.assertEqual(len(constraints),2)
+                migration.downgrade()
+                self.assertNotIn('pricing_product_links',inspect(conn).get_table_names())
+        engine.dispose()
+
     def test_upgrade_and_downgrade_in_isolated_database(self):
         engine=create_engine('sqlite://')
         with engine.begin() as conn:

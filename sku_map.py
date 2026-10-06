@@ -160,6 +160,7 @@ sku_mapping = {
     "SHAVE-BARBIE" : "SHAVE-Barbie",
     "N-CRNBRRYFZZ" : "ENE-CranberryFizz",
     "COFF-Custom" : "COF-CB-Custom",   
+    "COF-Custom" : "COF-CB-Custom",   
     "BLCK-CLD-BRW": "COF-CB-Cowboy",
     "CF-CRML-HRTBRKR": "COF-CB-SaltedCaramel",
     "CF-FRST-CRSH": "COF-CB-VanillaCrush",

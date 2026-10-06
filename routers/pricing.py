@@ -8,7 +8,7 @@ from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import select
 from database import SessionLocal
-from models import Organization, OrganizationStore, PricingProduct, ProductDiscovery
+from models import Organization, OrganizationStore, PricingProduct, ProductDiscovery, PricingProductLink
 from organization_context import get_current_organization_id
 from permissions import get_organization_role, role_can_manage_organization
 from poynt.client import PoyntClient, PoyntAPIError, PoyntReauthorizationRequired
@@ -48,6 +48,24 @@ def snapshot_for(session, org, store_id):
         ProductDiscovery.organization_id == org, ProductDiscovery.store_id == store_id))
 
 
+def links_for(session, org, snapshot):
+    return session.scalars(select(PricingProductLink).where(
+        PricingProductLink.organization_id == org,
+        PricingProductLink.business_id == snapshot.business_id,
+        PricingProductLink.store_id == snapshot.store_id)).all()
+
+
+def save_exact_links(session, org, snapshot, definitions):
+    rows, _ = compare_products(snapshot.payload["products"], definitions, links_for(session, org, snapshot))
+    for row in rows:
+        if (row["can_link"] and row["candidate"] and
+                sum(p["sku"] == row["sku"] for p in rows) == 1):
+            session.add(PricingProductLink(organization_id=org, business_id=snapshot.business_id,
+                store_id=snapshot.store_id, provider_product_id=row["id"],
+                pricing_product_id=row["candidate"].id))
+    session.flush()
+
+
 @router.get("/pricing")
 def pricing_home(request: Request):
     manager_org(request)
@@ -70,12 +88,13 @@ def products_page(request: Request, store_id: str = "", notice: str = ""):
         snapshot = snapshot_for(session, org, store_id) if store else None
         credentials = get_poynt_credentials(org)
         stale = bool(snapshot and (not credentials or snapshot.business_id != credentials.business_id))
-        rows, missing = compare_products(snapshot.payload["products"], definitions) if snapshot and not stale else ([], [])
+        rows, missing = compare_products(snapshot.payload["products"], definitions, links_for(session, org, snapshot)) if snapshot and not stale else ([], [])
         return templates.TemplateResponse(request=request, name="pricing_products.html", context={
             "stores": stores, "selected_store": store, "definitions": definitions,
             "snapshot": snapshot if not stale else None, "stale": stale,
             "rows": rows, "missing": missing, "csrf": csrf,
             "notice": {"discovered": "Products refreshed from Poynt.",
+                       "linked": "Store product association saved.",
                        "added": "Selected SKUs added to the authoritative list.",
                        "removed": "SKU removed from the FTW list. Poynt was not changed."}.get(notice, ""),
             "error": "", "can_connect": credentials is not None,
@@ -119,6 +138,7 @@ async def discover(request: Request, store_id: str = Form(...), csrf: str = Form
         snapshot.business_id = credentials.business_id
         snapshot.token = secrets.token_urlsafe(24)
         snapshot.payload = {"discovered_at": datetime.now(timezone.utc).isoformat(), "products": products}
+        save_exact_links(session, org, snapshot, session.scalars(select(PricingProduct).where(PricingProduct.organization_id == org)).all())
         session.commit()
     return RedirectResponse("/pricing/products?" + urlencode({"store_id": store_id, "notice": "discovered"}), 303)
 
@@ -137,7 +157,7 @@ def add_definitions(request: Request, store_id: str = Form(...), csrf: str = For
                 or not credentials or snapshot.business_id != credentials.business_id):
             raise HTTPException(409, "Discovery changed. Refresh Products before adding SKUs.")
         definitions = session.scalars(select(PricingProduct).where(PricingProduct.organization_id == org)).all()
-        rows, _ = compare_products(snapshot.payload["products"], definitions)
+        rows, _ = compare_products(snapshot.payload["products"], definitions, links_for(session, org, snapshot))
         by_id = {p["id"]: p for p in rows}
         selected = set(product_ids)
         if not selected or any(pid not in by_id or not by_id[pid]["can_add"] for pid in selected):
@@ -146,6 +166,8 @@ def add_definitions(request: Request, store_id: str = Form(...), csrf: str = For
             row = by_id[pid]
             session.add(PricingProduct(organization_id=org, sku=row["sku"],
                 name=row["name"][:200], category=row["category"][:200] or None))
+        session.flush()
+        save_exact_links(session, org, snapshot, session.scalars(select(PricingProduct).where(PricingProduct.organization_id == org)).all())
         session.commit()
     return RedirectResponse("/pricing/products?" + urlencode({"store_id": store_id, "notice": "added"}), 303)
 
@@ -162,6 +184,34 @@ def remove_definition(request: Request, definition_id: int = Form(...), csrf: st
             PricingProduct.id == definition_id, PricingProduct.organization_id == org))
         if not definition:
             raise HTTPException(404, "SKU definition not found.")
+        for link in session.scalars(select(PricingProductLink).where(
+                PricingProductLink.organization_id == org, PricingProductLink.pricing_product_id == definition.id)):
+            session.delete(link)
+        session.flush()
         session.delete(definition)
         session.commit()
     return RedirectResponse("/pricing/products?" + urlencode({"store_id": store_id, "notice": "removed"}), 303)
+
+
+@router.post("/pricing/products/link")
+def link_product(request: Request, store_id: str = Form(...), csrf: str = Form(...),
+                 snapshot_token: str = Form(...), product_id: str = Form(...), definition_id: int = Form(...)):
+    org = manager_org(request)
+    check_csrf(request, csrf)
+    credentials = get_poynt_credentials(org)
+    with SessionLocal() as session:
+        session.scalar(select(Organization.id).where(Organization.id == org).with_for_update())
+        require_store(session, org, store_id)
+        snapshot = snapshot_for(session, org, store_id)
+        if (not snapshot or not credentials or snapshot.business_id != credentials.business_id
+                or not secrets.compare_digest(snapshot.token, snapshot_token)):
+            raise HTTPException(409, "Discovery changed. Fetch latest products before linking.")
+        definitions = session.scalars(select(PricingProduct).where(PricingProduct.organization_id == org)).all()
+        rows, _ = compare_products(snapshot.payload["products"], definitions, links_for(session, org, snapshot))
+        row = next((p for p in rows if p["id"] == product_id), None)
+        if not row or not row["can_link"] or definition_id not in {d.id for d in row["link_choices"]}:
+            raise HTTPException(400, "Choose an unlinked FTW product and a valid store product.")
+        session.add(PricingProductLink(organization_id=org, business_id=snapshot.business_id,
+            store_id=store_id, provider_product_id=product_id, pricing_product_id=definition_id))
+        session.commit()
+    return RedirectResponse("/pricing/products?" + urlencode({"store_id": store_id, "notice": "linked"}), 303)
