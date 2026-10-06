@@ -51,8 +51,10 @@ class StoreDisplayMiddleware(BaseHTTPMiddleware):
             return RedirectResponse("/login", status_code=303)
         store_path = f"/dashboard/stores/{store_id}"
         if request.method == "GET" and request.url.path in {"/", "/dashboard"}:
-            return RedirectResponse(store_path, status_code=303)
-        if request.method == "GET" and request.url.path == store_path:
+            return RedirectResponse(store_path + "/home", status_code=303)
+        if request.method == "GET" and request.url.path in {store_path, store_path + "/home"}:
+            return await call_next(request)
+        if request.method == "POST" and request.url.path == store_path + "/show":
             return await call_next(request)
         if request.method == "GET" and request.url.path == "/dashboard/data":
             if (request.query_params.getlist("store_id") == [str(store_id)]

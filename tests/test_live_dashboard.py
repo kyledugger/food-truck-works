@@ -241,13 +241,17 @@ class DatabaseAndRoutesTests(unittest.TestCase):
         self.client.post("/logout")
         login=self.client.post("/login/store-display",data={"organization_code":"ftw-1","username":"truck-screen","password":"screen-password-123"},follow_redirects=False)
         self.assertEqual(login.status_code,303)
-        self.assertEqual(login.headers["location"],"/dashboard/stores/1")
+        self.assertEqual(login.headers["location"],"/dashboard/stores/1/home")
         page=self.client.get(login.headers["location"])
         self.assertEqual(page.status_code,200)
         self.assertNotIn("All stores",page.text)
         self.assertIn("Log out",page.text)
-        self.assertEqual(self.client.get("/dashboard/data?store_id=1&date=today").status_code,200)
-        self.assertEqual(self.client.get("/dashboard",follow_redirects=False).headers["location"],"/dashboard/stores/1")
+        self.assertNotIn('id="live-stores"',page.text)
+        self.assertNotIn('/static/js/live-dashboard.js',page.text)
+        self.assertIn("Claim Tips",page.text)
+        self.assertIn("Store Performance",page.text)
+        self.assertEqual(self.client.get("/dashboard/data?store_id=1&date=today").status_code,403)
+        self.assertEqual(self.client.get("/dashboard",follow_redirects=False).headers["location"],"/dashboard/stores/1/home")
         for url in ("/dashboard/data", "/dashboard/data?store_id=2&date=today", "/dashboard/data?store_id=1&date=yesterday",
                     "/dashboard/data?store_id=1&store_id=2&date=today", "/dashboard/stores/2", "/poynt/orders",
                     "/poynt/tip-submissions", "/employees", "/account", "/integrations", "/settings/stores", "/settings/store-displays", "/organizations/select"):
@@ -269,12 +273,33 @@ class DatabaseAndRoutesTests(unittest.TestCase):
         self.assertEqual(screen.get("/dashboard/data?store_id=1&date=today").status_code,401)
         self.assertEqual(screen.post("/login/store-display",data={"organization_code":"ftw-1","username":"truck-screen","password":"screen-password-123"}).status_code,401)
         login=screen.post("/login/store-display",data={"organization_code":"ftw-1","username":"truck-screen","password":"replacement-password-123"},follow_redirects=False)
-        self.assertEqual(login.headers["location"],"/dashboard/stores/3")
+        self.assertEqual(login.headers["location"],"/dashboard/stores/3/home")
         disabled=self.client.post(f"/settings/store-displays/{assignment_id}",data={"csrf_token":token,"store_id":3},follow_redirects=False)
         self.assertEqual(disabled.status_code,303)
         self.assertEqual(screen.get("/dashboard/data?store_id=3&date=today").status_code,401)
         self.assertEqual(screen.post("/login/store-display",data={"organization_code":"ftw-1","username":"truck-screen","password":"replacement-password-123"}).status_code,401)
         screen.close()
+
+    def test_display_performance_is_deliberate_and_hide_revokes_data(self):
+        import re
+        self.provision_display()
+        self.client.post("/logout")
+        home=self.client.post("/login/store-display",data={"organization_code":"ftw-1","username":"truck-screen","password":"screen-password-123"})
+        token=re.search(r'name="csrf_token" value="([^"]+)"',home.text).group(1)
+        self.assertEqual(self.client.get("/dashboard/stores/1",follow_redirects=False).headers['location'],"/dashboard/stores/1/home")
+        self.assertEqual(self.client.post("/dashboard/stores/1/show",data={'csrf_token':'bad'}).status_code,403)
+        self.assertEqual(self.client.post("/dashboard/stores/2/show",data={'csrf_token':token}).status_code,403)
+        page=self.client.post("/dashboard/stores/1/show",data={'csrf_token':token})
+        self.assertEqual(page.status_code,200)
+        self.assertIn('id="hide-performance"',page.text)
+        self.assertIn('class="store-left-column"',page.text)
+        self.assertEqual(self.client.get("/dashboard/data?store_id=1&date=today").status_code,200)
+        home=self.client.get("/dashboard/stores/1/home")
+        self.assertNotIn('id="live-stores"',home.text)
+        self.assertEqual(self.client.get("/dashboard/data?store_id=1&date=today").status_code,403)
+        self.assertEqual(self.client.get("/dashboard/stores/1",follow_redirects=False).headers['location'],"/dashboard/stores/1/home")
+        # Explicitly reopen after hiding; no auto-hide timer closes the view.
+        self.assertEqual(self.client.post("/dashboard/stores/1/show",data={'csrf_token':token}).status_code,200)
 
     def test_display_provisioning_checks_csrf_store_ownership_and_existing_users(self):
         import re
@@ -322,7 +347,7 @@ class DatabaseAndRoutesTests(unittest.TestCase):
         self.client.post("/logout")
         self.assertEqual(self.client.post("/login/store-display",data={"organization_code":"ftw-2","username":"truck-screen","password":"screen-password-123"}).status_code,401)
         login=self.client.post("/login/store-display",data={"organization_code":" FTW-1 ","username":" TRUCK-SCREEN ","password":"screen-password-123"},follow_redirects=False)
-        self.assertEqual(login.headers["location"],"/dashboard/stores/1")
+        self.assertEqual(login.headers["location"],"/dashboard/stores/1/home")
         self.client.post("/logout")
         self.assertEqual(self.client.post("/login",data={"email":"truck-screen","password":"screen-password-123"}).status_code,401)
         self.assertEqual(self.client.post("/login/store-display",data={"organization_code":"ftw-1","username":"missing","password":"screen-password-123"}).status_code,401)

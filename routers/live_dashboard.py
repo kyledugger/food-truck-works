@@ -3,11 +3,12 @@ import hashlib
 import hmac
 import json
 import os
+import secrets
 from urllib.parse import urlsplit
 from zoneinfo import ZoneInfo
 from datetime import timedelta, date as calendar_date
-from fastapi import APIRouter, Request, HTTPException, Query
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, Request, HTTPException, Query, Form
+from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
@@ -60,6 +61,8 @@ def sales_authorized(request, store_id=None):
 @router.get("/dashboard/stores/{store_id}")
 def store_dashboard(request: Request, store_id: int):
     organization_id, role = sales_authorized(request, store_id)
+    if role == "store_display" and request.session.get("store_performance_id") != store_id:
+        return RedirectResponse(f"/dashboard/stores/{store_id}/home", status_code=303)
     with SessionLocal() as session:
         store = session.scalar(select(OrganizationStore).where(OrganizationStore.id == store_id,
             OrganizationStore.organization_id == organization_id, OrganizationStore.is_active.is_(True)))
@@ -69,9 +72,38 @@ def store_dashboard(request: Request, store_id: int):
             context={"store": store, "is_store_display": role == "store_display"}, headers={"Cache-Control": "no-store"})
 
 
+@router.get("/dashboard/stores/{store_id}/home")
+def store_display_home(request: Request, store_id: int):
+    organization_id, role = sales_authorized(request, store_id)
+    request.session.pop("store_performance_id", None)
+    csrf = request.session.setdefault("store_performance_csrf", secrets.token_urlsafe(32))
+    with SessionLocal() as session:
+        store = session.scalar(select(OrganizationStore).where(
+            OrganizationStore.id == store_id,
+            OrganizationStore.organization_id == organization_id,
+            OrganizationStore.is_active.is_(True)))
+        if store is None:
+            raise HTTPException(404, "Store not found.")
+        return templates.TemplateResponse(request=request, name="store_display_home.html",
+            context={"store": store, "is_store_display": role == "store_display", "csrf_token": csrf},
+            headers={"Cache-Control": "no-store"})
+
+
+@router.post("/dashboard/stores/{store_id}/show")
+def show_store_performance(request: Request, store_id: int, csrf_token: str = Form(...)):
+    sales_authorized(request, store_id)
+    expected = request.session.get("store_performance_csrf")
+    if not expected or not secrets.compare_digest(expected, csrf_token):
+        raise HTTPException(403, "Open the store home screen and try again.")
+    request.session["store_performance_id"] = store_id
+    return RedirectResponse(f"/dashboard/stores/{store_id}", status_code=303)
+
+
 @router.get("/dashboard/data")
 def dashboard_data(request: Request, report_date: str = Query("today", alias="date"), store_id: int | None = Query(None)):
     organization_id, role = sales_authorized(request, store_id)
+    if role == "store_display" and request.session.get("store_performance_id") != store_id:
+        raise HTTPException(403, "Open Store Performance from the store home screen first.")
     if store_id is not None and report_date != "today":
         raise HTTPException(400, "The live store dashboard only supports Today.")
     now = utc_now()

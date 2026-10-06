@@ -1,16 +1,18 @@
 {% extends "base.html" %}
 {% block title %}{{ store.display_name or store.poynt_name }} · Live Store{% endblock %}
-{% block head %}<link rel="stylesheet" href="/static/css/live-dashboard.css?v=20261005-8"><link rel="stylesheet" href="/static/css/store-dashboard.css?v=20261005-3">{% endblock %}
+{% block head %}<link rel="stylesheet" href="/static/css/live-dashboard.css?v=20261005-8"><link rel="stylesheet" href="/static/css/store-dashboard.css?v=20261005-home-1">{% endblock %}
 {% block content %}
 <main class="store-screen">
     <header class="store-toolbar">
         <div>{% if not is_store_display %}<a href="/dashboard" class="is-size-7">← All stores</a>{% endif %}<h1 class="title is-4 mb-0">{{ store.display_name or store.poynt_name }}</h1></div>
-        <div class="store-toolbar-actions"><a href="/poynt/claim-tips?store_id={{ store.store_id|urlencode }}" class="button is-small is-primary">Claim Tips</a><button id="store-fullscreen" class="button is-small is-light">Full screen</button><button id="live-refresh" class="button is-small is-light">Refresh</button>
+        <div class="store-toolbar-actions"><a id="hide-performance" href="/dashboard/stores/{{ store.id }}/home" class="button is-small is-dark">Hide Performance</a><a href="/poynt/claim-tips?store_id={{ store.store_id|urlencode }}" class="button is-small is-primary">Claim Tips</a><button id="store-fullscreen" class="button is-small is-light">Full screen</button><button id="live-refresh" class="button is-small is-light">Refresh</button>
             <div class="has-text-right"><span id="live-mode" class="tag is-success is-light">Loading sales</span><p id="live-refreshed" class="is-size-7 mt-1">Connecting…</p></div>
             {% if is_store_display %}<form method="post" action="/logout"><button class="button is-small is-light">Log out</button></form>{% endif %}</div>
     </header>
     <div id="live-status" class="notification is-light" role="status" aria-live="polite">Loading sales…</div>
-    <div class="store-flow-row">
+    <div class="store-layout">
+    <div class="store-left-column">
+    <section id="live-stores" class="live-store-grid" data-store-id="{{ store.id }}" aria-label="Today's store sales"></section>
     <section class="store-intake" aria-labelledby="store-intake-title">
         <h2 id="store-intake-title" class="has-text-weight-semibold">Kitchen intake</h2>
         <div id="store-intake-data"><p class="store-pace-note">Collecting item flow…</p></div>
@@ -21,12 +23,18 @@
         <div id="store-pace-cards" class="store-pace-cards"><p class="store-pace-note">Collecting order intervals…</p></div>
     </section>
     </div>
-    <div class="store-layout">
-        <section id="live-stores" class="live-store-grid" data-store-id="{{ store.id }}" aria-label="Today's store sales"></section>
         <section class="store-orders"><h2 class="title is-5 mb-1">Latest orders <span class="is-size-7 has-text-grey">Today · latest 20</span></h2><p class="is-size-7 has-text-grey mb-3">Newest first. Includes open and cancelled orders.</p><div id="store-order-feed"><p>Loading orders…</p></div></section>
     </div>
     <p class="store-footnote">Sales include tax and exclude tips. Refunds reduce the original sale. Times use this store's timezone. This display updates every 15 seconds.</p>
     <dialog id="store-skus" aria-labelledby="store-skus-title"><div class="store-modal-head"><h2 id="store-skus-title" class="title is-5 mb-0">Products sold today</h2><button id="store-skus-close" class="button is-small">Close</button></div><p class="is-size-7 mb-3">Completed USD sales, excluding returned items.</p><div class="store-sku-chart"><canvas id="store-sku-canvas" role="img" aria-label="Product SKU quantities"></canvas></div><table class="live-category"><thead><tr><th>SKU</th><th>Qty</th></tr></thead><tbody id="store-sku-rows"></tbody></table></dialog>
 </main>
 {% endblock %}
-{% block scripts %}<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.min.js"></script><script src="/static/js/store-dashboard.js?v=20261005-5" defer></script><script src="/static/js/live-dashboard.js?v=20261005-8" defer></script>{% endblock %}
+{% block scripts %}<script>
+// Blank before navigation so history previews do not retain sales figures.
+const hidePerformance = document.getElementById('hide-performance');
+hidePerformance.addEventListener('click', () => { document.body.style.visibility = 'hidden'; });
+window.addEventListener('pagehide', () => { document.body.style.visibility = 'hidden'; });
+window.addEventListener('pageshow', event => {
+    if (event.persisted) window.location.replace(hidePerformance.href);
+});
+</script><script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.min.js"></script><script src="/static/js/store-dashboard.js?v=20261005-5" defer></script><script src="/static/js/live-dashboard.js?v=20261005-8" defer></script>{% endblock %}

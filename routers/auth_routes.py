@@ -371,7 +371,7 @@ def display_login(request: Request, organization_code: str = Form(...), username
         request.session.update(user_id=user.id, organization_id=store.organization_id,
             store_assignment_id=assignment.id, store_session_version=assignment.session_version)
         log_security_event(request, "store_display_login", "succeeded", user_id=user.id, organization_id=store.organization_id)
-        return RedirectResponse(f"/dashboard/stores/{store.id}", status_code=303)
+        return RedirectResponse(f"/dashboard/stores/{store.id}/home", status_code=303)
 
 
 @router.post("/login")
