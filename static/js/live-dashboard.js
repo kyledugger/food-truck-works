@@ -136,6 +136,7 @@
     finally{enable.disabled=false;enable.classList.remove('is-loading');}
   });
   function start(){clearInterval(timer);refresh();timer=setInterval(refresh,15000);}
+  document.addEventListener('kitchen-queue-changed',()=>{if(storeView)refresh();});
   function choose(value){
     selection=value;const url=new URL(location.href);if(value==='today')url.searchParams.delete('date');else url.searchParams.set('date',value);history.replaceState({},'',url);
     for(const c of cards.values()){Object.values(c.charts).forEach(chart=>chart.destroy());c.root.remove();}cards.clear();

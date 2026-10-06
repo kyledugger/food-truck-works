@@ -41,3 +41,15 @@
 .store-home-claim{background:#e5f5ef;border-color:#b5dece}.store-home-action-title{font-size:1.65rem;font-weight:700}
 .store-home-note{font-size:.85rem;color:#637477;margin-top:1.5rem}
 @media(max-width:600px){.store-home{padding:1rem}.store-home-content{padding:2rem 0}.store-home-actions{grid-template-columns:1fr}.store-home-action{min-height:150px;padding:1.5rem}}
+.kitchen-order-actions{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;margin:.5rem 0}
+.kitchen-state{font-size:.8rem;font-weight:700;display:block;padding:.2rem 0}
+.store-order tr.kitchen-claimed{background:#e7f0fc;border-left:4px solid #355fa8}
+.store-order tr.kitchen-done{background:#eef0f2;border-left:4px solid #66717d}
+.kitchen-done .kitchen-item-name{text-decoration:line-through;color:#53606d}
+.kitchen-available{border-left:4px solid #dbe4e8}
+.store-order .kitchen-item-actions{width:45%;text-align:left}.kitchen-item-actions button{margin:.2rem .3rem .2rem 0;min-height:36px}
+.kitchen-sku{display:block;text-decoration:none;font-size:.7rem}.kitchen-elapsed{font-variant-numeric:tabular-nums;color:#374151;font-size:.9rem}
+.store-orders #kitchen-recent{margin-top:1rem;border-top:1px solid #dbe4e8;padding-top:.75rem}
+#kitchen-recent summary{cursor:pointer;font-weight:600}#kitchen-status{color:#53606d}
+.kitchen-action:focus-visible{outline:3px solid #355fa8;outline-offset:2px}
+.kitchen-heading{position:sticky;top:-1rem;background:#fff;z-index:1;padding:.5rem 0;border-bottom:1px solid #dbe4e8}

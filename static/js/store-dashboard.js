@@ -44,9 +44,9 @@
   }
   document.addEventListener('store-data',event=>{
     store=event.detail.stores?.[0];pace();intake();if(!store)return;
-    if(store.setup_required||store.loading){feed.replaceChildren(el('p','',store.setup_required?store.message:'Collecting today’s orders…'));fingerprint='';return;}
+    if(store.setup_required||store.loading){if(feed.dataset.kitchen!=='true')feed.replaceChildren(el('p','',store.setup_required?store.message:'Collecting today’s orders…'));fingerprint='';return;}
     const orders=store.latest_orders||[],next=JSON.stringify(orders);
-    if(next!==fingerprint){fingerprint=next;feed.replaceChildren();
+    if(feed.dataset.kitchen!=='true'&&next!==fingerprint){fingerprint=next;feed.replaceChildren();
       for(const order of orders){const root=el('article','store-order'),head=el('div','store-order-head');
         const time=new Intl.DateTimeFormat('en-US',{timeZone:store.timezone,hour:'numeric',minute:'2-digit',second:'2-digit'}).format(new Date(order.created_at));
         head.append(el('strong','','Order '+order.number),el('small','',time),el('strong','',money(order.sales_cents,order.currency)));root.append(head);

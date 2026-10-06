@@ -10,6 +10,7 @@ from database import SessionLocal
 from models import OrganizationStore, PoyntConnection
 from live_dashboard_models import DashboardOrder, DashboardSync, DashboardNotification, DashboardDay
 from live_dashboard_metrics import instant, order_store
+from kitchen_service import sync_ticket
 from poynt.client import PoyntClient, PoyntReauthorizationRequired
 from poynt.connection import get_poynt_credentials
 from store_time import utc_now, utc_iso, local_day_bounds
@@ -93,12 +94,13 @@ def save_order(session, organization_id, business_id, order):
     # Persist reporting fields only, excluding customer/contact/payment details.
     payload = {key: order.get(key) for key in ("id", "orderNumber", "createdAt", "updatedAt", "amounts", "statuses")}
     payload["items"] = [{key: item.get(key) for key in
-        ("name", "sku", "quantity", "unitPrice", "discount", "status")} for item in order.get("items") or []]
+        ("id", "name", "sku", "quantity", "unitPrice", "discount", "status")} for item in order.get("items") or []]
     row.payload = payload
     row.store_id = order_store(order)
     row.created_at = at
     row.provider_updated_at = updated
     session.flush()
+    sync_ticket(session, row)
 
 
 async def process_organization(organization_id, business_id, token):
@@ -248,4 +250,4 @@ async def dashboard_worker():
         except Exception as exc:
             # A missing migration must not prevent the rest of the app starting.
             logger.warning("Dashboard worker unavailable: %s", type(exc).__name__)
-        await asyncio.sleep(5)
+        await asyncio.sleep(1)

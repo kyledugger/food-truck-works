@@ -25,6 +25,8 @@ from store_time import local_day_bounds, utc_iso, utc_now
 from store_display_access import display_assignment, valid_display_session
 
 router = APIRouter()
+from routers.kitchen import router as kitchen_router
+router.include_router(kitchen_router)
 templates = Jinja2Templates(directory="templates")
 
 
@@ -69,7 +71,8 @@ def store_dashboard(request: Request, store_id: int):
         if store is None:
             raise HTTPException(404, "Store not found.")
         return templates.TemplateResponse(request=request, name="store_dashboard.html",
-            context={"store": store, "is_store_display": role == "store_display"}, headers={"Cache-Control": "no-store"})
+            context={"store": store, "is_store_display": role == "store_display",
+                     "kitchen_csrf": request.session.setdefault("kitchen_csrf", secrets.token_urlsafe(32))}, headers={"Cache-Control": "no-store"})
 
 
 @router.get("/dashboard/stores/{store_id}/home")
