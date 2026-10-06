@@ -83,17 +83,9 @@ class PoyntClient:
             expires_at - now
         ).total_seconds()
 
-        logger.debug(
-            "Poynt token expiration check: "
-            "seconds_remaining=%.1f, refresh_window_seconds=%d",
-            seconds_remaining,
-            int(self.refresh_window.total_seconds()),
-        )
-
         if now >= expires_at:
-            logger.warning(
-                "Poynt access token has expired; "
-                "reauthorization is required."
+            logger.info(
+                "Poynt access token has expired; attempting refresh."
             )
             return "expired"
 
@@ -156,15 +148,8 @@ class PoyntClient:
             )
             return
 
-        if state == "expired":
-            raise PoyntReauthorizationRequired(
-                "The Poynt authorization has expired. "
-                "The merchant must reconnect Poynt."
-            )
-
-        # From this point forward we know:
-        # - the token is not expired
-        # - the token is inside the configured refresh window
+        # Refresh both near-expiration and expired access tokens.
+        # An expired access token does not mean authorization was revoked.
 
         logger.info(
             "Poynt access token refresh starting."
@@ -172,8 +157,7 @@ class PoyntClient:
 
         if not self.refresh_token:
             raise PoyntReauthorizationRequired(
-                "The Poynt access token is near expiration, "
-                "but no refresh token is available. "
+                "No Poynt refresh token is available. "
                 "The merchant must reconnect Poynt."
             )
 
