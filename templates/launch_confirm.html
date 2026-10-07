@@ -1,0 +1,3 @@
+{% extends "base.html" %}{% block title %}Confirm launch updates | Food Truck Works{% endblock %}
+{% block head %}<meta name="robots" content="noindex"><meta name="referrer" content="no-referrer">{% endblock %}
+{% block content %}<main class="section"><div class="container" style="max-width:600px"><h1 class="title">One more step.</h1><p class="mb-5">Confirm that you'd like Food Truck Works launch updates and early-access news.</p><form method="post" action="/launch-updates/confirm/{{ token }}"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="button is-primary">Confirm my subscription</button></form><p class="mt-5"><a href="/">Back to Food Truck Works</a></p></div></main>{% endblock %}
