@@ -4,6 +4,34 @@
 <meta name="description" content="Built by a software engineer who runs a food truck. Discover a better way to plan events, coordinate your team, keep service moving, and understand what pays.">
 <link rel="stylesheet" href="/static/css/teaser.css?v=20261007-1">
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+{% if not request.session.get("user_id") %}
+<script>
+  const publicPages = ["/", "/teaser", "/launch-updates"];
+
+  if (
+    ["foodtruckworks.com", "www.foodtruckworks.com"].includes(location.hostname)
+    && publicPages.includes(location.pathname)
+    && !location.search
+  ) {
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+
+    gtag("js", new Date());
+    gtag("config", "G-SSFHN44M6R", {
+      page_location: location.origin + location.pathname,
+      page_referrer: document.referrer.split("?")[0].split("#")[0],
+      allow_google_signals: false,
+      allow_ad_personalization_signals: false
+    });
+
+    const tag = document.createElement("script");
+    tag.async = true;
+    tag.src =
+      "https://www.googletagmanager.com/gtag/js?id=G-SSFHN44M6R";
+    document.head.appendChild(tag);
+  }
+</script>
+{% endif %}
 {% endblock %}
 {% block content %}
 <div class="teaser">
@@ -24,7 +52,13 @@
 <article class="feature"><span class="number">05 / PAY</span><h3>Make payday easier.</h3><p>Bring approved time and tip information into a simpler payroll workflow. We're exploring connections with third-party payroll services to reduce manual entry.</p><div class="mini"><span>LESS RE-ENTERING. MORE CLARITY.</span><div class="chips"><b>Approved hours</b><b>Tip totals</b></div></div></article>
 <article class="feature"><span class="number">06 / SERVE</span><h3>Keep service moving.</h3><p>Follow sales and order activity with live dashboards. Give your kitchen a clear view of orders, customizations, and pickup notes through a kitchen display.</p><div class="mini"><span>A CLEAR VIEW OF THE RUSH</span><div class="chips"><b>Live dashboard</b><b>Kitchen queue</b></div></div></article>
 </div><p class="scope">A preview of our direction. Food Truck Works is in private testing. We'll announce V1 features as launch approaches; some capabilities will follow in later releases. Illustrations are concepts, not product screenshots.</p></section>
-<section class="story-section" id="story"><div class="wrap story"><img src="/static/images/teaser/founders.jpg" width="1200" height="1600" loading="lazy" alt="The Food Truck Works founder and his partner beside their Ice Cream Crush truck"><div><p class="eyebrow">BUILT FROM EXPERIENCE</p><h2>I run a food truck.<br>I also write software.</h2><p>Running a food truck means doing a lot more than serving food. There's the booking, the event details, the staffing, the tips, and the question at the end of the day: was that event worth it?</p><p>I'm building Food Truck Works because I work through those same problems in my own business. My experience as a software engineer gives me a way to turn them into tools that help.</p><p>This is where Food Truck Works started: real work, real events, and a belief that the tools we use can fit our day better.</p><strong class="signature">Built at the intersection of code and the service window.</strong></div></div></section>
+<section class="story-section" id="story"><div class="wrap story">
+    <img src="/static/images/teaser/trucking.png"
+     width="1200"
+     height="900"
+     loading="lazy"
+     alt="Kyle preparing ice cream and Skye serving a customer at Ice Cream Crush">    
+    <div><p class="eyebrow">BUILT FROM EXPERIENCE</p><h2>I run a food truck.<br>I also write software.</h2><p>Running a food truck means doing a lot more than serving food. There's the booking, the event details, the staffing, the tips, and the question at the end of the day: was that event worth it?</p><p>I'm building Food Truck Works because I work through those same problems in my own business. My experience as a software engineer gives me a way to turn them into tools that help.</p><p>This is where Food Truck Works started: real work, real events, and a belief that the tools we use can fit our day better.</p><strong class="signature">Built at the intersection of code and the service window.</strong></div></div></section>
 <section class="wrap closing"><p class="eyebrow">THE NEXT CHAPTER IS COMING</p><h2>Your next great event<br>starts here.</h2><p>We're putting Food Truck Works through its paces.<br>Follow along as the product takes shape.</p><a class="cta" href="#signup">Get launch updates <span aria-hidden="true">↓</span></a></section>
 <section class="wrap signup-section" id="signup"><div><p class="eyebrow">HELP SHAPE WHAT COMES NEXT</p><h2>Stay in the loop.</h2><p>Get launch updates and early-access news. Tell us what would help your business most.</p></div><form method="post" action="/launch-updates#signup"><input type="hidden" name="csrf" value="{{ launch_csrf }}">
 {% if launch_message %}<p class="signup-message" role="status">{{ launch_message }}</p>{% endif %}
