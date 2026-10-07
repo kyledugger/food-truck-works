@@ -1,0 +1,2485 @@
+{
+  "stores": [
+    {
+      "name": "Truck",
+      "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+      "checks": {
+        "graphql": {
+          "status": "ok",
+          "count": 80,
+          "products": [
+            {
+              "id": "0194f197-e34e-7003-974b-75180c767dd9",
+              "sku": "SHAVE-CUSTOM",
+              "name": "Custom Shave Ice",
+              "status": "ACTIVE",
+              "group_id": "0194f197-e1d3-7ee0-aca5-5a999a48b907",
+              "prices": [
+                {
+                  "id": "0194f197-e350-7003-974b-7de8377868f6",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 600
+                  }
+                }
+              ]
+            },
+            {
+              "id": "0194f197-ef31-7ee0-aca8-6b5b7182a0b2",
+              "sku": "ENE-CARAMELAPPLE",
+              "name": "Caramel Apple Energy Drink",
+              "status": "ACTIVE",
+              "group_id": "0194f197-ee98-7ee0-aca8-368401e24b15",
+              "prices": [
+                {
+                  "id": "0194f197-ef34-7ee0-aca8-700d5bbdca13",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 700
+                  }
+                }
+              ]
+            },
+            {
+              "id": "0194f198-08d0-7ee0-acaa-bbe0e7d635ad",
+              "sku": "ENE-STRAWBERRYDREAM",
+              "name": "Strawberry Dream Energy Drink",
+              "status": "ACTIVE",
+              "group_id": "0194f198-0823-7ee0-acaa-677e783e9da3",
+              "prices": [
+                {
+                  "id": "0194f198-08d2-7ee0-acaa-c1b3c1a8c0d5",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 700
+                  }
+                }
+              ]
+            },
+            {
+              "id": "0194f19c-d34b-7ee0-ace9-d720e9e692d0",
+              "sku": "BN-LMNDDDCTN",
+              "name": "Almond Addiction Signature Banana",
+              "status": "ACTIVE",
+              "group_id": "0194f19c-d322-7003-97a9-c6573d9454b1",
+              "prices": [
+                {
+                  "id": "0194f19c-d34f-7ee0-ace9-d8c68d0540e4",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 800
+                  }
+                }
+              ]
+            },
+            {
+              "id": "0194f19d-044a-7ee0-aceb-f55535283766",
+              "sku": "BN-LMNDJY",
+              "name": "Almond Joy Banana",
+              "status": "ACTIVE",
+              "group_id": "0194f19d-0420-7003-97af-34a887e60e3e",
+              "prices": [
+                {
+                  "id": "0194f19d-044f-7ee0-aceb-fb7e27b28d83",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 800
+                  }
+                }
+              ]
+            },
+            {
+              "id": "0194f7a9-06e4-7770-a346-7567777b35ce",
+              "sku": "BAR-ROCKYROAD",
+              "name": "Rocky Road Signature Bar",
+              "status": "ACTIVE",
+              "group_id": "0194f7a9-0682-7000-9a83-04ae304a877d",
+              "prices": [
+                {
+                  "id": "0194f7a9-06e8-7770-a346-798a68cc097c",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 800
+                  }
+                }
+              ]
+            },
+            {
+              "id": "0194fe12-bcab-7000-a0cf-3d4cb20cab45",
+              "sku": "BN-YBBDBBDP",
+              "name": "Yabba Dabba Dip Signature Banana",
+              "status": "ACTIVE",
+              "group_id": "0194fe12-bc5c-7000-a0cf-28209168e288",
+              "prices": [
+                {
+                  "id": "0194fe12-bcad-7000-a0cf-41def4ee3adc",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 800
+                  }
+                }
+              ]
+            },
+            {
+              "id": "0195065f-8cb5-7000-bff7-9c0d217aa79e",
+              "sku": "WTR-BTTL",
+              "name": "Water Bottle",
+              "status": "ACTIVE",
+              "group_id": "0195065f-8ba3-7000-93e0-56dc841070ae",
+              "prices": [
+                {
+                  "id": "0195065f-8cbb-7000-bff7-a3640800d7e2",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 200
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950888-4fcf-7001-a767-2438d236a9cc",
+              "sku": "SHAVE-ALMONDJOY",
+              "name": "Almond Joy Signature Shaved Ice",
+              "status": "ACTIVE",
+              "group_id": "01950888-4eea-7001-88b2-a0fcbdf7615b",
+              "prices": [
+                {
+                  "id": "01950888-4fd2-7001-a767-2aed682cb975",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 700
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950888-7233-7001-a768-1111e32d591a",
+              "sku": "SHAVE-BARBIE",
+              "name": "Barbie Signature Shaved Ice",
+              "status": "ACTIVE",
+              "group_id": "01950888-7162-7001-88b4-3b5b593f1ab8",
+              "prices": [
+                {
+                  "id": "01950888-7234-7001-a768-18e801fa0765",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 700
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950888-c3d7-7001-a769-f6bec8d838df",
+              "sku": "ENE-BLACKBERRYVANILLA",
+              "name": "Blackberry Vanilla Energy Drink",
+              "status": "ACTIVE",
+              "group_id": "01950888-c2cf-7001-88b8-485b932db98c",
+              "prices": [
+                {
+                  "id": "01950888-c3d9-7001-a769-ffac6a61dd39",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 700
+                  }
+                }
+              ]
+            },
+            {
+              "id": "0195088a-4f25-7001-a76f-ca3f05e90fc3",
+              "sku": "BN-FRDCCRM",
+              "name": "Fried Ice Cream Signature Banana",
+              "status": "ACTIVE",
+              "group_id": "0195088a-4ecd-7001-88bf-86ff3b083c4c",
+              "prices": [
+                {
+                  "id": "0195088a-4f26-7001-a76f-d27e21a4fbcf",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 800
+                  }
+                }
+              ]
+            },
+            {
+              "id": "0195088a-51ad-7001-88bf-9d1fe480642b",
+              "sku": "BAN-CUSTOM",
+              "name": "Custom Banana",
+              "status": "ACTIVE",
+              "group_id": "0195088a-50ab-7001-a770-33a8713e181e",
+              "prices": [
+                {
+                  "id": "0195088a-51af-7001-88bf-a1f8b90a3da1",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 800
+                  }
+                }
+              ]
+            },
+            {
+              "id": "0195088a-c3aa-7001-88c6-f475bb182ee8",
+              "sku": "BN-GMMSMR",
+              "name": "Gimme S'more Signature Banana",
+              "status": "ACTIVE",
+              "group_id": "0195088a-c357-7001-a775-30fedd1b0ac8",
+              "prices": [
+                {
+                  "id": "0195088a-c3ad-7001-88c6-f8fe9f69ed23",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 800
+                  }
+                }
+              ]
+            },
+            {
+              "id": "0195088a-c5f6-7001-a775-8397d38189b0",
+              "sku": "BN-MNTTB",
+              "name": "Mint To Be Signature Banana",
+              "status": "ACTIVE",
+              "group_id": "0195088a-c5a2-7001-88c7-5a9670340fd2",
+              "prices": [
+                {
+                  "id": "0195088a-c5f7-7001-a775-8cf97ee0b380",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 800
+                  }
+                }
+              ]
+            },
+            {
+              "id": "0195088a-e0f5-7001-88cc-1b20e2f05c82",
+              "sku": "BN-RBSSSN",
+              "name": "Oreo Obsession Signature Banana",
+              "status": "ACTIVE",
+              "group_id": "0195088a-e0ac-7001-a778-1940c88c73a2",
+              "prices": [
+                {
+                  "id": "0195088a-e0f8-7001-88cc-21f0dcc20a32",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 800
+                  }
+                }
+              ]
+            },
+            {
+              "id": "0195088e-8fa4-7001-88f5-286fdf32fdfb",
+              "sku": "BAR-BUTTERFINGERBLISS",
+              "name": "Butterfinger Bliss Signature Bar",
+              "status": "ACTIVE",
+              "group_id": "0195088e-8f5d-7001-a7a0-a5cd4a553692",
+              "prices": [
+                {
+                  "id": "0195088e-8fa7-7001-88f5-339d1bf96ef8",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 800
+                  }
+                }
+              ]
+            },
+            {
+              "id": "019509d6-00db-7001-92b5-6478b40b871e",
+              "sku": "SHAVE-CARAMELAPPLE",
+              "name": "Caramel Apple Signature Shaved Ice",
+              "status": "ACTIVE",
+              "group_id": "019509d6-000c-7001-b144-6f4cc775e020",
+              "prices": [
+                {
+                  "id": "019509d6-00de-7001-92b5-6b77282b15e3",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 700
+                  }
+                }
+              ]
+            },
+            {
+              "id": "019509d6-034d-7001-b146-0e614aa354a2",
+              "sku": "SHAVE-RAINBOW",
+              "name": "Rainbow Signature Shaved Ice",
+              "status": "ACTIVE",
+              "group_id": "019509d6-0284-7001-b145-590039c2f840",
+              "prices": [
+                {
+                  "id": "019509d6-034e-7001-b146-1151a871c7fb",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 700
+                  }
+                }
+              ]
+            },
+            {
+              "id": "019509d6-0582-7001-b146-4e94b04a671f",
+              "sku": "SHV-GRNCH",
+              "name": "The Grinch Signature Shaved Ice",
+              "status": "ACTIVE",
+              "group_id": "019509d6-04ae-7001-92b5-c26e9769297a",
+              "prices": [
+                {
+                  "id": "019509d6-0585-7001-b146-5622a98d9014",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 700
+                  }
+                }
+              ]
+            },
+            {
+              "id": "019509d6-0a43-7001-92b7-2283de3a6f7d",
+              "sku": "SHAVE-SHARKATTACK",
+              "name": "Shark Attack Signature Shaved Ice",
+              "status": "ACTIVE",
+              "group_id": "019509d6-0938-7001-92b6-7176192b9ed2",
+              "prices": [
+                {
+                  "id": "019509d6-0a45-7001-92b7-29af085a1000",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 700
+                  }
+                }
+              ]
+            },
+            {
+              "id": "019509e8-633a-7001-b1b7-84ae1e404db7",
+              "sku": "ENE-BORABORA",
+              "name": "Bora Bora Energy Drink",
+              "status": "ACTIVE",
+              "group_id": "019509e8-62b2-7001-931c-90a079088524",
+              "prices": [
+                {
+                  "id": "019509e8-633c-7001-b1b7-8af6556dbf8f",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 700
+                  }
+                }
+              ]
+            },
+            {
+              "id": "019509e9-0200-7001-b1bf-4bdab1dd38cf",
+              "sku": "ENE-CRANBERRYFIZZ",
+              "name": "Cranberry Fizz",
+              "status": "ACTIVE",
+              "group_id": "019509e9-0172-7001-b1be-d2dafda31707",
+              "prices": [
+                {
+                  "id": "019509e9-0202-7001-b1bf-5601d9a73b7f",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 700
+                  }
+                }
+              ]
+            },
+            {
+              "id": "019509eb-97c7-7001-b1d9-f5dbf1d28681",
+              "sku": "BAR-CUSTOM",
+              "name": "Custom Bar",
+              "status": "ACTIVE",
+              "group_id": "019509eb-96b1-7001-933a-72c2c9b0a480",
+              "prices": [
+                {
+                  "id": "019509eb-97c8-7001-b1d9-f953155df2f9",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 800
+                  }
+                }
+              ]
+            },
+            {
+              "id": "019509ec-3f6c-7001-b1db-e0ceb3d03833",
+              "sku": "ENE-CUSTOM",
+              "name": "Custom Energy Drink",
+              "status": "ACTIVE",
+              "group_id": "019509ec-3e85-7001-933c-8a3ae3f86b0c",
+              "prices": [
+                {
+                  "id": "019509ec-3f6d-7001-b1db-ecc9b4a1a82e",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 700
+                  }
+                }
+              ]
+            },
+            {
+              "id": "019509ed-86d4-7001-b1e0-3a00e530142a",
+              "sku": "BAR-FRIEDICECREAM",
+              "name": "Fried Ice Cream Signature Bar",
+              "status": "ACTIVE",
+              "group_id": "019509ed-8686-7001-b1e0-2ed65f5d73b9",
+              "prices": [
+                {
+                  "id": "019509ed-86d6-7001-b1e0-42a648ce3ff1",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 800
+                  }
+                }
+              ]
+            },
+            {
+              "id": "019509ee-4cc5-7001-b1e5-06524027a289",
+              "sku": "BAR-GIMMESMORE",
+              "name": "Gimme S'more Signature Bar",
+              "status": "ACTIVE",
+              "group_id": "019509ee-4c6e-7001-9349-269beafc0770",
+              "prices": [
+                {
+                  "id": "019509ee-4cc8-7001-b1e5-0cd56bdba1de",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 800
+                  }
+                }
+              ]
+            },
+            {
+              "id": "019509ee-9a19-7001-b1e6-6dcf0f97cfb9",
+              "sku": "ENE-HANG10",
+              "name": "Hang 10 Energy Drink",
+              "status": "ACTIVE",
+              "group_id": "019509ee-998f-7001-934a-9f5cae180e2c",
+              "prices": [
+                {
+                  "id": "019509ee-9a1b-7001-b1e6-72dcc78039e3",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 700
+                  }
+                }
+              ]
+            },
+            {
+              "id": "019509ef-9f74-7001-934e-d69b6a4039ac",
+              "sku": "HT-CC",
+              "name": "Hot Cocoa",
+              "status": "ACTIVE",
+              "group_id": "019509ef-9f04-7001-b1ee-f8a58b5aa48f",
+              "prices": [
+                {
+                  "id": "019509ef-9f78-7001-934e-d8ab403fbd80",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 500
+                  }
+                }
+              ]
+            },
+            {
+              "id": "019509ef-deba-7001-b1f2-4f33abba3546",
+              "sku": "BR-MNTTB",
+              "name": "Mint To Be Signature Bar",
+              "status": "ACTIVE",
+              "group_id": "019509ef-de71-7001-b1f2-3dee6485275d",
+              "prices": [
+                {
+                  "id": "019509ef-debc-7001-b1f2-5700da5e58a8",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 800
+                  }
+                }
+              ]
+            },
+            {
+              "id": "019509f6-db66-7001-b216-4c4087346578",
+              "sku": "BAR-OREOOBSESSION",
+              "name": "Oreo Obsession Signature Bar",
+              "status": "ACTIVE",
+              "group_id": "019509f6-da68-7001-9372-b6e134c220c8",
+              "prices": [
+                {
+                  "id": "019509f6-db67-7001-b216-5108fd0c1473",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 800
+                  }
+                }
+              ]
+            },
+            {
+              "id": "019509f7-5d60-7001-b21b-2b401dc7f559",
+              "sku": "BN-VRTHRNBW",
+              "name": "Over The Rainbow Signature Banana",
+              "status": "ACTIVE",
+              "group_id": "019509f7-5cd6-7001-9376-ee7c53068b1f",
+              "prices": [
+                {
+                  "id": "019509f7-5d63-7001-b21b-334f348ae4ee",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 800
+                  }
+                }
+              ]
+            },
+            {
+              "id": "019509fa-0c51-7001-b22b-860eba2a15b4",
+              "sku": "BR-VRTHRNBW",
+              "name": "Over The Rainbow Signature Bar",
+              "status": "ACTIVE",
+              "group_id": "019509fa-0bfb-7001-9389-10fbb55729f0",
+              "prices": [
+                {
+                  "id": "019509fa-0c52-7001-b22b-8a27d1f73e1a",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 800
+                  }
+                }
+              ]
+            },
+            {
+              "id": "019509fa-8e46-7001-938a-47ca18113e40",
+              "sku": "ENE-PEACHES",
+              "name": "Peaches Energy Drink",
+              "status": "ACTIVE",
+              "group_id": "019509fa-8dab-7001-b230-1f4531321a87",
+              "prices": [
+                {
+                  "id": "019509fa-8e4b-7001-938a-4faa76878978",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 700
+                  }
+                }
+              ]
+            },
+            {
+              "id": "019509fb-6abc-7001-9390-010304bf9b1c",
+              "sku": "BN-PNTPRFCTN",
+              "name": "Peanut Perfection Signature Banana",
+              "status": "ACTIVE",
+              "group_id": "019509fb-6a70-7001-b237-57c4b69e48be",
+              "prices": [
+                {
+                  "id": "019509fb-6abe-7001-9390-0fae7dff5fe4",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 800
+                  }
+                }
+              ]
+            },
+            {
+              "id": "019509fb-dd96-7001-b23a-d66b2cdbeb6a",
+              "sku": "BAR-PEANUTPERFECTION",
+              "name": "Peanut Perfection Signature Bar",
+              "status": "ACTIVE",
+              "group_id": "019509fb-dd4d-7001-9392-1e2d7e686ac5",
+              "prices": [
+                {
+                  "id": "019509fb-dd98-7001-b23a-dba456846ed0",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 800
+                  }
+                }
+              ]
+            },
+            {
+              "id": "019509fc-b506-7001-b240-79fa51adc1f5",
+              "sku": "BN-PPPRMNTKSS",
+              "name": "Peppermint Kiss Signature Banana",
+              "status": "ACTIVE",
+              "group_id": "019509fc-b4b8-7001-9395-64b3be8c7e3a",
+              "prices": [
+                {
+                  "id": "019509fc-b507-7001-b240-804b686431bb",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 800
+                  }
+                }
+              ]
+            },
+            {
+              "id": "019509fd-31f6-7001-b242-491dd14b8138",
+              "sku": "BR-PPPRMNTKSS",
+              "name": "Peppermint Kiss Signature Bar",
+              "status": "ACTIVE",
+              "group_id": "019509fd-31ac-7001-9397-7f0fae29235a",
+              "prices": [
+                {
+                  "id": "019509fd-31f7-7001-b242-50c271e96603",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 800
+                  }
+                }
+              ]
+            },
+            {
+              "id": "019509fd-947d-7001-b24b-97dff7c44fae",
+              "sku": "ENE-PINACOLADA",
+              "name": "Pina Colada Energy Drink",
+              "status": "ACTIVE",
+              "group_id": "019509fd-93b4-7001-939d-007aaf32e12d",
+              "prices": [
+                {
+                  "id": "019509fd-947f-7001-b24b-9f2921d58780",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 700
+                  }
+                }
+              ]
+            },
+            {
+              "id": "019509fe-26e5-7001-b251-6cf420d05829",
+              "sku": "ENE-PRETTYINPINK",
+              "name": "Pretty In Pink Energy Drink",
+              "status": "ACTIVE",
+              "group_id": "019509fe-2654-7001-93a6-df4355ac15cc",
+              "prices": [
+                {
+                  "id": "019509fe-26e8-7001-b251-76a7d2896267",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 700
+                  }
+                }
+              ]
+            },
+            {
+              "id": "019509fe-f317-7001-b255-20051508b8bf",
+              "sku": "ENE-RAZZMATAZZ",
+              "name": "Razzmatazz Energy Drink",
+              "status": "ACTIVE",
+              "group_id": "019509fe-f28f-7001-b254-eeea16c0390d",
+              "prices": [
+                {
+                  "id": "019509fe-f319-7001-b255-2dfe12414835",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 700
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950a22-b7e9-7001-94d0-e932d700ec11",
+              "sku": "BN-RCKYRD",
+              "name": "Rocky Road Signature Banana",
+              "status": "ACTIVE",
+              "group_id": "01950a22-b79c-7001-b359-6bf98cb0041a",
+              "prices": [
+                {
+                  "id": "01950a22-b7ec-7001-94d0-f7c7c19da152",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 800
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950a24-4dd8-7001-94da-1cc046b70077",
+              "sku": "FLOAT-ROOTBEER",
+              "name": "Root Beer Float",
+              "status": "ACTIVE",
+              "group_id": "01950a24-4d89-7001-b362-eb0372c8f41e",
+              "prices": [
+                {
+                  "id": "01950a24-4de0-7001-94da-27ac3217f80d",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 750
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950a24-940b-7001-94dc-78636b94cc9f",
+              "sku": "ENE-RUBYRED",
+              "name": "Ruby Red Energy Drink",
+              "status": "ACTIVE",
+              "group_id": "01950a24-935b-7001-b365-099f0af9a2bb",
+              "prices": [
+                {
+                  "id": "01950a24-940d-7001-94dc-875851f2787d",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 700
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950a24-f8f0-7001-94df-3485a438c20a",
+              "sku": "BN-SLTYCRSH",
+              "name": "Salty Crush Signature Banana",
+              "status": "ACTIVE",
+              "group_id": "01950a24-f89c-7001-b367-9f7c23a8a6b8",
+              "prices": [
+                {
+                  "id": "01950a24-f8f3-7001-94df-3d592b075a68",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 800
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950a25-8b23-7001-b372-50f23ae5647a",
+              "sku": "BAR-SALTYCRUSH",
+              "name": "Salty Crush Signature Bar",
+              "status": "ACTIVE",
+              "group_id": "01950a25-8adb-7001-94e5-3d5ce4c302ff",
+              "prices": [
+                {
+                  "id": "01950a25-8b25-7001-b372-5bae982fbb32",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 800
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950a26-6c4a-7001-94eb-fb8f3b43ef63",
+              "sku": "ENE-SHARKBITE",
+              "name": "Shark Bite Energy Drink",
+              "status": "ACTIVE",
+              "group_id": "01950a26-6b9e-7001-b378-d292ed08bfc0",
+              "prices": [
+                {
+                  "id": "01950a26-6c4d-7001-94ec-06717b7138be",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 700
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950a26-b0d4-7001-b37b-0276be1443a4",
+              "sku": "BAR-SKINNYDIP",
+              "name": "Skinny Dip Signature Bar",
+              "status": "ACTIVE",
+              "group_id": "01950a26-b089-7001-94ee-80b4587d6803",
+              "prices": [
+                {
+                  "id": "01950a26-b0d6-7001-b37b-0935ee9f3998",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 700
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950a27-a176-7001-b382-abd9cc5ed8e1",
+              "sku": "ENE-SUNNYDAY",
+              "name": "Sunny Day Energy Drink",
+              "status": "ACTIVE",
+              "group_id": "01950a27-a0bb-7001-94f5-42981fd4d3de",
+              "prices": [
+                {
+                  "id": "01950a27-a177-7001-b382-b2aafeb7ae2c",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 700
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950a27-ebd6-7001-b383-27f56b0a54b0",
+              "sku": "BN-TK5",
+              "name": "Take 5 Signature Banana",
+              "status": "ACTIVE",
+              "group_id": "01950a27-eb8d-7001-94f8-14a162083c34",
+              "prices": [
+                {
+                  "id": "01950a27-ebd8-7001-b383-2ee94044cc38",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 800
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950a28-23e3-7001-b384-8656f1c81fb4",
+              "sku": "BAR-TAKE5",
+              "name": "Take 5 Signature Bar",
+              "status": "ACTIVE",
+              "group_id": "01950a28-2385-7001-94f9-85348085580c",
+              "prices": [
+                {
+                  "id": "01950a28-23e5-7001-b384-8b5edab4c800",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 800
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950a29-b0fa-7001-9509-b1540ac166f7",
+              "sku": "ENE-WINTERCRUSH",
+              "name": "Winter Crush Energy Drink",
+              "status": "ACTIVE",
+              "group_id": "01950a29-b069-7001-9509-7b77ddbebb33",
+              "prices": [
+                {
+                  "id": "01950a29-b0fd-7001-9509-bfb117486073",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 700
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950a29-e2d8-7001-b393-1a1c08831384",
+              "sku": "BAR-YABBADABBADIP",
+              "name": "Yabba Dabba Dip Signature Bar",
+              "status": "ACTIVE",
+              "group_id": "01950a29-e289-7001-950b-dc99aa72ccef",
+              "prices": [
+                {
+                  "id": "01950a29-e2dc-7001-b393-2174facda09a",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 800
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950a3f-81d7-7001-95c2-0649d24d4015",
+              "sku": "BN-SKNNYDP",
+              "name": "Skinny Dip Signature Banana",
+              "status": "ACTIVE",
+              "group_id": "01950a3f-818b-7001-b452-1c5ef4baa945",
+              "prices": [
+                {
+                  "id": "01950a3f-81da-7001-95c2-0bd5e6fd80f3",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 800
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950a4c-1162-7001-962e-dde42cbfb20d",
+              "sku": "BR-LMNDJY",
+              "name": "Almond Joy Signature Bar",
+              "status": "ACTIVE",
+              "group_id": "01950a4c-1112-7001-b4c2-25fa8bf833b2",
+              "prices": [
+                {
+                  "id": "01950a4c-1164-7001-962e-e30e75aa146c",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 800
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01952962-9ce1-7003-819b-16b209a8a889",
+              "sku": "BR-LMNDDDCTN",
+              "name": "Almond Addiction Signature Bar",
+              "status": "ACTIVE",
+              "group_id": "01950a40-f003-7001-95cf-a799531e1237",
+              "prices": [
+                {
+                  "id": "01952962-9ce5-7003-819b-1f0da1db4144",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 800
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01952962-a3a1-7ff6-a8a2-8a1d90ab6ba4",
+              "sku": "BAN-BUTTERFINGERBLISS",
+              "name": "Butterfinger Bliss Signature Banana",
+              "status": "ACTIVE",
+              "group_id": "01950889-d860-7001-88bd-e558cf63b1a9",
+              "prices": [
+                {
+                  "id": "01952962-a3a2-7ff6-a8a2-96b7bd7943e4",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 800
+                  }
+                }
+              ]
+            },
+            {
+              "id": "0195bf47-1810-7220-9f4f-570864312f6e",
+              "sku": "DRINK-COCONUT",
+              "name": "Coconut Water",
+              "status": "ACTIVE",
+              "group_id": "0195bf47-16d5-7000-8344-491cfc6243ad",
+              "prices": [
+                {
+                  "id": "0195bf47-1811-7220-9f4f-5b92d5d5c956",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 0
+                  }
+                }
+              ]
+            },
+            {
+              "id": "0195f4f7-490b-799b-8248-9acf592eee08",
+              "sku": "WATER-CUPOFICE",
+              "name": "Cup of Ice",
+              "status": "ACTIVE",
+              "group_id": "0195f4f7-48c9-799b-8248-8f5f791a6266",
+              "prices": [
+                {
+                  "id": "0195f4f7-4911-799b-8248-a436d7ce2953",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 200
+                  }
+                }
+              ]
+            },
+            {
+              "id": "0197d864-8021-7eee-b18f-cd7ae5576d23",
+              "sku": "BAR-VANILLA",
+              "name": "Plain Vanilla Ice Cream Bar",
+              "status": "ACTIVE",
+              "group_id": "0197d864-7e93-7ffc-96bc-abc1ebe01075",
+              "prices": [
+                {
+                  "id": "0197d864-8029-7eee-b18f-d783502f6b69",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 600
+                  }
+                }
+              ]
+            },
+            {
+              "id": "0198e942-4b04-7000-a185-3c13f53b7124",
+              "sku": "BR-RCKYRD-1",
+              "name": "Rocky Road Bar",
+              "status": "ACTIVE",
+              "group_id": "0198e942-4a41-7554-beb0-54fe9aa11491",
+              "prices": [
+                {
+                  "id": "0198e942-4b0c-7000-a185-46a8210d6030",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 800
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01991e56-0992-7ff0-9b4a-008b9a0ac5d1",
+              "sku": "DRINK-SELTZER",
+              "name": "Seltzer Water on Ice",
+              "status": "ACTIVE",
+              "group_id": "01991e56-0807-7000-8b99-1ad789a24ae3",
+              "prices": [
+                {
+                  "id": "01991e56-0998-7ff0-9b4a-0fb5a94eb315",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 400
+                  }
+                }
+              ]
+            },
+            {
+              "id": "019bf099-7e6d-7bbb-b4a4-f6f9704071f7",
+              "sku": "COF-CB-MAPLE",
+              "name": "Cold Brew Maple Cream",
+              "status": "ACTIVE",
+              "group_id": "019bf099-7cbb-7bbb-9902-23a11d3c4c83",
+              "prices": [
+                {
+                  "id": "019bf099-7e76-7bbb-b4a4-f9c08edf5912",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 750
+                  }
+                }
+              ]
+            },
+            {
+              "id": "019bf09b-eca2-7eee-90aa-5b44e78a1a59",
+              "sku": "COF-CB-FRST-CRSH",
+              "name": "Cold Brew Vanilla Crush",
+              "status": "ACTIVE",
+              "group_id": "019bf09b-eb11-7bb2-be95-fc792d80d203",
+              "prices": [
+                {
+                  "id": "019bf09b-eca5-7eee-90aa-623738e24333",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 750
+                  }
+                }
+              ]
+            },
+            {
+              "id": "019bf09d-37e0-7886-9777-479b0419c5bd",
+              "sku": "COF-CB-SALTEDCARAMEL",
+              "name": "Cold Brew Salted Caramel",
+              "status": "ACTIVE",
+              "group_id": "019bf09d-3653-7eee-90ac-c0487a78585f",
+              "prices": [
+                {
+                  "id": "019bf09d-37e3-7886-9777-4b2a6c49b8ef",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 750
+                  }
+                }
+              ]
+            },
+            {
+              "id": "019bf09f-8fea-7bb2-be99-8b815731e627",
+              "sku": "COF-CB-PECAN",
+              "name": "Cold Brew Southern Charm",
+              "status": "ACTIVE",
+              "group_id": "019bf09f-8e5c-7000-810c-0066b331877f",
+              "prices": [
+                {
+                  "id": "019bf09f-8fed-7bb2-be99-969cfa418a87",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 750
+                  }
+                }
+              ]
+            },
+            {
+              "id": "019bf5ff-7315-7777-aa93-9ae750d23bf5",
+              "sku": "COF-CB-COWBOY",
+              "name": "Cold Brew Cowboy Black",
+              "status": "ACTIVE",
+              "group_id": "019bf5ff-71c1-7000-86c2-239ca541efb6",
+              "prices": [
+                {
+                  "id": "019bf5ff-7321-7777-aa93-a1adbeed889d",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 750
+                  }
+                }
+              ]
+            },
+            {
+              "id": "019c8627-d1a3-7000-81d5-2fe27335742f",
+              "sku": "COF-CB-CUSTOM",
+              "name": "Custom Coffee",
+              "status": "ACTIVE",
+              "group_id": "019c8627-cfb9-7991-a362-e9063d8d72d6",
+              "prices": [
+                {
+                  "id": "019c8627-d1ab-7000-81d5-33ca2e873d20",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 750
+                  }
+                }
+              ]
+            },
+            {
+              "id": "019caa7f-a17e-7cc1-b7c4-8699e6361776",
+              "sku": "COF-CB-MAPLEPECAN",
+              "name": "Cold Brew Maple Pecan",
+              "status": "ACTIVE",
+              "group_id": "019caa7f-9ed8-7ccb-bfef-5ea6b00246f5",
+              "prices": [
+                {
+                  "id": "019caa7f-a181-7cc1-b7c4-8d6da26852c4",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 750
+                  }
+                }
+              ]
+            },
+            {
+              "id": "019ec318-0112-76f3-ad78-f394acd4ba73",
+              "sku": "REF-STRAWBERRY-COLADA",
+              "name": "Strawberry Colada Refresher",
+              "status": "ACTIVE",
+              "group_id": "019ec317-ff8f-7438-96c8-8b7b6c9893f7",
+              "prices": [
+                {
+                  "id": "019ec318-0117-7259-9a4e-f97becf3c9d0",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 700
+                  }
+                }
+              ]
+            },
+            {
+              "id": "019ec319-3a81-777c-9ba0-e334962cd381",
+              "sku": "REF-PRETTY-IN-PINK",
+              "name": "Pretty In Pink Refresher",
+              "status": "ACTIVE",
+              "group_id": "019ec319-3863-7449-95d7-0d4a356d3e97",
+              "prices": [
+                {
+                  "id": "019ec319-3a84-7753-ae50-59899f42b246",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 700
+                  }
+                }
+              ]
+            },
+            {
+              "id": "019ec319-cc47-739d-90e8-ebce192e5347",
+              "sku": "REF-BORABORA",
+              "name": "Bora Bora Refresher",
+              "status": "ACTIVE",
+              "group_id": "019ec319-c988-712f-995b-55df10e13fe0",
+              "prices": [
+                {
+                  "id": "019ec319-cc49-7159-8a19-0949b898807c",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 700
+                  }
+                }
+              ]
+            },
+            {
+              "id": "019ecde4-c2a4-7379-b54f-c82e8e2e4d5d",
+              "sku": "BAR-BISCOFF",
+              "name": "Biscoff Signature Bar",
+              "status": "ACTIVE",
+              "group_id": "019ecde4-c12c-73c3-bcba-5387335517fa",
+              "prices": [
+                {
+                  "id": "019ecde4-c2ad-72bf-ac10-59ace235f857",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 800
+                  }
+                }
+              ]
+            },
+            {
+              "id": "019ecdf0-7ca6-7123-ba5a-90983278ab93",
+              "sku": "BAN-DUBAI",
+              "name": "Dubai Signature Banana",
+              "status": "ACTIVE",
+              "group_id": "019ecdf0-79f2-770b-96d6-49f047e1d85c",
+              "prices": [
+                {
+                  "id": "019ecdf0-7cb0-7385-9a9a-1c04b3ccc41b",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 1000
+                  }
+                }
+              ]
+            },
+            {
+              "id": "019ecdf1-49da-724e-9ab6-f9f8e20b5d6a",
+              "sku": "BAR-DUBAI",
+              "name": "Dubai Signature Bar",
+              "status": "ACTIVE",
+              "group_id": "019ecdf1-4538-749c-a1ff-22e7741a61a5",
+              "prices": [
+                {
+                  "id": "019ecdf1-4a33-756d-ab17-f0ecba67bb73",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 1000
+                  }
+                }
+              ]
+            },
+            {
+              "id": "019ecdf1-f766-743f-aa44-b8c90a812b08",
+              "sku": "BAN-BISCOFF",
+              "name": "Biscoff Signature Banana",
+              "status": "ACTIVE",
+              "group_id": "019ecdf1-f5b6-72a9-8926-318439cbfee1",
+              "prices": [
+                {
+                  "id": "019ecdf1-f769-7325-ba88-8507c163f738",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 800
+                  }
+                }
+              ]
+            },
+            {
+              "id": "019f2f7b-913f-71cf-a2db-3c9de71b203c",
+              "sku": "SHAVE-STARS-STRIPES",
+              "name": "Stars & Stripes Signature Shave Ice",
+              "status": "ACTIVE",
+              "group_id": "019f2f7b-909a-74ea-b76b-200172284f0a",
+              "prices": [
+                {
+                  "id": "019f2f7b-914a-7529-a822-37444029c487",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 700
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01a0ac99-6b98-7422-96a1-11ca0afa8883",
+              "sku": "BAK-CINNAMON-ROLL",
+              "name": "Cinnamon Roll",
+              "status": "ACTIVE",
+              "group_id": "01a0ac99-6972-7409-948f-f2a40a330719",
+              "prices": [
+                {
+                  "id": "01a0ac99-6b9b-72f9-858d-574842119a75",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 800
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01a0ca44-cbad-704e-8040-a5fb4e3955e9",
+              "sku": "ENE-BLUELAGOON",
+              "name": "Blue Lagoon",
+              "status": "ACTIVE",
+              "group_id": "01a0ca44-c950-75d7-8d4f-d4445a259de5",
+              "prices": [
+                {
+                  "id": "01a0ca44-cbaf-7618-9694-f1bfdb4e0d85",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 700
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01a0ca46-4944-75a4-a6a7-1e2fffa397f7",
+              "sku": "ENE-ORANGECREAMCICLE",
+              "name": "Orange Creamcicle",
+              "status": "ACTIVE",
+              "group_id": "01a0ca46-4723-748b-af4b-533774278430",
+              "prices": [
+                {
+                  "id": "01a0ca46-4949-74ec-9d55-bc8c5a630eda",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 700
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "legacy_rest": {
+          "status": "failed",
+          "error": "HTTP 401; no provider body logged"
+        }
+      }
+    },
+    {
+      "name": "Popup",
+      "store_id": "6440e3cd-757f-4e2d-8076-d4895722f044",
+      "checks": {
+        "graphql": {
+          "status": "ok",
+          "count": 73,
+          "products": [
+            {
+              "id": "019505f9-447e-7000-a682-fb9c0c6f11da",
+              "sku": "BAR-AlmondAddiction",
+              "name": "Almond Addiction Bar",
+              "status": "ACTIVE",
+              "group_id": "019505f9-445a-7000-a682-e8597729b14a",
+              "prices": [
+                {
+                  "id": "019505f9-4480-7000-a683-021a12a17d52",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 950
+                  }
+                }
+              ]
+            },
+            {
+              "id": "019505fa-91c8-7eee-bafe-d8f40535ee03",
+              "sku": "BAR-CUSTOM",
+              "name": "Custom Bar",
+              "status": "ACTIVE",
+              "group_id": "019505fa-919b-7eee-bafe-cb0c2428a843",
+              "prices": [
+                {
+                  "id": "019505fa-91cb-7eee-bafe-e2f75e62c211",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 950
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950641-9915-7000-8f92-3f7b7c5880a1",
+              "sku": "ENE-StrawberryDream",
+              "name": "Strawberry Dream Energy Drink",
+              "status": "ACTIVE",
+              "group_id": "01950641-98ec-7000-bba7-bef1ef46536d",
+              "prices": [
+                {
+                  "id": "01950641-9918-7000-8f92-46a8bd52b81b",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 900
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950641-99df-7000-bba8-124d4fe4cc94",
+              "sku": "BAR-Take5",
+              "name": "Take 5 Signature Bar",
+              "status": "ACTIVE",
+              "group_id": "01950641-99b2-7000-8f92-6ad57191a0b7",
+              "prices": [
+                {
+                  "id": "01950641-99e6-7000-bba8-1e088820cd1e",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 950
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950641-9dca-7000-8f93-972763a6a51d",
+              "sku": "ENE-PinaColada",
+              "name": "Pina Colada Energy Drink",
+              "status": "ACTIVE",
+              "group_id": "01950641-9d68-7000-8f93-5a5bcd91bebc",
+              "prices": [
+                {
+                  "id": "01950641-9dcd-7000-8f93-980c37bea744",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 900
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950641-9ea8-7000-bba9-42a200f1fecb",
+              "sku": "ENE-Custom",
+              "name": "Custom Energy Drink",
+              "status": "ACTIVE",
+              "group_id": "01950641-9e7a-7000-8f93-cbf0e99fdc47",
+              "prices": [
+                {
+                  "id": "01950641-9eaa-7000-bba9-4cbe7ead6167",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 900
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950641-9f4a-7000-8f93-ecfaa9c19e97",
+              "sku": "BAN-OreoObsession",
+              "name": "Oreo Obsession Signature Banana",
+              "status": "ACTIVE",
+              "group_id": "01950641-9f1f-7000-8f93-dca9390eb48c",
+              "prices": [
+                {
+                  "id": "01950641-9f4e-7000-8f93-f4d235d4ef6b",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 950
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950641-9ff4-7000-bba9-b2cf21e5bf0d",
+              "sku": "BAN-RockyRoad",
+              "name": "Rocky Road Signature Banana",
+              "status": "ACTIVE",
+              "group_id": "01950641-9fcb-7000-8f94-052e59f141ac",
+              "prices": [
+                {
+                  "id": "01950641-9ff6-7000-bba9-b8d10a319b25",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 950
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950641-a0cd-7000-8f94-76f3bcf38d41",
+              "sku": "ENE-CranberryFizz",
+              "name": "Cranberry Fizz Energy Drink",
+              "status": "ACTIVE",
+              "group_id": "01950641-a096-7000-bba9-f2758eed9f24",
+              "prices": [
+                {
+                  "id": "01950641-a0cf-7000-8f94-7a1e2bfcc0b5",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 900
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950641-a17e-7000-bbaa-3754d5665e42",
+              "sku": "BAR-SkinnyDip",
+              "name": "Skinny Dip Signature Bar",
+              "status": "ACTIVE",
+              "group_id": "01950641-a154-7000-bbaa-25170967e0f9",
+              "prices": [
+                {
+                  "id": "01950641-a180-7000-bbaa-3a250d0847b7",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 850
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950641-a21d-7000-bbaa-8153b6b94420",
+              "sku": "BAN-FriedIceCream",
+              "name": "Fried Ice Cream Signature Banana",
+              "status": "ACTIVE",
+              "group_id": "01950641-a1f6-7000-bbaa-742bab35fafc",
+              "prices": [
+                {
+                  "id": "01950641-a21e-7000-bbaa-8e01c8c1cf82",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 950
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950641-a2d1-7000-bbaa-db15d673d63f",
+              "sku": "SHAVE-Custom",
+              "name": "Custom Shave Ice",
+              "status": "ACTIVE",
+              "group_id": "01950641-a2a5-7000-bbaa-c8b34804ef8e",
+              "prices": [
+                {
+                  "id": "01950641-a2d2-7000-bbaa-e0ac756de12f",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 600
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950641-a3ba-7000-bbab-4e15989e68b1",
+              "sku": "ENE-PrettyInPink",
+              "name": "Pretty In Pink Energy Drink",
+              "status": "ACTIVE",
+              "group_id": "01950641-a36a-7000-8f95-b4aad20da8c4",
+              "prices": [
+                {
+                  "id": "01950641-a3bc-7000-bbab-52585eda124f",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 900
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950641-a45c-7000-bbab-aff4d712ef45",
+              "sku": "BAN-AlmondJoy",
+              "name": "Almond Joy Signature Banana",
+              "status": "ACTIVE",
+              "group_id": "01950641-a434-7000-8f95-c2aa37a3d6e1",
+              "prices": [
+                {
+                  "id": "01950641-a45d-7000-bbab-b27993d7ff40",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 950
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950641-a5a8-7000-bbac-1b925642b5e5",
+              "sku": "BAN-Take5",
+              "name": "Take 5 Signature Banana",
+              "status": "ACTIVE",
+              "group_id": "01950641-a580-7000-8f96-29a047e33381",
+              "prices": [
+                {
+                  "id": "01950641-a5a9-7000-bbac-2330534b4f73",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 950
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950641-a900-7000-bbac-6455f507c077",
+              "sku": "BAN-GimmeSmore",
+              "name": "Gimme S'more Signature Banana",
+              "status": "ACTIVE",
+              "group_id": "01950641-a66b-7000-8f96-66664fffabb0",
+              "prices": [
+                {
+                  "id": "01950641-a901-7000-bbac-6bdc2655cde1",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 950
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950641-a9fd-7000-8f96-9f7ed0ac18cc",
+              "sku": "SHAVE-Barbie",
+              "name": "Barbie Signature Shaved Ice",
+              "status": "ACTIVE",
+              "group_id": "01950641-a986-7000-bbac-a4e043060f51",
+              "prices": [
+                {
+                  "id": "01950641-aa00-7000-8f96-a1a3d2d496b7",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 700
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950641-ab62-7000-bbac-fe274de89663",
+              "sku": "BAR-OreoObsession",
+              "name": "Oreo Obsession Signature Bar",
+              "status": "ACTIVE",
+              "group_id": "01950641-ab2c-7000-bbac-edcfc4c7d5e7",
+              "prices": [
+                {
+                  "id": "01950641-ab64-7000-bbad-00ca126c1c65",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 950
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950641-ac02-7000-8f97-1fcf13f3c046",
+              "sku": "BAR-PeanutPerfection",
+              "name": "Peanut Perfection Signature Bar",
+              "status": "ACTIVE",
+              "group_id": "01950641-abd7-7000-bbad-385db6a7cb1c",
+              "prices": [
+                {
+                  "id": "01950641-ac04-7000-8f97-2573a91562b8",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 950
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950641-acb8-7000-bbad-9f8c79a33ea3",
+              "sku": "SHAVE-SharkAttack",
+              "name": "Shark Attack Signature Shaved Ice",
+              "status": "ACTIVE",
+              "group_id": "01950641-ac93-7000-8f97-583b3ffafcb5",
+              "prices": [
+                {
+                  "id": "01950641-acb9-7000-bbad-a1b3754d0a30",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 700
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950641-ad91-7000-8f97-cec2990e04ee",
+              "sku": "BAN-PeppermintKiss",
+              "name": "Peppermint Kiss Signature Banana",
+              "status": "ACTIVE",
+              "group_id": "01950641-ad68-7000-bbad-b33753bee6c4",
+              "prices": [
+                {
+                  "id": "01950641-ad93-7000-8f97-d5971eb1b944",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 950
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950641-ae68-7000-bbae-1509a29addcf",
+              "sku": "BAR-PeppermintKiss",
+              "name": "Peppermint Kiss Signature Bar",
+              "status": "ACTIVE",
+              "group_id": "01950641-ae41-7000-8f97-e190d21db0c3",
+              "prices": [
+                {
+                  "id": "01950641-ae6a-7000-bbae-1a0c0b324e68",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 950
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950641-af81-7000-8f98-241ca1352858",
+              "sku": "BAR-FriedIceCream",
+              "name": "Fried Ice Cream Signature Bar",
+              "status": "ACTIVE",
+              "group_id": "01950641-aee6-7000-bbae-2c36215d0ca4",
+              "prices": [
+                {
+                  "id": "01950641-af8f-7000-8f98-30c926e06300",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 950
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950641-b108-7000-8f98-8cf34bd9e1a0",
+              "sku": "ENE-Hang10",
+              "name": "Hang 10 Energy Drink",
+              "status": "ACTIVE",
+              "group_id": "01950641-b0e0-7000-8f98-78471c77c960",
+              "prices": [
+                {
+                  "id": "01950641-b13b-7000-8f98-962a7dbee326",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 900
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950641-b225-7000-8f98-e6bf6765d141",
+              "sku": "BAR-MintToBe",
+              "name": "Mint To Be Signature Bar",
+              "status": "ACTIVE",
+              "group_id": "01950641-b1fa-7000-8f98-a27c9e1bed3c",
+              "prices": [
+                {
+                  "id": "01950641-b227-7000-8f98-f34396926868",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 950
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950641-b2d4-7000-8f99-52a6dd639ac0",
+              "sku": "BAN-OverTheRainbow",
+              "name": "Over The Rainbow Signature Banana",
+              "status": "ACTIVE",
+              "group_id": "01950641-b2ac-7000-bbae-cddb3043be0a",
+              "prices": [
+                {
+                  "id": "01950641-b2d7-7000-8f99-581c1c0c0dba",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 950
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950641-b384-7000-8f99-890b73f636fa",
+              "sku": "BAR-YabbaDabbaDip",
+              "name": "Yabba Dabba Dip Signature Bar",
+              "status": "ACTIVE",
+              "group_id": "01950641-b357-7000-8f99-6e865272c3f8",
+              "prices": [
+                {
+                  "id": "01950641-b388-7000-8f99-93c25e74d90e",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 950
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950641-b4f6-7000-bbaf-9673a3177fa4",
+              "sku": "SHAVE-Rainbow",
+              "name": "Rainbow Signature Shaved Ice",
+              "status": "ACTIVE",
+              "group_id": "01950641-b4ca-7000-bbaf-54d1e65ab9b7",
+              "prices": [
+                {
+                  "id": "01950641-b4f9-7000-bbaf-9f56dee79dab",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 700
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950641-b5b2-7000-bbaf-bd979d3d22e3",
+              "sku": "ENE-Razzmatazz",
+              "name": "Razzmatazz Energy Drink",
+              "status": "ACTIVE",
+              "group_id": "01950641-b58d-7000-bbaf-abf1c9e6ed97",
+              "prices": [
+                {
+                  "id": "01950641-b5b6-7000-bbaf-c67be6c0d951",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 900
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950641-b665-7000-bbb0-251e086b1a8c",
+              "sku": "ENE-CarmelApple",
+              "name": "Caramel Apple Energy Drink",
+              "status": "ACTIVE",
+              "group_id": "01950641-b63d-7000-8f9a-731c0ff4d0e3",
+              "prices": [
+                {
+                  "id": "01950641-b667-7000-bbb0-2ab0a0583a7d",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 900
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950641-b9a6-7000-bbb1-4d7f29ab7728",
+              "sku": "ENE-WinterCrush",
+              "name": "Winter Crush Energy Drink",
+              "status": "ACTIVE",
+              "group_id": "01950641-b8a3-7000-bbb0-a62d79a70473",
+              "prices": [
+                {
+                  "id": "01950641-b9be-7000-bbb1-7114367f7bb0",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 900
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950641-bbb6-7000-bbb3-d51d06ec0d16",
+              "sku": "BAR-GimmeSmore",
+              "name": "Gimme S'more Signature Bar",
+              "status": "ACTIVE",
+              "group_id": "01950641-bb8d-7000-bbb3-b2fb93319eb8",
+              "prices": [
+                {
+                  "id": "01950641-bbb8-7000-bbb3-dc14db93cf8f",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 950
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950641-bc6c-7000-bbb5-0104205afa35",
+              "sku": "BAN-SaltyCrush",
+              "name": "Salty Crush Signature Banana",
+              "status": "ACTIVE",
+              "group_id": "01950641-bc3c-7000-8f9d-e74f69155809",
+              "prices": [
+                {
+                  "id": "01950641-bc6e-7000-bbb5-0d6a59ed7862",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 950
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950641-bd1e-7000-bbb5-d84d5845a7cf",
+              "sku": "ENE-SunnyDay",
+              "name": "Sunny Day Energy Drink",
+              "status": "ACTIVE",
+              "group_id": "01950641-bcf4-7000-bbb5-8b9241728dad",
+              "prices": [
+                {
+                  "id": "01950641-bd20-7000-bbb5-f2d7ac466fa3",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 900
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950641-bde3-7000-8fa0-01131c10522a",
+              "sku": "SHAVE-AlmondJoy",
+              "name": "Almond Joy Signature Shaved Ice",
+              "status": "ACTIVE",
+              "group_id": "01950641-bda6-7000-bbb6-68bf8687281e",
+              "prices": [
+                {
+                  "id": "01950641-bdea-7000-8fa0-385b2bdb7099",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 700
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950641-bf59-7000-8fa1-4379afcb7a05",
+              "sku": "BAN-AlmondAddiction",
+              "name": "Almond Addiction Signature Banana",
+              "status": "ACTIVE",
+              "group_id": "01950641-bf28-7000-bbb8-2a5aa84fe082",
+              "prices": [
+                {
+                  "id": "01950641-bf5c-7000-8fa1-5bde50319ec1",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 950
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950641-c053-7000-8fa2-a9514def36e3",
+              "sku": "FLOAT-RootBeer",
+              "name": "Root Beer Float",
+              "status": "ACTIVE",
+              "group_id": "01950641-c01b-7000-8fa2-459a23ae7561",
+              "prices": [
+                {
+                  "id": "01950641-c057-7000-8fa2-b2437ff54adc",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 700
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950641-c3c6-7000-8fa4-c425277e7b78",
+              "sku": "ENE-SharkBite",
+              "name": "Shark Bite Energy Drink",
+              "status": "ACTIVE",
+              "group_id": "01950641-c38a-7000-8fa4-3727b7df4091",
+              "prices": [
+                {
+                  "id": "01950641-c3cf-7000-8fa4-dff3967b0a2b",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 900
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950641-c48d-7000-bbbc-43e0c457e5ba",
+              "sku": "ENE-Peaches",
+              "name": "Peaches Energy Drink",
+              "status": "ACTIVE",
+              "group_id": "01950641-c451-7000-bbbc-2f1901721c91",
+              "prices": [
+                {
+                  "id": "01950641-c48f-7000-bbbc-4a0a882c84c8",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 900
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950641-c53e-7000-bbbd-095d8b813c1e",
+              "sku": "BAN-SKNNY-DP",
+              "name": "Skinny Dip Signature Banana",
+              "status": "ACTIVE",
+              "group_id": "01950641-c515-7000-8fa6-529dd3b8a0fc",
+              "prices": [
+                {
+                  "id": "01950641-c542-7000-bbbd-102b55f0a3fd",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 950
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950641-c5ee-7000-8fa6-ebb5ac524b48",
+              "sku": "BAN-Custom",
+              "name": "Custom Banana",
+              "status": "ACTIVE",
+              "group_id": "01950641-c5c0-7000-8fa6-df4f5f6de47a",
+              "prices": [
+                {
+                  "id": "01950641-c5f0-7000-8fa6-f54870ba861f",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 950
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950641-c699-7000-bbbf-8438dbef304c",
+              "sku": "BAN-MintToBe",
+              "name": "Mint To Be Signature Banana",
+              "status": "ACTIVE",
+              "group_id": "01950641-c66d-7000-8fa7-34ea95dfce9d",
+              "prices": [
+                {
+                  "id": "01950641-c69b-7000-bbbf-88cf3792f7ae",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 950
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950641-c738-7000-bbc0-3b1024d19af6",
+              "sku": "HOT-Cocoa",
+              "name": "Hot Cocoa",
+              "status": "ACTIVE",
+              "group_id": "01950641-c712-7000-bbc0-00bad1b35040",
+              "prices": [
+                {
+                  "id": "01950641-c73a-7000-bbc0-40a15ff039a9",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 500
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950641-c802-7000-8fa8-5e37bb9bb882",
+              "sku": "BAN-PeanutPerfection",
+              "name": "Peanut Perfection Signature Banana",
+              "status": "ACTIVE",
+              "group_id": "01950641-c7c7-7000-bbc0-736b30dae87c",
+              "prices": [
+                {
+                  "id": "01950641-c804-7000-8fa8-6c54798328a0",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 950
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950641-c8e9-7000-bbc1-a04594f06201",
+              "sku": "BAN-BUTTERFINGERBLISS",
+              "name": "Butterfinger Bliss Signature Banana",
+              "status": "ACTIVE",
+              "group_id": "01950641-c8b7-7000-bbc1-769ef01d7106",
+              "prices": [
+                {
+                  "id": "01950641-c8ec-7000-bbc1-acf6a3b2fd0a",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 950
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950641-c9de-7000-8faa-55119be13020",
+              "sku": "ENE-BoraBora",
+              "name": "Bora Bora Energy Drink",
+              "status": "ACTIVE",
+              "group_id": "01950641-c9a9-7000-8fa9-fdac30695814",
+              "prices": [
+                {
+                  "id": "01950641-c9e1-7000-8faa-5f267586e025",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 900
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950641-caba-7000-8fab-194fbc2eca82",
+              "sku": "BAR-SaltyCrush",
+              "name": "Salty Crush Signature Bar",
+              "status": "ACTIVE",
+              "group_id": "01950641-ca90-7000-bbc3-224480b06f74",
+              "prices": [
+                {
+                  "id": "01950641-cabf-7000-8fab-25bc65220ccc",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 950
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950641-cb7c-7000-bbc4-05742965f78a",
+              "sku": "SHAVE-Grinch",
+              "name": "The Grinch Signature Shaved Ice",
+              "status": "ACTIVE",
+              "group_id": "01950641-cb53-7000-bbc3-c244d636168a",
+              "prices": [
+                {
+                  "id": "01950641-cb7e-7000-bbc4-0b1a484685e0",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 700
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950641-cd17-7000-8fad-16df980155e9",
+              "sku": "BAR-AlmondJoy",
+              "name": "Almond Joy Signature Bar",
+              "status": "ACTIVE",
+              "group_id": "01950641-cce8-7000-bbc5-11c099a45f81",
+              "prices": [
+                {
+                  "id": "01950641-cd19-7000-8fad-1a406bd79959",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 950
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950641-cdb5-7000-8fad-96e0c4e724fa",
+              "sku": "SHAVE-CaramelApple",
+              "name": "Caramel Apple Signature Shaved Ice",
+              "status": "ACTIVE",
+              "group_id": "01950641-cd90-7000-bbc5-552e3df2c28a",
+              "prices": [
+                {
+                  "id": "01950641-cdb9-7000-8fad-9f2d96376c0e",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 700
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950641-ce67-7000-8fae-6d33e6358d1e",
+              "sku": "ENE-RubyRed",
+              "name": "Ruby Red Energy Drink",
+              "status": "ACTIVE",
+              "group_id": "01950641-ce39-7000-8fad-f874d21df154",
+              "prices": [
+                {
+                  "id": "01950641-ce6a-7000-8fae-7df6de1d86bb",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 900
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950641-cf3e-7000-bbc7-e2e4a75fd4ec",
+              "sku": "ENE-BlackberryVanilla",
+              "name": "Blackberry Vanilla Energy Drink",
+              "status": "ACTIVE",
+              "group_id": "01950641-cef9-7000-8fae-b66fad988dd2",
+              "prices": [
+                {
+                  "id": "01950641-cf45-7000-bbc7-ec72f36ca9b5",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 900
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950641-cfe6-7000-8faf-80ddc863f5ee",
+              "sku": "BAR-OverTheRainbow",
+              "name": "Over The Rainbow Signature Bar",
+              "status": "ACTIVE",
+              "group_id": "01950641-cfba-7000-8faf-42dea9bb0ddd",
+              "prices": [
+                {
+                  "id": "01950641-cfe8-7000-8faf-88f30951429f",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 950
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01950648-1c12-7000-bd22-c84ccb824177",
+              "sku": "BAN-YabbaDabbaDip",
+              "name": "Yabba Dabba Dip Signature Banana",
+              "status": "ACTIVE",
+              "group_id": "01950648-1b57-7000-bd22-8321ad691d34",
+              "prices": [
+                {
+                  "id": "01950648-1c14-7000-bd22-d0ee52d99a7a",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 950
+                  }
+                }
+              ]
+            },
+            {
+              "id": "019b1e7d-ba55-7000-8d16-32c68c9b8784",
+              "sku": "WTR-BTTL",
+              "name": "Water Bottle",
+              "status": "ACTIVE",
+              "group_id": "019b1e7d-b790-7000-8c42-7b585d63ac84",
+              "prices": [
+                {
+                  "id": "019b1e7d-ba5e-7000-8d16-3ed7039714a5",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 0
+                  }
+                }
+              ]
+            },
+            {
+              "id": "019c544a-ef13-7000-90f9-531b998ea72e",
+              "sku": "BAR-ROCKYROAD",
+              "name": "Rocky Road Signature Bar",
+              "status": "ACTIVE",
+              "group_id": "019c544a-ecc2-777d-bcfb-613c93fbccb2",
+              "prices": [
+                {
+                  "id": "019c544a-ef19-7000-90f9-5a2852ce8ffd",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 950
+                  }
+                }
+              ]
+            },
+            {
+              "id": "019c83ea-541d-7447-b45b-cf16955e44ac",
+              "sku": "COF-CB-VANILLA-CRUSH",
+              "name": "Cold Brew Vanilla Crush",
+              "status": "ACTIVE",
+              "group_id": "019c83ea-51b3-7cc6-96e7-027ced8b6714",
+              "prices": [
+                {
+                  "id": "019c83ea-5427-7447-b45b-d0311132e95d",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 750
+                  }
+                }
+              ]
+            },
+            {
+              "id": "019c83eb-3896-7000-811f-29a9aac1d28b",
+              "sku": "COF-CB-MAPLE",
+              "name": "Cold Brew Maple Cream",
+              "status": "ACTIVE",
+              "group_id": "019c83eb-369a-7447-b45c-5e670539166c",
+              "prices": [
+                {
+                  "id": "019c83eb-3899-7000-811f-34f686baf790",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 750
+                  }
+                }
+              ]
+            },
+            {
+              "id": "019c83eb-fc3c-7771-a0e2-ff965492ab46",
+              "sku": "COF-CB-COWBOY",
+              "name": "Cold Brew Cowboy",
+              "status": "ACTIVE",
+              "group_id": "019c83eb-f9b6-7444-bf82-9cb868b40c5e",
+              "prices": [
+                {
+                  "id": "019c83eb-fc8c-7771-a0e3-0629d175ba59",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 750
+                  }
+                }
+              ]
+            },
+            {
+              "id": "019c83ec-f2b1-777a-a486-fae36ba918f9",
+              "sku": "COF-CB-SALTED-CARAMEL",
+              "name": "Cold Brew Salted Caramel",
+              "status": "ACTIVE",
+              "group_id": "019c83ec-f081-7443-aaad-dfec0ab5dcdb",
+              "prices": [
+                {
+                  "id": "019c83ec-f2b3-777a-a487-020ec8720b52",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 750
+                  }
+                }
+              ]
+            },
+            {
+              "id": "019c83ed-ad66-7991-a2a7-9778e86c6ed2",
+              "sku": "COF-CB-PECAN",
+              "name": "Cold Brew Southern Charm",
+              "status": "ACTIVE",
+              "group_id": "019c83ed-ab22-777a-a487-606df6e9ad41",
+              "prices": [
+                {
+                  "id": "019c83ed-ad68-7991-a2a7-9a05bce0e4a7",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 750
+                  }
+                }
+              ]
+            },
+            {
+              "id": "019c83ee-ed43-7447-b45d-7bc61da0f6da",
+              "sku": "COF-CB-MAPLEPECAN",
+              "name": "Cold Brew Maple Pecan",
+              "status": "ACTIVE",
+              "group_id": "019c83ee-eb17-777a-a488-44f32843af49",
+              "prices": [
+                {
+                  "id": "019c83ee-ed46-7447-b45d-84869ff3305e",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 750
+                  }
+                }
+              ]
+            },
+            {
+              "id": "019cbfcf-57ad-7796-8fce-28b103086a0d",
+              "sku": "BAR-BUTTERFINGERBLISS",
+              "name": "Butterfinger Bliss Bar",
+              "status": "ACTIVE",
+              "group_id": "019cbfcf-55ba-761e-85c4-a54050ca938b",
+              "prices": [
+                {
+                  "id": "019cbfcf-57b0-7251-9cc8-6cee333bcaa3",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 950
+                  }
+                }
+              ]
+            },
+            {
+              "id": "019d0955-d6d6-7208-abdc-560b7de872de",
+              "sku": "SODA-CAN",
+              "name": "Soda Can",
+              "status": "ACTIVE",
+              "group_id": "019d0955-d407-72ef-a4ba-83a792a280c5",
+              "prices": [
+                {
+                  "id": "019d0955-d6de-77b9-a331-54a5155e94c3",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 0
+                  }
+                }
+              ]
+            },
+            {
+              "id": "019e53a1-09a2-72fb-8e58-52f6623c9096",
+              "sku": "REF-STRAWBERRY-COLADA",
+              "name": "Refresher - Strawberry Colada",
+              "status": "ACTIVE",
+              "group_id": "019e53a1-0754-707a-bf17-b050b90eb004",
+              "prices": [
+                {
+                  "id": "019e53a1-09ad-74b8-9002-0d8efd4bfa8f",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 900
+                  }
+                }
+              ]
+            },
+            {
+              "id": "019e53a1-e636-72a8-b10e-a39876657273",
+              "sku": "REF-BORABORA",
+              "name": "Refresher - Bora Bora",
+              "status": "ACTIVE",
+              "group_id": "019e53a1-de7b-7183-b841-7fcb5dfcbb4e",
+              "prices": [
+                {
+                  "id": "019e53a1-e63a-748d-a8fd-4e7c4653ec05",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 900
+                  }
+                }
+              ]
+            },
+            {
+              "id": "019e53a2-9bb1-703e-b2dd-4b3d94a2bc54",
+              "sku": "REF-PRETTY-IN-PINK",
+              "name": "Refresher - Pretty In Pink",
+              "status": "ACTIVE",
+              "group_id": "019e53a2-991f-71b4-a5e6-b8ee90994912",
+              "prices": [
+                {
+                  "id": "019e53a2-9bb3-73f7-86e3-bd8c88f96970",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 900
+                  }
+                }
+              ]
+            },
+            {
+              "id": "019ecde3-6f5c-7768-b254-9a6196a4f634",
+              "sku": "BAR-BISCOFF",
+              "name": "Biscoff Signature Bar",
+              "status": "ACTIVE",
+              "group_id": "019ecde3-6d26-74e7-aa9a-ea761c03801a",
+              "prices": [
+                {
+                  "id": "019ecde3-6f63-72b1-8e97-4b14e21b84d2",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 950
+                  }
+                }
+              ]
+            },
+            {
+              "id": "019ecde4-1fac-736f-b672-8d226abfbfad",
+              "sku": "BAN-BISCOFF",
+              "name": "Biscoff SignatureBanana",
+              "status": "ACTIVE",
+              "group_id": "019ecde4-1d71-77f8-a04d-05b1b3372a2e",
+              "prices": [
+                {
+                  "id": "019ecde4-1faf-70e8-9f8a-41c66ea1382d",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 950
+                  }
+                }
+              ]
+            },
+            {
+              "id": "019ecdf3-13bd-7530-8ff5-93f49f3cd677",
+              "sku": "BAR-DUBAI",
+              "name": "Dubai Signature Bar",
+              "status": "ACTIVE",
+              "group_id": "019ecdf3-11e1-7733-968f-3e1c30d1849b",
+              "prices": [
+                {
+                  "id": "019ecdf3-13ca-74a9-a8b3-63ba74c1c4ba",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 1150
+                  }
+                }
+              ]
+            },
+            {
+              "id": "019ecdf3-7ea6-7030-a41b-0d3f598932b8",
+              "sku": "BAN-DUBAI",
+              "name": "Dubai Signature Banana",
+              "status": "ACTIVE",
+              "group_id": "019ecdf3-7701-7452-91de-9e17a2ffa4e8",
+              "prices": [
+                {
+                  "id": "019ecdf3-7eae-712d-9c9e-3b9b6e81859e",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 1150
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01a0ac9a-c19b-7319-8b1a-235db2237b9c",
+              "sku": "BAK-CINNAMON-ROLL",
+              "name": "Cinnamon Roll",
+              "status": "ACTIVE",
+              "group_id": "01a0ac9a-bebb-748c-a69d-a3364cbff92b",
+              "prices": [
+                {
+                  "id": "01a0ac9a-c340-75f4-9c5f-3bf89b70dcf9",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 800
+                  }
+                }
+              ]
+            },
+            {
+              "id": "01a11303-2939-75e9-ac47-116054df23de",
+              "sku": "COF-CB-CUSTOM",
+              "name": "Custom Cold Brew Coffee",
+              "status": "ACTIVE",
+              "group_id": "01a11303-2823-7208-ac24-e987772d9624",
+              "prices": [
+                {
+                  "id": "01a11303-293d-7778-854f-139c97d2927a",
+                  "value": {
+                    "currencyCode": "USD",
+                    "value": 750
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "legacy_rest": {
+          "status": "failed",
+          "error": "HTTP 401; no provider body logged"
+        }
+      }
+    }
+  ],
+  "read_only": true
+}

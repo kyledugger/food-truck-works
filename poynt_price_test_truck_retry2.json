@@ -1,0 +1,35 @@
+{
+  "store": "truck",
+  "business_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+  "product_id": "d2671333-9e7d-4672-ab6f-ac5672883ee8",
+  "original_cents": 700,
+  "test_cents": 701,
+  "before": {
+    "truck": {
+      "id": "d2671333-9e7d-4672-ab6f-ac5672883ee8",
+      "storeId": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+      "businessId": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+      "sku": "ENE-PRETTYINPINK",
+      "name": "Pretty In Pink Energy Drink",
+      "price": {
+        "amount": 700,
+        "currency": "USD"
+      },
+      "updatedAt": "2026-10-06T20:25:52Z"
+    },
+    "popup": {
+      "id": "f6c25917-16c5-44c0-ba18-02be3c7922ed",
+      "storeId": "6440e3cd-757f-4e2d-8076-d4895722f044",
+      "businessId": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+      "sku": "ENE-PrettyInPink",
+      "name": "Pretty In Pink Energy Drink",
+      "price": {
+        "amount": 900,
+        "currency": "USD"
+      },
+      "updatedAt": "2026-05-23T07:03:07Z"
+    }
+  },
+  "started_at": "2026-10-07T02:41:15.121684+00:00",
+  "state": "apply_attempted"
+}
