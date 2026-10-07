@@ -1,14 +1,37 @@
 {% extends "base.html" %}
 {% block title %}Food Truck Works | Book smarter. Serve smoother.{% endblock %}
 {% block head %}
-<script defer src="/static/js/ftw-analytics.js?v=1" data-ftw-analytics
-        data-audience="{{ 'signed_in' if request.session.get('user_id') else 'visitor' }}"
-        data-event="{{ analytics_event|default('', true) }}"></script>
-
 <meta name="description" content="Built by a software engineer who runs a food truck. Discover a better way to plan events, coordinate your team, keep service moving, and understand what pays.">
 <link rel="stylesheet" href="/static/css/teaser.css?v=20261007-1">
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+{% if not request.session.get("user_id") %}
+<script>
+  const publicPages = ["/", "/teaser", "/launch-updates"];
 
+  if (
+    ["foodtruckworks.com", "www.foodtruckworks.com"].includes(location.hostname)
+    && publicPages.includes(location.pathname)
+    && !location.search
+  ) {
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+
+    gtag("js", new Date());
+    gtag("config", "G-SSFHN44M6R", {
+      page_location: location.origin + location.pathname,
+      page_referrer: document.referrer.split("?")[0].split("#")[0],
+      allow_google_signals: false,
+      allow_ad_personalization_signals: false
+    });
+
+    const tag = document.createElement("script");
+    tag.async = true;
+    tag.src =
+      "https://www.googletagmanager.com/gtag/js?id=G-SSFHN44M6R";
+    document.head.appendChild(tag);
+  }
+</script>
+{% endif %}
 {% endblock %}
 {% block content %}
 <div class="teaser">

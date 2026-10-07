@@ -1,4 +1,3 @@
-from fastapi.responses import RedirectResponse
 import csv
 import hashlib
 import hmac
@@ -36,10 +35,10 @@ def digest(value):
     return hashlib.sha256(value.encode()).hexdigest()
 
 
-def page(request, message=None, status_code=200, analytics_event=None):
+def page(request, message=None, status_code=200):
     request.session.setdefault("launch_csrf", secrets.token_urlsafe(32))
     return templates.TemplateResponse(request=request, name="coming_soon.html",
-        context={"analytics_event": analytics_event, "launch_message": message, "launch_csrf": request.session["launch_csrf"],
+        context={"launch_message": message, "launch_csrf": request.session["launch_csrf"],
                  "turnstile_site_key": os.getenv("TURNSTILE_SITE_KEY", "")}, status_code=status_code,
         headers={"Cache-Control": "no-store", "Referrer-Policy": "same-origin"})
 
@@ -119,8 +118,7 @@ def signup(request: Request, email: str = Form(..., max_length=320),
     except (EmailDeliveryError, KeyError):
         logger.warning("Launch confirmation delivery failed; no recipient or token logged")
         return page(request, "We couldn't send the confirmation email. Please try again in 10 minutes.", 503)
-    request.session["launch_analytics_event"] = "launch_signup_requested"
-    return RedirectResponse("/launch-updates/thanks", status_code=303)
+    return page(request, "Please check your inbox to confirm your subscription. Thanks for helping shape Food Truck Works!")
 
 
 @router.get("/launch-updates/confirm/{token}", response_class=HTMLResponse)
@@ -140,8 +138,7 @@ def confirm(request: Request, token: str, csrf: str = Form("")):
             return page(request, "This confirmation link is expired or unavailable. Please sign up again.", 400)
         row.confirmed_at, row.token_hash, row.token_expires_at = now(), None, None
         db.commit()
-    request.session["launch_analytics_event"] = "launch_signup_confirmed"
-    return RedirectResponse("/launch-updates/thanks", status_code=303)
+    return page(request, "You're on the list. Thanks for helping shape Food Truck Works!")
 
 
 def webhook_auth(credentials: HTTPBasicCredentials = Depends(basic)):
@@ -214,13 +211,3 @@ def export(request: Request):
         for row in db.execute(select(LaunchSubscriber).order_by(LaunchSubscriber.id)).scalars():
             writer.writerow([safe_csv(getattr(row, field)) for field in ["email", "feedback", "created_at", "confirmed_at", "suppressed", "suppression_reason", "consent_version"]])
     return Response(buffer.getvalue(), media_type="text/csv", headers={"Content-Disposition": 'attachment; filename="launch-signups.csv"', "Cache-Control": "no-store"})
-
-
-@router.get("/launch-updates/thanks", response_class=HTMLResponse)
-def analytics_thanks(request: Request):
-    event = request.session.pop("launch_analytics_event", None)
-    messages = {
-        "launch_signup_requested": "Please check your inbox to confirm your subscription. Thanks for helping shape Food Truck Works!",
-        "launch_signup_confirmed": "You're on the list. Thanks for helping shape Food Truck Works!",
-    }
-    return page(request, messages.get(event), analytics_event=event)
