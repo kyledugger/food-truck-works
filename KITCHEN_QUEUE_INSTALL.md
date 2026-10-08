@@ -150,7 +150,7 @@ of the relocated sales breakdown. No additional migration is required.
 
 Kitchen Display opens from Store Home without showing sales. The Kitchen orders
 heading in Store Performance links to the same screen. Cards scroll horizontally
-with the oldest order on the left; arrows, touch scrolling and a Full screen
+with the oldest order on the left; touch scrolling and a Full screen
 button are available. Existing claims, modifiers, notes, elapsed timers, Ready,
 Undo and live updates use the shared kitchen queue. Recent completions remain
 collapsible. The assigned-store restriction applies to this page and its data.
@@ -205,7 +205,7 @@ separate customer lookup will need verification before relying on it.
 
 Claim turns the row blue immediately on this display, with a small Saving
 indicator while the request is outstanding. Other orders remain actionable;
-actions on the same order wait for its response and an authoritative refresh.
+item actions on the same order queue while saves proceed in sequence.
 Periodic updates do not erase a pending claim. Conflict or save failure restores
 the server state, with an error in the status line. If the queue cannot be read,
 actions pause until it reconnects. Other displays change after the server saves
@@ -218,7 +218,7 @@ Order identifiers remain in accessible labels and the backend for troubleshootin
 Item buttons are removed: tap anywhere on an active item row to cycle Available
 to In progress, then Done, then back to Available. Enter or Space does the same
 with keyboard focus. Each tap shows its new state immediately with a Saving
-indicator; only that order is blocked until the authoritative response arrives.
+indicator; further item taps queue while those changes save.
 Completed orders leave the active queue, so use Recently completed / Undo to
 restore an order whose final item was completed accidentally. Inset item dividers
 do not increase row height. Elapsed timers omit their title and use a larger badge.
@@ -235,7 +235,8 @@ Store Display accounts consume the shared profile but cannot edit it.
 
 Kitchen-only cards are 290px wide on tablet and desktop (narrower on very small
 screens). Timer badges use 1.0rem and share a line with the name. The page
-background is #cccccc; header colors are unchanged. Item/preparation headings
+background is #cccccc; normal headers are white and completing/Ready headers
+are gray. Item/preparation headings
 and visible item state labels are removed, so items use the full card width.
 Blue/double-border claimed rows and gray/struck-through done rows preserve
 visual distinction. Accessible labels still describe the next item action.
@@ -252,6 +253,44 @@ header completion. Cancellation can still remove a held POS ticket.
 Hold uses the existing ticket state field; this update requires no additional
 migration beyond the previously supplied timer profile migration. Keep your
 locally generated merge migrations when copying this cumulative patch.
+
+## Rapid item taps
+
+Quantities omit the multiplication sign and use weight 800. Modifiers use
+#222222 with lighter font weight. Older/Newer controls and their navigation row
+are removed; swipe or horizontally scroll the card area to browse.
+
+Item taps are now queued per order. The whole sequence appears immediately,
+including repeated taps cycling one item, while each order's saves proceed in
+sequence with current revisions. Different orders save in parallel. Item rows
+stay tappable during saves; whole-order completion and Hold wait for that order's
+pending item taps. Saving indicators distinguish unconfirmed changes. A card
+remains active while it has queued taps, including a queued Undo after its final
+Done, then moves to Recently completed when its confirmed final state is Ready.
+
+Successful action responses include the saved ticket, eliminating the previous
+full-queue request between each action. SSE/polling still reconciles other screens
+and POS updates. Failure, timeout, changed item details or revision conflict
+cancels the remaining queued taps for that order and refreshes its saved state;
+uncertain actions are not automatically retried. Queues are in browser memory,
+not an offline outbox: keep the page open until Saving indicators clear.
+This improves tap responsiveness and avoids an extra network round trip. Actual
+save throughput still depends on server/database/network latency. No additional
+migration is required for this change.
+
+## Stable saving and completion feedback
+
+The saving text is replaced by a tiny red spinner over the right edge of each
+pending item. The item gutter is always reserved, so pending feedback does not
+change wrapping or card height. Reduced-motion displays use a stationary dot;
+accessible saving labels remain present. Quantities have two nonbreaking spaces
+before the item name.
+
+When all items are optimistically Done, the pending card has a gray header,
+struck-through customer name and muted items. It remains in the active queue
+until its queued saves finish. Queued Undo or failure clears the completing
+appearance as the row states return. Normal/in-progress header backgrounds are
+white; claimed item rows retain their blue preparation distinction. No migration.
 
 Apply c69e1a47f358, which follows b58d0f36e247 and creates kitchen_timer_profiles.
 No production database was accessed. If you created a merge revision after the

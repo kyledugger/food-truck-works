@@ -10,7 +10,8 @@
   let timerProfile={green_seconds:0,yellow_seconds:300,red_seconds:600};
   let serverTime=Date.now(),observed=performance.now(),snapshot=null;
   const el=(tag,cls,text)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=text;return n;};
-  function buttonsEnabled(){document.querySelectorAll('[data-kitchen-action]').forEach(b=>{const disabled=!available||pending.has(Number(b.dataset.ticketId))||b.dataset.blocked==='true';if(b.tagName==='BUTTON')b.disabled=disabled;else b.setAttribute('aria-disabled',String(disabled));});}
+  const itemIdentity=item=>JSON.stringify([item?.key,item?.name,item?.quantity,item?.modifiers||[]]);
+  function buttonsEnabled(){document.querySelectorAll('[data-kitchen-action]').forEach(b=>{const disabled=!available||(b.tagName==='BUTTON'&&pending.has(Number(b.dataset.ticketId)))||b.dataset.blocked==='true';if(b.tagName==='BUTTON')b.disabled=disabled;else b.setAttribute('aria-disabled',String(disabled));});}
   function tick(){
     const now=serverTime+performance.now()-observed;
     document.querySelectorAll('[data-order-created]').forEach(node=>{
@@ -31,7 +32,8 @@
   }
   function card(ticket,finished=false){
     const held=ticket.state==='held';
-    const root=el('article','store-order kitchen-ticket'+(held?' ticket-held':finished?' ticket-ready':ticket.items.some(i=>i.state==='claimed')?' ticket-in-progress':'')),head=el('div','store-order-head');
+    const root=el('article','store-order kitchen-ticket'+(ticket.completing?' ticket-completing':held?' ticket-held':finished?' ticket-ready':ticket.items.some(i=>i.state==='claimed')?' ticket-in-progress':'')),head=el('div','store-order-head');
+    if(ticket.completing){root.setAttribute('aria-busy','true');root.setAttribute('aria-label','Order '+ticket.number+' completing; saving changes');}
     const title=el(finished?'strong':'button','kitchen-complete-header',(held?'Ⅱ Held · ':'')+(ticket.customer_name||ticket.notes||''));
     if(!finished){title.type='button';title.dataset.kitchenAction='done';title.dataset.ticketId=ticket.id;title.dataset.blocked=String(held);title.setAttribute('aria-label','Complete order '+ticket.number);title.title=held?'Resume using the timer before completing':'Tap header to complete this order';title.addEventListener('click',event=>{event.stopPropagation();act(ticket,'done',null);});head.addEventListener('click',event=>{if(event.target===head)act(ticket,'done',null);});}
     const timer=el(finished?'strong':'button','kitchen-elapsed');timer.dataset.orderCreated=ticket.created_at;timer.dataset.held=String(held);timer.dataset.orderNumber=ticket.number;
@@ -43,15 +45,16 @@
     const table=el('table');table.setAttribute('aria-label','Order '+ticket.number+' preparation');
     const body=el('tbody');
     for(const item of ticket.items){
-      const row=el('tr','kitchen-'+item.state),name=el('td','kitchen-item-name',item.quantity+' × '+item.name);
+      const row=el('tr','kitchen-'+item.state),name=el('td','kitchen-item-name');
+      name.append(el('strong','kitchen-quantity',String(item.quantity)),document.createTextNode('\u00a0\u00a0'+item.name));
       for(const group of item.modifiers||[])name.append(el('div','kitchen-modifier',group.attribute.replaceAll('_',' ')+': '+group.values.map(value=>value.replaceAll('_',' ')).join(', ')));
-      if(item.saving){row.classList.add('kitchen-saving');name.append(el('span','kitchen-save-indicator',' · Saving…'));row.setAttribute('aria-busy','true');}
+      if(item.saving){row.classList.add('kitchen-saving');const spinner=el('span','kitchen-save-indicator');spinner.setAttribute('role','img');spinner.setAttribute('aria-label','Saving changes');spinner.title='Saving changes';name.append(spinner);row.setAttribute('aria-busy','true');}
       if(!finished){
         const action=item.state==='available'?'claim':item.state==='claimed'?'done':'undo';
         const label={claim:'Claim',done:'Done',undo:'Undo'}[action];
         row.setAttribute('role','button');row.tabIndex=0;row.dataset.kitchenAction=action;row.dataset.ticketId=ticket.id;row.dataset.itemKey=item.key;
         row.setAttribute('aria-label',label+' item in order '+ticket.number);
-        row.dataset.blocked=String(held);row.setAttribute('aria-disabled',String(!available||pending.has(ticket.id)||held));
+        row.dataset.blocked=String(held);row.setAttribute('aria-disabled',String(!available||held));
         row.addEventListener('click',()=>act(ticket,action,item.key));
         row.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();act(ticket,action,item.key);}});
       }
@@ -63,25 +66,27 @@
     document.dispatchEvent(new CustomEvent('kitchen-flow',{detail:data.flow}));
     if(!local){serverTime=Date.parse(data.generated_at);observed=performance.now();snapshot=data;}
     if(data.timer_profile){timerProfile=data.timer_profile;document.dispatchEvent(new CustomEvent('kitchen-timer-profile',{detail:timerProfile}));}
-    const active=data.active.map(ticket=>{
-      const op=pending.get(ticket.id);if(!op)return ticket;
-      const holdAction=op.action==='hold'||op.action==='resume';
-      return {...ticket,state:holdAction&&ticket.revision===op.revision?(op.action==='hold'?'held':'active'):ticket.state,items:ticket.items.map(item=>{
-        if(holdAction)return item;
-        if(op.key&&item.key!==op.key)return item;
-        const optimistic=ticket.revision===op.revision;
-        const state=optimistic?(op.action==='claim'&&item.state==='available'?'claimed':op.action==='done'?'done':op.action==='undo'||op.action==='release'?'available':item.state):item.state;
-        return {...item,state,saving:true};
-      })};
-    });
-    const next=JSON.stringify([active,data.recent]);
+    const active=data.active.filter(t=>!pending.has(t.id));
+    for(const queue of pending.values()){
+      const ticket=structuredClone(queue.confirmed);
+      for(const op of queue.ops){
+        if(op.action==='hold'||op.action==='resume'){ticket.state=op.action==='hold'?'held':'active';continue;}
+        for(const item of ticket.items){if(op.key&&item.key!==op.key)continue;item.state=op.action==='claim'?(item.state==='available'?'claimed':item.state):op.action==='done'?'done':'available';item.saving=true;}
+      }
+      if(ticket.state==='ready')ticket.state='active';
+      ticket.completing=queue.ops.length>0&&ticket.items.every(item=>item.state==='done');
+      active.push(ticket);
+    }
+    active.sort((a,b)=>Date.parse(a.created_at)-Date.parse(b.created_at)||a.id-b.id);
+    const visibleRecent=data.recent.filter(t=>!pending.has(t.id));
+    const next=JSON.stringify([active,visibleRecent]);
     if(next!==fingerprint){
       fingerprint=next;const container=feed.closest('.store-orders'),scroll=container.scrollTop,left=container.scrollLeft;
       const focus=document.activeElement,focusTicket=focus?.dataset.ticketId,focusKey=focus?.dataset.itemKey;
-      feed.replaceChildren(...active.map(t=>card(t)));recent.replaceChildren(...data.recent.map(t=>card(t,true)));
-      if(!data.active.length)feed.append(el('p','live-empty','No unfinished orders.'));
-      document.getElementById('kitchen-count').textContent=data.active.length+' active';
-      document.getElementById('kitchen-recent-count').textContent='('+data.recent.length+')';
+      feed.replaceChildren(...active.map(t=>card(t)));recent.replaceChildren(...visibleRecent.map(t=>card(t,true)));
+      if(!active.length)feed.append(el('p','live-empty','No unfinished orders.'));
+      document.getElementById('kitchen-count').textContent=active.length+' active';
+      document.getElementById('kitchen-recent-count').textContent='('+visibleRecent.length+')';
       container.scrollTop=scroll;
       container.scrollLeft=left;
       if(focusTicket&&focusKey)feed.querySelector('[data-ticket-id="'+focusTicket+'"][data-item-key="'+focusKey+'"]')?.focus({preventScroll:true});
@@ -110,18 +115,42 @@
     finally{clearTimeout(timeout);controller=null;loading=false;}
   }
   async function act(ticket,action,key){
-    if(pending.has(ticket.id)||!available||stopped)return;
+    if(!available||stopped)return;
+    if(pending.has(ticket.id)&&!key)return;
     if(ticket.state==='held'&&action!=='resume')return;
-    pending.set(ticket.id,{action,key,revision:ticket.revision});if(snapshot)render(snapshot,true);buttonsEnabled();let message='';
+    const existing=pending.get(ticket.id),queue=existing||{confirmed:structuredClone(ticket),ops:[]};
+    const item=key?ticket.items.find(i=>i.key===key):null;
+    queue.ops.push({action,key,from:item?.state,identity:key?itemIdentity(item):null});
+    pending.set(ticket.id,queue);if(snapshot)render(snapshot,true);
+    if(!existing)saveQueue(ticket.id,queue);
+  }
+  function remember(ticket){
+    if(!snapshot)return;
+    const current=[...snapshot.active,...snapshot.recent].find(t=>t.id===ticket.id);
+    if(current&&current.revision>ticket.revision)return;
+    snapshot={...snapshot,active:snapshot.active.filter(t=>t.id!==ticket.id),recent:snapshot.recent.filter(t=>t.id!==ticket.id)};
+    if(ticket.state==='active'||ticket.state==='held')snapshot.active.push(ticket);
+    else if(ticket.state==='ready'){snapshot.recent.unshift(ticket);snapshot.recent=snapshot.recent.slice(0,20);}
+  }
+  async function saveQueue(id,queue){
+    let message='';
     try{
-      const response=await fetch(base+'/'+ticket.id,{method:'POST',credentials:'same-origin',
+      while(queue.ops.length&&!stopped){
+      const op=queue.ops[0],ticket=queue.confirmed;
+      const item=op.key?ticket.items.find(i=>i.key===op.key):null;
+      if(op.key&&(item?.state!==op.from||itemIdentity(item)!==op.identity))throw new Error('Item changed while saving. Review the current order before continuing.');
+      const response=await fetch(base+'/'+id,{method:'POST',credentials:'same-origin',
         headers:{'Content-Type':'application/json','X-Kitchen-CSRF':feed.dataset.csrf},
-        body:JSON.stringify({action,revision:ticket.revision,item_key:key}),signal:AbortSignal.timeout(10000)});
+        body:JSON.stringify({action:op.action,revision:ticket.revision,item_key:op.key}),signal:AbortSignal.timeout(10000)});
       if(response.status===401||response.status===403){revoke();document.dispatchEvent(new Event('store-access-denied'));return;}
       const data=await response.json();if(!response.ok)throw new Error(data.detail||'Action could not be saved.');
-      document.dispatchEvent(new Event('kitchen-queue-changed'));
+      let saved=data.ticket;
+      if(!saved){await refresh(true);saved=[...(snapshot?.active||[]),...(snapshot?.recent||[])].find(t=>t.id===id);}
+      if(!saved)throw new Error('Saved order could not be reviewed.');
+      queue.confirmed=saved;queue.ops.shift();remember(saved);if(snapshot&&!stopped)render(snapshot,true);
+      }
     }catch(error){message=error.name==='TimeoutError'?'Save response timed out. Reviewing the saved queue before another tap.':error.message;}
-    finally{await refresh(true);pending.delete(ticket.id);if(snapshot&&!stopped)render(snapshot,true);buttonsEnabled();if(message&&!stopped)status.textContent='Order '+ticket.number+': '+message;}
+    finally{pending.delete(id);if(message)await refresh(true);if(snapshot&&!stopped)render(snapshot,true);buttonsEnabled();document.dispatchEvent(new Event('kitchen-queue-changed'));if(message&&!stopped)status.textContent='Order '+queue.confirmed.number+': '+message+' Remaining queued taps for this order were cancelled.';}
   }
   function connect(){
     if(stopped||document.hidden||source||!window.EventSource)return;

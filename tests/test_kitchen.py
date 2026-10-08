@@ -33,6 +33,17 @@ class KitchenTests(unittest.TestCase):
         self.kitchen_patch.stop()
         DatabaseAndRoutesTests.tearDown(self)
 
+    def test_action_returns_saved_ticket_without_followup_fetch(self):
+        self.seed()
+        ticket=self.queue()["active"][0]
+        response=self.action(ticket,"claim",ticket["items"][0]["key"])
+        self.assertEqual(response.status_code,200)
+        data=response.json()
+        self.assertEqual(data["ticket"]["revision"],ticket["revision"]+1)
+        self.assertEqual(data["ticket"]["items"][0]["state"],"claimed")
+        self.assertTrue(data["generated_at"].endswith("Z"))
+        self.assertEqual(data["ticket"],self.queue()["active"][0])
+
     def test_hold_resume_blocks_preparation_and_preserves_progress(self):
         self.seed()
         ticket=self.queue()["active"][0]

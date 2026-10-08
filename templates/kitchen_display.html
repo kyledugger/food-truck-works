@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{{ store.display_name or store.poynt_name }} · Kitchen{% endblock %}
-{% block head %}<link rel="stylesheet" href="/static/css/store-dashboard.css?v=20261008-hold-1"><link rel="stylesheet" href="/static/css/kitchen-board.css?v=20261008-hold-1">{% endblock %}
+{% block head %}<link rel="stylesheet" href="/static/css/store-dashboard.css?v=20261008-saving-1"><link rel="stylesheet" href="/static/css/kitchen-board.css?v=20261008-saving-1">{% endblock %}
 {% block content %}
 <main class="kitchen-board" data-kitchen-board="true">
   <header class="board-toolbar">
@@ -19,7 +19,6 @@
     <span id="test-message" role="status">Open Test kitchen on another tablet to share this queue.</span>
   </section>
   {% endif %}
-  <div class="board-navigation"><span>Oldest on the left · Swipe to browse</span><button id="board-left" class="button" aria-label="Scroll to older orders">← Older</button><button id="board-right" class="button" aria-label="Scroll to newer orders">Newer →</button></div>
   <section class="store-orders board-orders" tabindex="0" aria-label="Active kitchen orders">
     <div id="store-order-feed" data-kitchen="true" data-test="{{ 'true' if test_mode else 'false' }}" data-store-id="{{ store.id }}" data-csrf="{{ kitchen_csrf }}"><p>Loading orders…</p></div>
   </section>
@@ -39,4 +38,4 @@
 </dialog>
 {% endif %}
 {% endblock %}
-{% block scripts %}<script src="/static/js/kitchen-display.js?v=20261008-hold-1" defer></script><script src="/static/js/kitchen-board.js?v=20261008-hold-1" defer></script>{% endblock %}
+{% block scripts %}<script src="/static/js/kitchen-display.js?v=20261008-saving-1" defer></script><script src="/static/js/kitchen-board.js?v=20261008-saving-1" defer></script>{% endblock %}

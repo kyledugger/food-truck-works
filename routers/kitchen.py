@@ -199,7 +199,9 @@ def act(request: Request, store_id: int, ticket_id: int, body: Action):
                 raise HTTPException(409, "Order changed. Review its current items before acting.")
             revision = transition(session, ticket, body.action, body.item_key, body.revision, request.session["user_id"])
             session.commit()
-        return JSONResponse({"revision": revision}, headers={"Cache-Control": "no-store"})
+            session.refresh(ticket)
+            saved = serialize(ticket)
+        return JSONResponse({"revision": revision, "ticket": saved, "generated_at": utc_iso(utc_now())}, headers={"Cache-Control": "no-store"})
     except SQLAlchemyError:
         raise HTTPException(503, "Kitchen action could not be saved. Refresh before trying again.")
 
