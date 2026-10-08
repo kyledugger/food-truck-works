@@ -332,6 +332,12 @@ After copying the patch, run `alembic heads`. If two heads are listed, merge
 them using `alembic merge -m "merge kitchen timer profile" FIRST_HEAD SECOND_HEAD`,
 replacing the placeholders with those listed revision IDs, then run
 `alembic upgrade head`. Include the generated merge file in your deployment.
+# Preparation and pickup (October 8)
+
+Item completion and ticket clearing are separate. Finishing the last item leaves the ticket in the active queue with its customer name and a compact Ready for pickup label. Tap the header after customer pickup to clear it. The cleared ticket is shown under Recently picked up; Undo reopens its preparation rows. Header tapping continues to clear an order directly even if some items have not been marked done.
+
+Kitchen Completion counts each item's existing completion timestamp, not pickup. Customer Wait excludes tickets with no unfinished items. Unchanged POS refreshes preserve both waiting-for-pickup tickets and cleared tickets. Changed item quantities or modifiers can still reopen preparation. The database's existing `ready` state now represents explicitly cleared tickets; this behavior change requires no additional migration.
+
 # Editable kitchen notes (October 8)
 
 Tap the small note icon beside the timer on an unfinished order in either kitchen queue. Edit the customer name and preparation note independently. Existing single-word POS note names populate the name field automatically. Saving updates the card immediately and syncs other displays through the existing queue updates. Held orders can also be edited.

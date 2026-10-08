@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{{ store.display_name or store.poynt_name }} · Live Store{% endblock %}
-{% block head %}<link rel="stylesheet" href="/static/css/live-dashboard.css?v=20261005-8"><link rel="stylesheet" href="/static/css/store-dashboard.css?v=20261008-notes-1">{% endblock %}
+{% block head %}<link rel="stylesheet" href="/static/css/live-dashboard.css?v=20261005-8"><link rel="stylesheet" href="/static/css/store-dashboard.css?v=20261008-pickup-1">{% endblock %}
 {% block content %}
 <main class="store-screen">
     <header class="store-toolbar">
@@ -35,7 +35,7 @@
     </div>
         <section class="store-orders"><div class="kitchen-heading"><div class="kitchen-heading-row"><h2 class="title is-5 mb-0"><a href="/dashboard/stores/{{ store.id }}/kitchen-display{% if test_mode %}?test=true{% endif %}" class="kitchen-drilldown">Kitchen orders ↗</a> <span id="kitchen-count" class="is-size-7 has-text-grey"></span></h2><a class="button is-small" href="/dashboard/stores/{{ store.id }}{% if not test_mode %}?test=true{% endif %}">{{ 'Live queue' if test_mode else 'Test queue' }}</a></div><p id="kitchen-status" class="is-size-7 mb-2" role="status" aria-live="polite">Connecting to the kitchen queue…</p></div>
         {% if test_mode %}<details class="performance-test-controls"><summary>TEST QUEUE · Simulation controls</summary><p>Kitchen metrics use sample orders. Sales and cashier intervals remain real.</p>{% include "_kitchen_test_controls.html" %}</details>{% endif %}
-        <div id="store-order-feed" data-kitchen="true" data-store-id="{{ store.id }}" data-test="{{ 'true' if test_mode else 'false' }}" data-csrf="{{ kitchen_csrf }}"><p>Loading orders…</p></div><details id="kitchen-recent"><summary>Recently completed <span id="kitchen-recent-count"></span></summary><p class="is-size-7 has-text-grey">Latest 20 from the last 2 hours. Undo returns an order to the active queue.</p><div id="kitchen-recent-feed"></div></details></section>
+        <div id="store-order-feed" data-kitchen="true" data-store-id="{{ store.id }}" data-test="{{ 'true' if test_mode else 'false' }}" data-csrf="{{ kitchen_csrf }}"><p>Loading orders…</p></div><details id="kitchen-recent"><summary>Recently picked up <span id="kitchen-recent-count"></span></summary><p class="is-size-7 has-text-grey">Latest 20 from the last 2 hours. Undo returns an order to the active queue.</p><div id="kitchen-recent-feed"></div></details></section>
     </div>
     <section id="store-sales-breakdown" aria-label="Hourly sales and category totals"></section>
     <p class="store-footnote">Sales include tax and exclude tips. Refunds reduce the original sale. Times use this store's timezone. This display updates every 15 seconds.</p>
@@ -50,4 +50,4 @@ window.addEventListener('pagehide', () => { document.body.style.visibility = 'hi
 window.addEventListener('pageshow', event => {
     if (event.persisted) window.location.replace(hidePerformance.href);
 });
-</script><script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.min.js"></script><script src="/static/js/store-dashboard.js?v=20261008-wait-1" defer></script><script src="/static/js/kitchen-display.js?v=20261008-notes-1" defer></script><script src="/static/js/live-dashboard.js?v=20261008-cards-1" defer></script><script src="/static/js/kitchen-simulation.js?v=20261008-wait-1" defer></script>{% endblock %}
+</script><script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.min.js"></script><script src="/static/js/store-dashboard.js?v=20261008-wait-1" defer></script><script src="/static/js/kitchen-display.js?v=20261008-pickup-1" defer></script><script src="/static/js/live-dashboard.js?v=20261008-cards-1" defer></script><script src="/static/js/kitchen-simulation.js?v=20261008-wait-1" defer></script>{% endblock %}

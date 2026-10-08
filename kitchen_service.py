@@ -83,7 +83,9 @@ def sync_ticket(session, order, now=None):
         if old and (old["quantity"], old["sku"], old["name"], old.get("modifiers", [])) == (item["quantity"], item["sku"], item["name"], item["modifiers"]):
             for field in ("state", "claimed_at", "done_at"):
                 item[field] = old[field]
-    state = ticket_state(incoming) if eligible else "cancelled"
+    # Only an explicit whole-order action clears the ticket. Preserve a cleared
+    # ticket across unchanged POS updates; changed preparation reopens it.
+    state = ("ready" if ticket.state == "ready" and ticket_state(incoming) == "ready" else "active") if eligible else "cancelled"
     if state == "active" and ticket.state == "held":
         state = "held"
     if ticket.items != incoming or ticket.state != state or ticket.store_id != store.id or ticket.notes != notes or ticket.customer_name != customer_name:
@@ -139,9 +141,10 @@ def transition(session, ticket, action, item_key, expected_revision, actor_user_
         else:
             continue
         changed = True
-    if not changed:
+    clearing = action == "done" and item_key is None and ticket.state == "active"
+    if not changed and not clearing:
         raise HTTPException(409, "Already claimed or no applicable items. Refresh the order.")
-    new_state = ticket_state(items)
+    new_state = "ready" if clearing else "active"
     values = dict(items=items, state=new_state, ready_at=now if new_state == "ready" else None,
                   updated_at=now, revision=expected_revision+1)
     # Compare-and-swap protects simultaneous taps, including across processes.

@@ -20,6 +20,32 @@ from store_time import utc_now
 
 
 class KitchenTests(unittest.TestCase):
+    def test_last_item_waits_for_explicit_pickup_and_pos_sync_preserves_it(self):
+        payload=self.seed()
+        ticket=self.queue()["active"][0]
+        for item in ticket["items"]:
+            response=self.action(ticket,"done",item["key"])
+            self.assertEqual(response.status_code,200,response.text)
+            ticket=response.json()["ticket"]
+        self.assertEqual(ticket["state"],"active")
+        self.assertIsNone(ticket["ready_at"])
+        data=self.queue()
+        self.assertEqual(len(data["active"]),1)
+        self.assertEqual(data["recent"],[])
+        self.assertIsNone(data["flow"]["customer_wait"])
+        self.assertEqual(data["flow"]["completion"]["completed_items"],3)
+        with self.factory() as session:
+            save_order(session,1,"business",payload);session.commit()
+        ticket=self.queue()["active"][0]
+        timestamps=[i["done_at"] for i in ticket["items"]]
+        response=self.action(ticket,"done")
+        self.assertEqual(response.status_code,200,response.text)
+        self.assertEqual([i["done_at"] for i in response.json()["ticket"]["items"]],timestamps)
+        self.assertEqual(self.queue()["active"],[])
+        with self.factory() as session:
+            save_order(session,1,"business",payload);session.commit()
+        self.assertEqual(self.queue()["active"],[])
+
     def test_note_edit_persists_through_pos_sync_and_conflicts(self):
         payload=self.seed(notes="Sarah allergy peanuts")
         ticket=self.queue()["active"][0]

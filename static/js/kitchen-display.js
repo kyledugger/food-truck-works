@@ -55,16 +55,17 @@
     const root=el('article','store-order kitchen-ticket'+(ticket.completing?' ticket-completing':held?' ticket-held':finished?' ticket-ready':ticket.items.some(i=>i.state==='claimed')?' ticket-in-progress':'')),head=el('div','store-order-head');
     if(ticket.completing){root.setAttribute('aria-busy','true');root.setAttribute('aria-label','Order '+ticket.number+' completing; saving changes');}
     const title=el(finished?'strong':'button','kitchen-complete-header',(held?'Ⅱ Held · ':'')+callout.name);
-    if(!finished){title.type='button';title.dataset.kitchenAction='done';title.dataset.ticketId=ticket.id;title.dataset.blocked=String(held);title.setAttribute('aria-label','Complete order '+ticket.number);title.title=held?'Resume using the timer before completing':'Tap header to complete this order';title.addEventListener('click',event=>{event.stopPropagation();act(ticket,'done',null);});head.addEventListener('click',event=>{if(event.target===head)act(ticket,'done',null);});}
+    if(!finished){title.type='button';title.dataset.kitchenAction='done';title.dataset.ticketId=ticket.id;title.dataset.blocked=String(held);title.setAttribute('aria-label','Clear order '+ticket.number+' after pickup');title.title=held?'Resume using the timer before clearing':'Tap header after customer pickup to clear this order';title.addEventListener('click',event=>{event.stopPropagation();act(ticket,'done',null);});head.addEventListener('click',event=>{if(event.target===head)act(ticket,'done',null);});}
     const timer=el(finished?'strong':'button','kitchen-elapsed');timer.dataset.orderCreated=ticket.created_at;timer.dataset.held=String(held);timer.dataset.orderNumber=ticket.number;
     if(!finished){timer.type='button';timer.dataset.kitchenAction=held?'resume':'hold';timer.dataset.ticketId=ticket.id;timer.title=held?'Resume preparation':'Hold preparation; order age keeps counting';timer.addEventListener('click',event=>{event.stopPropagation();act(ticket,held?'resume':'hold',null);});}
     if(finished)timer.dataset.orderReady=ticket.ready_at;
     head.append(title,timer);root.append(head);
+    if(!finished&&!ticket.completing&&ticket.items.length&&ticket.items.every(i=>i.state==='done'))root.append(el('strong','kitchen-pickup-label','✓ Ready for pickup'));
     const allergy=/\ballergy\b/i.test([ticket.notes,ticket.kitchen_notes,ticket.customer_name,ticket.kitchen_customer_name,...ticket.items.flatMap(i=>[i.name,...(i.modifiers||[]).flatMap(m=>[m.attribute,...m.values])])].filter(Boolean).join(' '));
     if(allergy){root.classList.add('ticket-allergy');root.append(el('strong','kitchen-allergy-label','⚠ ALLERGY'));}
     if(!finished){const edit=el('button','kitchen-edit-note','▤');edit.type='button';edit.title='Edit customer name or kitchen note';edit.setAttribute('aria-label','Edit customer name or note for order '+ticket.number);edit.dataset.kitchenAction='edit_note';edit.dataset.ticketId=ticket.id;edit.onclick=event=>{event.stopPropagation();editNote(ticket);};head.append(edit);}
     if(callout.notes)root.append(el('p','kitchen-callout','Order note: '+callout.notes));
-    if(finished){const controls=el('div','kitchen-order-actions');controls.append(el('span','kitchen-state kitchen-done','✓ Ready'),button('Undo order',ticket,'undo'));root.append(controls);}
+    if(finished){const controls=el('div','kitchen-order-actions');controls.append(el('span','kitchen-state kitchen-done','✓ Picked up'),button('Undo order',ticket,'undo'));root.append(controls);}
     const table=el('table');table.setAttribute('aria-label','Order '+ticket.number+' preparation');
     const body=el('tbody');
     for(const item of ticket.items){
@@ -98,7 +99,7 @@
         for(const item of ticket.items){if(op.key&&item.key!==op.key)continue;item.state=op.action==='claim'?(item.state==='available'?'claimed':item.state):op.action==='done'?'done':'available';item.saving=true;}
       }
       if(ticket.state==='ready')ticket.state='active';
-      ticket.completing=queue.ops.length>0&&ticket.items.every(item=>item.state==='done');
+      ticket.completing=queue.ops.some(op=>op.action==='done'&&!op.key);
       active.push(ticket);
     }
     active.sort((a,b)=>Date.parse(a.created_at)-Date.parse(b.created_at)||a.id-b.id);

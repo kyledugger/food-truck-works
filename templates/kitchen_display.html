@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{{ store.display_name or store.poynt_name }} · Kitchen{% endblock %}
-{% block head %}<link rel="stylesheet" href="/static/css/store-dashboard.css?v=20261008-notes-1"><link rel="stylesheet" href="/static/css/kitchen-board.css?v=20261008-wait-1">{% endblock %}
+{% block head %}<link rel="stylesheet" href="/static/css/store-dashboard.css?v=20261008-pickup-1"><link rel="stylesheet" href="/static/css/kitchen-board.css?v=20261008-wait-1">{% endblock %}
 {% block content %}
 <main class="kitchen-board" data-kitchen-board="true">
   <header class="board-toolbar">
@@ -11,7 +11,7 @@
   <section class="store-orders board-orders" tabindex="0" aria-label="Active kitchen orders">
     <div id="store-order-feed" data-kitchen="true" data-test="{{ 'true' if test_mode else 'false' }}" data-store-id="{{ store.id }}" data-csrf="{{ kitchen_csrf }}"><p>Loading orders…</p></div>
   </section>
-  <details id="kitchen-recent"><summary>Recently completed <span id="kitchen-recent-count"></span></summary><p>Latest 20 from the last 2 hours · Undo returns an order to the queue.</p><div id="kitchen-recent-feed"></div></details>
+  <details id="kitchen-recent"><summary>Recently picked up <span id="kitchen-recent-count"></span></summary><p>Latest 20 from the last 2 hours · Undo returns an order to the queue.</p><div id="kitchen-recent-feed"></div></details>
 </main>
 {% if can_edit_timer %}
 <dialog id="timer-dialog" aria-labelledby="timer-profile-title">
@@ -27,4 +27,4 @@
 </dialog>
 {% endif %}
 {% endblock %}
-{% block scripts %}<script src="/static/js/kitchen-display.js?v=20261008-notes-1" defer></script><script src="/static/js/kitchen-board.js?v=20261008-wait-1" defer></script><script src="/static/js/kitchen-simulation.js?v=20261008-wait-1" defer></script>{% endblock %}
+{% block scripts %}<script src="/static/js/kitchen-display.js?v=20261008-pickup-1" defer></script><script src="/static/js/kitchen-board.js?v=20261008-wait-1" defer></script><script src="/static/js/kitchen-simulation.js?v=20261008-wait-1" defer></script>{% endblock %}
