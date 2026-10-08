@@ -37,6 +37,13 @@ def completion_rate(tickets, now, minutes=15):
     return {"completed_items": total, "items_per_minute": total/minutes}
 
 
+def customer_wait(tickets, now):
+    eligible = [t for t in tickets if t.state == "active" and any(i.get("state") != "done" for i in t.items)]
+    oldest = min(eligible, key=lambda t: (t.created_at, t.id)) if eligible else None
+    return {"ticket_id": oldest.id, "created_at": utc_iso(oldest.created_at),
+            "wait_seconds": max(0, int((now-oldest.created_at).total_seconds()))} if oldest else None
+
+
 def scope(request, session, store_id):
     from routers.live_dashboard import sales_authorized
     organization_id, role = sales_authorized(request, store_id)
@@ -86,13 +93,20 @@ def queue(request: Request, store_id: int):
                 DashboardOrder.organization_id == store.organization_id,
                 DashboardOrder.business_id == connection.business_id, DashboardOrder.store_id == store.store_id,
                 DashboardOrder.created_at >= now-timedelta(minutes=30), DashboardOrder.created_at <= now)).all()
+            flow_payloads = [o.payload for o in flow_orders]
+            if "/kitchen-test" in request.url.path:
+                samples = session.scalars(select(KitchenTicket).where(*filters(store, connection),
+                    KitchenTicket.state != "cancelled", KitchenTicket.created_at >= now-timedelta(minutes=30),
+                    KitchenTicket.created_at <= now)).all()
+                flow_payloads = [{"createdAt": utc_iso(t.created_at), "statuses": {"status": "COMPLETED", "transactionStatusSummary": "COMPLETED"}, "items": t.items} for t in samples]
             completed_tickets = session.scalars(select(KitchenTicket).where(*filters(store, connection),
                 KitchenTicket.state.in_(["active", "held", "ready"]), KitchenTicket.updated_at >= now-timedelta(minutes=15))).all()
             result = {"active": [serialize(t) for t in active], "recent": [serialize(t) for t in recent],
                       "timer_profile": timer_profile(session, store.id),
                       "generated_at": utc_iso(now), "timezone": store.timezone_name,
                       "flow": {"window_minutes": 15,
-                               "intake": kitchen_intake([o.payload for o in flow_orders], now, 15),
+                               "customer_wait": customer_wait(active, now),
+                               "intake": kitchen_intake(flow_payloads, now, 15),
                                "completion": completion_rate(completed_tickets, now)}}
             session.commit()
         return JSONResponse(result, headers={"Cache-Control": "no-store"})

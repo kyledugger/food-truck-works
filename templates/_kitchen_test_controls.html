@@ -1,0 +1,10 @@
+  <section class="board-test-controls" aria-label="Kitchen simulation">
+    <strong>TEST MODE · Sample orders only</strong>
+    <button class="button" data-test-count="1">Add order</button>
+    <button class="button" data-test-count="10">Add 10 orders</button>
+    <button class="button" data-test-count="1" data-test-scenario="large">Add large order</button>
+    <label>New order every <select id="test-interval"><option value="10">10 seconds</option><option value="25" selected>25 seconds</option><option value="60">60 seconds</option></select></label>
+    <button id="test-stream" class="button" aria-pressed="false">Start stream</button>
+    <button id="test-clear" class="button">Clear test orders</button>
+    <span id="test-message" role="status">Open Test kitchen on another tablet to share this queue.</span>
+  </section>

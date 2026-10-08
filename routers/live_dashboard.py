@@ -61,7 +61,7 @@ def sales_authorized(request, store_id=None):
 
 
 @router.get("/dashboard/stores/{store_id}")
-def store_dashboard(request: Request, store_id: int):
+def store_dashboard(request: Request, store_id: int, test: bool = False):
     organization_id, role = sales_authorized(request, store_id)
     if role == "store_display" and request.session.get("store_performance_id") != store_id:
         return RedirectResponse(f"/dashboard/stores/{store_id}/home", status_code=303)
@@ -71,7 +71,7 @@ def store_dashboard(request: Request, store_id: int):
         if store is None:
             raise HTTPException(404, "Store not found.")
         return templates.TemplateResponse(request=request, name="store_dashboard.html",
-            context={"store": store, "is_store_display": role == "store_display",
+            context={"store": store, "is_store_display": role == "store_display", "test_mode": test,
                      "kitchen_csrf": request.session.setdefault("kitchen_csrf", secrets.token_urlsafe(32))}, headers={"Cache-Control": "no-store"})
 
 

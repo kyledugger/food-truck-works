@@ -176,7 +176,7 @@ Test tickets persist across reloads until cleared. Active test orders are capped
 at 100; generation pauses on errors or a full queue.
 
 Test orders use a dedicated business namespace in existing kitchen tables. They
-never enter DashboardOrder, POS, sales, tips, intake or real completion metrics.
+never enter DashboardOrder, POS, sales, tips, or real intake/completion metrics.
 Claim/Done/Release/Undo, revision conflicts, SSE and polling use the same code as
 real tickets, with the same role, assigned-store and CSRF checks. A Poynt
 connection is not required for the simulation. No additional migration is needed.
@@ -291,6 +291,26 @@ struck-through customer name and muted items. It remains in the active queue
 until its queued saves finish. Queued Undo or failure clears the completing
 appearance as the row states return. Normal/in-progress header backgrounds are
 white; claimed item rows retain their blue preparation distinction. No migration.
+
+## Performance test queue and Customer Wait
+
+Click Test queue in the Performance screen's Kitchen orders heading. Its queue
+uses the same sample tickets as the dedicated Test kitchen display, so actions
+sync between both screens. The drilldown link preserves test mode. Expand TEST
+QUEUE / Simulation controls to add orders, run a stream or clear samples; collapse
+it to preview the compact kitchen layout. Live queue returns to real tickets.
+Sales, tips, hourly/category charts and cashier intervals remain real. Test-mode
+intake, completion and Customer Wait use samples and are explicitly labeled Test.
+
+Customer Wait is beside intake and completion. It shows the current age of the
+oldest unfinished ticket that is not Held, including unfinished tickets carried
+over midnight. It advances locally each second using the server clock and switches
+immediately when an order is held, resumed or completed. All-held/empty queues
+show a dash and No active orders off hold. Unavailable/revoked queues clear the
+metric. This is observed oldest-order age, not a predicted time to completion.
+
+Performance test mode retains the existing sales visibility gate and assigned-
+store role restrictions. No additional migration or dependency is required.
 
 Apply c69e1a47f358, which follows b58d0f36e247 and creates kitchen_timer_profiles.
 No production database was accessed. If you created a merge revision after the

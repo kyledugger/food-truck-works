@@ -6,6 +6,17 @@
   const paceCards=document.getElementById('store-pace-cards');
   const intakeData=document.getElementById('store-intake-data');
   const completionData=document.getElementById('store-completion-data');
+  const waitData=document.getElementById('store-wait-data');
+  let waiting=null,waitClock=0,waitObserved=performance.now(),waitUnavailable=false;
+  function customerWait(){
+    if(!waitData)return;waitData.replaceChildren();
+    if(waitUnavailable){waitData.append(el('p','store-pace-note','Wait temporarily unavailable.'));return;}
+    if(!waiting){waitData.append(el('strong','store-intake-value','—'),el('p','store-intake-detail','No active orders off hold'));return;}
+    const seconds=Math.max(0,Math.floor((waitClock+performance.now()-waitObserved-Date.parse(waiting))/1000));
+    waitData.append(el('strong','store-intake-value',Math.floor(seconds/60)+'m '+String(seconds%60).padStart(2,'0')+'s'),el('p','store-intake-detail','Oldest active · Holds excluded'));
+  }
+  document.addEventListener('kitchen-wait',event=>{waiting=event.detail.created_at;waitClock=Date.parse(event.detail.generated_at);waitObserved=performance.now();waitUnavailable=false;customerWait();});
+  setInterval(()=>{if(!document.hidden)customerWait();},1000);
   let flow=null,flowUnavailable=false;
   function intake(){
     intakeData.replaceChildren();completionData.replaceChildren();
@@ -21,8 +32,8 @@
     intakeData.append(trend);
   }
   document.addEventListener('kitchen-flow',event=>{flow=event.detail;flowUnavailable=false;intake();});
-  document.addEventListener('kitchen-flow-unavailable',()=>{flow=null;flowUnavailable=true;intake();});
-  document.addEventListener('store-access-denied',()=>{flow=null;intakeData.replaceChildren();completionData.replaceChildren();});
+  document.addEventListener('kitchen-flow-unavailable',()=>{flow=null;flowUnavailable=true;waiting=null;waitUnavailable=true;intake();customerWait();});
+  document.addEventListener('store-access-denied',()=>{flow=null;waiting=null;waitUnavailable=true;intakeData.replaceChildren();completionData.replaceChildren();waitData?.replaceChildren();});
   function pace(){
     paceCards.replaceChildren();
     if(!store||store.setup_required||store.loading){paceCards.append(el('p','store-pace-note',store?.setup_required?'Store setup required.':'Collecting order intervals…'));return;}

@@ -1,24 +1,13 @@
 {% extends "base.html" %}
 {% block title %}{{ store.display_name or store.poynt_name }} · Kitchen{% endblock %}
-{% block head %}<link rel="stylesheet" href="/static/css/store-dashboard.css?v=20261008-saving-1"><link rel="stylesheet" href="/static/css/kitchen-board.css?v=20261008-saving-1">{% endblock %}
+{% block head %}<link rel="stylesheet" href="/static/css/store-dashboard.css?v=20261008-wait-1"><link rel="stylesheet" href="/static/css/kitchen-board.css?v=20261008-wait-1">{% endblock %}
 {% block content %}
 <main class="kitchen-board" data-kitchen-board="true">
   <header class="board-toolbar">
     <div><h1>{{ store.display_name or store.poynt_name }} · Kitchen <span id="kitchen-count"></span></h1><p id="kitchen-status" role="status" aria-live="polite">Connecting…</p></div>
     <nav aria-label="Kitchen controls"><a class="button" href="/dashboard/stores/{{ store.id }}/home">Store home</a><a class="button" href="/dashboard/stores/{{ store.id }}/kitchen-display{% if not test_mode %}?test=true{% endif %}">{{ 'Live kitchen' if test_mode else 'Test kitchen' }}</a>{% if can_edit_timer %}<button id="timer-settings" class="button">Timer profile</button>{% endif %}<button id="store-fullscreen" class="button">Full screen</button><button id="live-refresh" class="button">Refresh</button></nav>
   </header>
-  {% if test_mode %}
-  <section class="board-test-controls" aria-label="Kitchen simulation">
-    <strong>TEST MODE · Sample orders only</strong>
-    <button class="button" data-test-count="1">Add order</button>
-    <button class="button" data-test-count="10">Add 10 orders</button>
-    <button class="button" data-test-count="1" data-test-scenario="large">Add large order</button>
-    <label>New order every <select id="test-interval"><option value="10">10 seconds</option><option value="25" selected>25 seconds</option><option value="60">60 seconds</option></select></label>
-    <button id="test-stream" class="button" aria-pressed="false">Start stream</button>
-    <button id="test-clear" class="button">Clear test orders</button>
-    <span id="test-message" role="status">Open Test kitchen on another tablet to share this queue.</span>
-  </section>
-  {% endif %}
+  {% if test_mode %}{% include "_kitchen_test_controls.html" %}{% endif %}
   <section class="store-orders board-orders" tabindex="0" aria-label="Active kitchen orders">
     <div id="store-order-feed" data-kitchen="true" data-test="{{ 'true' if test_mode else 'false' }}" data-store-id="{{ store.id }}" data-csrf="{{ kitchen_csrf }}"><p>Loading orders…</p></div>
   </section>
@@ -38,4 +27,4 @@
 </dialog>
 {% endif %}
 {% endblock %}
-{% block scripts %}<script src="/static/js/kitchen-display.js?v=20261008-saving-1" defer></script><script src="/static/js/kitchen-board.js?v=20261008-saving-1" defer></script>{% endblock %}
+{% block scripts %}<script src="/static/js/kitchen-display.js?v=20261008-wait-1" defer></script><script src="/static/js/kitchen-board.js?v=20261008-wait-1" defer></script><script src="/static/js/kitchen-simulation.js?v=20261008-wait-1" defer></script>{% endblock %}

@@ -78,6 +78,8 @@
       active.push(ticket);
     }
     active.sort((a,b)=>Date.parse(a.created_at)-Date.parse(b.created_at)||a.id-b.id);
+    const oldest=active.find(t=>t.state!=='held'&&t.items.some(item=>item.state!=='done'));
+    document.dispatchEvent(new CustomEvent('kitchen-wait',{detail:{created_at:oldest?.created_at||null,generated_at:new Date(serverTime+performance.now()-observed).toISOString()}}));
     const visibleRecent=data.recent.filter(t=>!pending.has(t.id));
     const next=JSON.stringify([active,visibleRecent]);
     if(next!==fingerprint){

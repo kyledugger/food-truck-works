@@ -33,6 +33,27 @@ class KitchenTests(unittest.TestCase):
         self.kitchen_patch.stop()
         DatabaseAndRoutesTests.tearDown(self)
 
+    def test_customer_wait_oldest_unheld_and_performance_test_mode(self):
+        self.seed("older",at=self.now-timedelta(minutes=10))
+        self.seed("newer",at=self.now-timedelta(minutes=3))
+        data=self.queue()
+        oldest=data["active"][0]
+        self.assertEqual(data["flow"]["customer_wait"]["ticket_id"],oldest["id"])
+        self.assertGreaterEqual(data["flow"]["customer_wait"]["wait_seconds"],600)
+        self.action(oldest,"hold")
+        data=self.queue()
+        self.assertEqual(data["flow"]["customer_wait"]["ticket_id"],data["active"][1]["id"])
+        self.action(data["active"][1],"done")
+        self.assertIsNone(self.queue()["flow"]["customer_wait"])
+        self.action(self.queue()["active"][0],"resume")
+        self.assertEqual(self.queue()["flow"]["customer_wait"]["ticket_id"],oldest["id"])
+        page=self.client.get("/dashboard/stores/1?test=true")
+        self.assertEqual(page.status_code,200)
+        self.assertIn('data-test="true"',page.text)
+        self.assertIn('store-wait-data',page.text)
+        self.assertIn('TEST QUEUE',page.text)
+        self.assertIn('kitchen-display?test=true',page.text)
+
     def test_action_returns_saved_ticket_without_followup_fetch(self):
         self.seed()
         ticket=self.queue()["active"][0]
@@ -115,7 +136,7 @@ class KitchenTests(unittest.TestCase):
         self.assertEqual(response.status_code,200,response.text)
         data=self.client.get(path).json()
         self.assertEqual(len(data["active"]),10)
-        self.assertEqual(data["flow"]["intake"]["recent_items"],0)
+        self.assertEqual(data["flow"]["intake"]["recent_items"],52)
         self.assertTrue(all(t["number"].startswith("TEST-") for t in data["active"]))
         times=[t["created_at"] for t in data["active"]]
         self.assertEqual(times,sorted(times))
