@@ -334,6 +334,12 @@ replacing the placeholders with those listed revision IDs, then run
 `alembic upgrade head`. Include the generated merge file in your deployment.
 # Preparation and pickup (October 8)
 
+## New-order bell
+
+Both kitchen views have a Sound off/on button beside Refresh. Tap it once after opening the page to enable audio and hear a short two-note bell preview. New tickets then ring automatically, including simulated orders. The first queue load is silent, as are item actions, note edits, pickup, Undo, and repeated refreshes. A batch of arrivals rings once. Muted arrivals are not replayed when sound is enabled.
+
+Sound is per page session and resets on reload/navigation. Keep the kitchen page visible and the tablet media volume audible. If the browser suspends audio, the button returns to Sound off when an arrival attempts playback; tap to enable it again. Reconnection may ring once for new unseen tickets received since the last successful update. No new migration is required for sound.
+
 Test orders start with the supplied Shark Bite Energy Drink sample (SKU N-SHRKBT, Options: Caffeine_Free). Orders with at least two rows also include the supplied Custom Energy Drink (SKU N-CSTM, Drink_Flavors: Blue_Raspberry, Coconut). Both use the real Poynt modifier extraction. Remaining products/toppings are generic fixtures. Existing test tickets are unchanged; clear the test queue and add new orders to see the updated samples. Add 10 orders or a large order to see both products.
 
 Item completion and ticket clearing are separate. Finishing the last item leaves the ticket in the active queue with its customer name and a compact Ready for pickup label. Tap the header after customer pickup to clear it. The cleared ticket is shown under Recently picked up; Undo reopens its preparation rows. Header tapping continues to clear an order directly even if some items have not been marked done.

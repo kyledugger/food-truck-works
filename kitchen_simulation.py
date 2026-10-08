@@ -9,8 +9,9 @@ from order_preparation import modifiers
 
 def add_samples(session, store, business_id, count, scenario, actor):
     now = utc_now()
-    names = ["Alex", "Jordan", "Sam", "Taylor", "Morgan", "Casey", "Riley", "Jamie", "Cameron", "Drew"]
-    menu = ["Shark Bite Energy Drink", "Custom Energy Drink", "Custom Shave Ice", "Oreo Obsession Signature Bar", "Take 5 Frozen banana", "Custom energy drink", "Cold brew Maple Cream"]
+    names = ["Alex", "Jordan", "Sam", "Taylor", "Morgan"]
+    menu = ["Shark Bite Energy Drink", "Custom Energy Drink", "Custom Shave Ice", "Chocolate ice cream bar", "Frozen banana", "Cold brew"]
+    # Exact preparation fields from the supplied Poynt order. Use the real
     # modifier parser rather than a separately invented display representation.
     shark_bite = {"selectedVariants": [{"sku": "N-SHRKBT", "selectableVariations": [
         {"attribute": "Options", "values": [{"name": "Caffeine_Free"}]}]}]}

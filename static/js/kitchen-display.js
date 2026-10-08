@@ -11,6 +11,46 @@
   let serverTime=Date.now(),observed=performance.now(),snapshot=null;
   const el=(tag,cls,text)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=text;return n;};
   const itemIdentity=item=>JSON.stringify([item?.key,item?.name,item?.quantity,item?.modifiers||[]]);
+  const soundButton=el('button',board?'button':'button is-small is-light','♫ Sound off');
+  soundButton.type='button';soundButton.setAttribute('aria-pressed','false');soundButton.title='Enable new-order bell and play a preview';
+  document.getElementById('live-refresh')?.after(soundButton);
+  let audioContext=null,soundOn=false,soundStarting=false,arrivalBaseline=null;
+  const seenTickets=new Set();
+  function soundState(){soundButton.textContent=soundOn?'♫ Sound on':'♫ Sound off';soundButton.setAttribute('aria-pressed',String(soundOn));soundButton.title=soundOn?'Mute new-order bell':'Enable new-order bell and play a preview';}
+  function bell(){
+    if(!soundOn||stopped||document.hidden)return;
+    if(audioContext?.state!=='running'){soundOn=false;soundState();soundButton.title='Tap to enable sound again';return;}
+    const start=audioContext.currentTime;
+    for(const [offset,hz] of [[0,880],[.16,1174.66]]){
+      for(const [multiple,volume] of [[1,.12],[2.76,.025]]){
+        const oscillator=audioContext.createOscillator(),gain=audioContext.createGain(),at=start+offset;
+        oscillator.type='sine';oscillator.frequency.value=hz*multiple;
+        gain.gain.setValueAtTime(0,at);gain.gain.linearRampToValueAtTime(volume,at+.008);gain.gain.exponentialRampToValueAtTime(.0001,at+.65);
+        oscillator.connect(gain);gain.connect(audioContext.destination);oscillator.start(at);oscillator.stop(at+.7);
+        oscillator.onended=()=>{oscillator.disconnect();gain.disconnect();};
+      }
+    }
+  }
+  soundButton.addEventListener('click',async()=>{
+    if(soundStarting||stopped)return;
+    if(soundOn){soundOn=false;await audioContext?.suspend();soundState();return;}
+    soundStarting=true;
+    try{
+      const Audio=window.AudioContext||window.webkitAudioContext;
+      if(!Audio)throw new Error('Audio unavailable');
+      audioContext=audioContext||new Audio();await audioContext.resume();
+      if(stopped)return;
+      soundOn=audioContext.state==='running';soundState();bell();
+    }catch(error){soundOn=false;soundState();soundButton.title='Sound unavailable. Check browser and tablet audio settings.';}
+    finally{soundStarting=false;}
+  });
+  function arrivals(data){
+    const tickets=[...data.active,...data.recent];
+    if(arrivalBaseline===null){arrivalBaseline=Math.max(0,...tickets.map(t=>t.id));tickets.forEach(t=>seenTickets.add(t.id));return;}
+    const incoming=data.active.some(t=>t.id>arrivalBaseline&&!seenTickets.has(t.id));
+    tickets.forEach(t=>seenTickets.add(t.id));
+    if(incoming)bell(); // One chime per received batch, never one per item.
+  }
   function customerCallout(ticket){
     if(ticket.kitchen_notes!==null&&ticket.kitchen_notes!==undefined)return {name:ticket.kitchen_customer_name||'',notes:ticket.kitchen_notes};
     const notes=(ticket.notes||'').trim();
@@ -88,7 +128,7 @@
   }
   function render(data,local=false){
     document.dispatchEvent(new CustomEvent('kitchen-flow',{detail:data.flow}));
-    if(!local){serverTime=Date.parse(data.generated_at);observed=performance.now();snapshot=data;}
+    if(!local){arrivals(data);serverTime=Date.parse(data.generated_at);observed=performance.now();snapshot=data;}
     if(data.timer_profile){timerProfile=data.timer_profile;document.dispatchEvent(new CustomEvent('kitchen-timer-profile',{detail:timerProfile}));}
     const active=data.active.filter(t=>!pending.has(t.id));
     for(const queue of pending.values()){
@@ -122,6 +162,7 @@
   }
   function revoke(){
     stopped=true;available=false;source?.close();source=null;controller?.abort();
+    soundOn=false;soundState();soundButton.disabled=true;audioContext?.close().catch(()=>{});
     feed.replaceChildren();recent.replaceChildren();snapshot=null;fingerprint='';
     document.getElementById('kitchen-count').textContent='';document.getElementById('kitchen-recent-count').textContent='';
     status.textContent='Kitchen access changed. Sign in again.';
@@ -191,7 +232,7 @@
   document.addEventListener('visibilitychange',()=>{if(document.hidden){source?.close();source=null;live=false;}else{refresh();connect();}});
   document.getElementById('live-refresh')?.addEventListener('click',refresh);
   document.addEventListener('store-data',refresh);
-  window.addEventListener('pagehide',()=>{stopped=true;source?.close();controller?.abort();feed.replaceChildren();recent.replaceChildren();});
+  window.addEventListener('pagehide',()=>{stopped=true;soundOn=false;audioContext?.close().catch(()=>{});source?.close();controller?.abort();feed.replaceChildren();recent.replaceChildren();});
   setInterval(()=>{if(!document.hidden)tick();},1000);
   setInterval(refresh,5000);refresh();connect();
 })();
