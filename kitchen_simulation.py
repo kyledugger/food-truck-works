@@ -4,12 +4,21 @@ from datetime import timedelta
 from uuid import uuid4
 from kitchen_models import KitchenTicket, KitchenAction
 from store_time import utc_now
+from order_preparation import modifiers
 
 
 def add_samples(session, store, business_id, count, scenario, actor):
     now = utc_now()
-    names = ["Alex", "Jordan", "Sam", "Taylor", "Morgan"]
-    menu = ["Chocolate ice cream bar", "Frozen banana", "Shave ice", "Custom energy drink", "Cold brew"]
+    names = ["Alex", "Jordan", "Sam", "Taylor", "Morgan", "Casey", "Riley", "Jamie", "Cameron", "Drew"]
+    menu = ["Shark Bite Energy Drink", "Custom Energy Drink", "Custom Shave Ice", "Oreo Obsession Signature Bar", "Take 5 Frozen banana", "Custom energy drink", "Cold brew Maple Cream"]
+    # modifier parser rather than a separately invented display representation.
+    shark_bite = {"selectedVariants": [{"sku": "N-SHRKBT", "selectableVariations": [
+        {"attribute": "Options", "values": [{"name": "Caffeine_Free"}]}]}]}
+    custom_drink = {"selectedVariants": [{"sku": "N-CSTM", "selectableVariations": [
+        {"attribute": "Drink_Flavors", "values": [{"name": "Blue_Raspberry"}, {"name": "Coconut"}]}]}]}
+    custom_shave_ice = {"selectedVariants": [{"selectableVariations": [
+        {"attribute": "Flavors", "values": [{"name": "Blue_Raspberry"},
+            {"name": "Tiger_blood"}, {"name": "Wedding_Cake"}]}]}]}
     for index in range(count):
         token = uuid4().hex
         variant = int(token[:8], 16) if count == 1 else index
@@ -17,11 +26,11 @@ def add_samples(session, store, business_id, count, scenario, actor):
         items = []
         for row in range(rows):
             items.append({"key": hashlib.sha256(f"{token}:{row}".encode()).hexdigest(),
-                "provider_id": None, "sku": "TEST", "name": menu[row % len(menu)],
+                "provider_id": None, "sku": "N-SHRKBT" if row % 6 == 0 else "N-CSTM" if row % 6 == 1 else "TEST", "name": menu[row % len(menu)],
                 "quantity": 1 + row % 3, "state": "available", "claimed_at": None, "done_at": None,
-                "modifiers": [{"attribute": "Options", "values": ["Caffeine free", "Blue raspberry"]}]
-                    if row % 5 == 3 else [{"attribute": "Toppings", "values": ["Chocolate dip", "Sprinkles"]}]
-                    if row % 5 == 0 else []})
+                "modifiers": modifiers(shark_bite) if row % 6 == 0 else modifiers(custom_drink) if row % 6 == 1 else modifiers(custom_shave_ice) if row % 6 == 2 else
+                    [{"attribute": "Toppings", "values": ["Chocolate dip", "Sprinkles"]}]
+                    if row % 6 == 3 else []})
         ticket = KitchenTicket(organization_id=store.organization_id, store_id=store.id,
             business_id=business_id, order_id=f"test-{token}", number=f"TEST-{token[:6].upper()}",
             created_at=now-timedelta(seconds=(count-index-1)*45), updated_at=now,

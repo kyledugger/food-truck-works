@@ -334,6 +334,8 @@ replacing the placeholders with those listed revision IDs, then run
 `alembic upgrade head`. Include the generated merge file in your deployment.
 # Preparation and pickup (October 8)
 
+Test orders start with the supplied Shark Bite Energy Drink sample (SKU N-SHRKBT, Options: Caffeine_Free). Orders with at least two rows also include the supplied Custom Energy Drink (SKU N-CSTM, Drink_Flavors: Blue_Raspberry, Coconut). Both use the real Poynt modifier extraction. Remaining products/toppings are generic fixtures. Existing test tickets are unchanged; clear the test queue and add new orders to see the updated samples. Add 10 orders or a large order to see both products.
+
 Item completion and ticket clearing are separate. Finishing the last item leaves the ticket in the active queue with its customer name and a compact Ready for pickup label. Tap the header after customer pickup to clear it. The cleared ticket is shown under Recently picked up; Undo reopens its preparation rows. Header tapping continues to clear an order directly even if some items have not been marked done.
 
 Kitchen Completion counts each item's existing completion timestamp, not pickup. Customer Wait excludes tickets with no unfinished items. Unchanged POS refreshes preserve both waiting-for-pickup tickets and cleared tickets. Changed item quantities or modifiers can still reopen preparation. The database's existing `ready` state now represents explicitly cleared tickets; this behavior change requires no additional migration.
