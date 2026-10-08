@@ -63,3 +63,143 @@
 #kitchen-recent summary{cursor:pointer;font-weight:600}#kitchen-status{color:#53606d}
 .kitchen-action:focus-visible{outline:3px solid #355fa8;outline-offset:2px}
 .kitchen-heading{position:sticky;top:-1rem;background:#fff;z-index:1;padding:.5rem 0;border-bottom:1px solid #dbe4e8}
+
+/* Compact landscape displays, including tablets with browser chrome visible. */
+@media (min-width:850px) and (max-height:800px) and (max-width:1400px) and (orientation:landscape){
+.store-screen{height:100dvh;min-height:0;padding:.55rem;gap:.45rem;overflow:hidden}
+.store-toolbar{gap:.4rem;flex-wrap:nowrap;flex-shrink:0}
+.store-toolbar .title{font-size:1.15rem!important;line-height:1.2}
+.store-toolbar-actions{gap:.35rem;flex-wrap:nowrap}
+.store-toolbar .button{padding-left:.55rem;padding-right:.55rem;min-height:36px}
+.store-toolbar #live-mode{font-size:.65rem}.store-toolbar #live-refreshed{margin-top:0!important;font-size:.65rem!important}
+.store-layout{grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:.5rem;overflow:hidden}
+.store-left-column{gap:.4rem;overflow:auto}
+.store-screen .live-store{padding:.55rem;border-radius:9px;box-shadow:none}
+.store-screen .live-store-header h2{display:none}
+.store-screen .live-store-date{margin:0;font-size:.7rem}
+.store-screen .live-store-header{align-items:center;gap:.4rem}
+.store-screen .live-store-header .tag{font-size:.65rem}
+.store-screen .live-empty{padding:.25rem 0;font-size:.85rem}
+.store-left-column .live-kpis{grid-template-columns:repeat(4,minmax(0,1fr));gap:.4rem;margin:.35rem 0}
+.store-screen .live-kpis small{font-size:.7rem}.store-screen .live-kpis strong{font-size:1.25rem}
+.store-screen .live-now{padding:.35rem .5rem;display:grid;grid-template-columns:auto 1fr;gap:0 .55rem;align-items:center}
+.store-screen .live-now>small{font-size:.65rem}.store-screen .live-now strong{font-size:1rem;margin:0}
+.store-screen .live-pace{font-size:.8rem}.store-screen .live-last{font-size:.65rem;margin:0}
+.store-screen .live-warning:empty{display:none}
+.store-screen .live-store details{margin-top:.3rem}
+.store-screen .live-store summary{padding:.1rem 0;font-size:.8rem}
+.store-screen .live-store details>p{margin-top:.2rem!important;font-size:.65rem!important}
+.store-sales-panels{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:.5rem}
+.store-sales-panels>div{min-width:0}
+.store-screen .live-chart-title{margin:.2rem 0;font-size:.75rem}
+.store-screen .live-chart{height:105px;margin:.2rem 0}
+.store-category-panel{max-height:135px;overflow:auto}
+.store-category-panel>button{height:auto;min-height:32px;white-space:normal;line-height:1.15;font-size:.7rem;padding:.25rem .4rem}
+.store-screen .live-category{font-size:.7rem;margin:.25rem 0}
+.store-screen .live-category td,.store-screen .live-category th{padding:.15rem .2rem}
+.store-flow-pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.4rem;flex-shrink:0}
+.store-intake,.store-pace{padding:.4rem .55rem;border-radius:9px}
+.store-intake h2,.store-pace h2{font-size:.85rem}
+.store-intake-value{font-size:1.25rem;line-height:1.3}
+.store-intake-detail{font-size:.7rem;line-height:1.2;margin:.1rem 0}
+.store-pace-note{font-size:.65rem;line-height:1.2}
+.store-pace{gap:.3rem}.store-pace-cards{gap:.35rem}
+.store-pace-card{padding:.25rem .4rem}.store-pace-value{font-size:1.15rem;line-height:1.25}
+.store-pace-card strong,.store-pace-card small{font-size:.65rem}
+.store-orders{padding:.55rem;border-radius:9px;max-height:none;min-width:0}
+.kitchen-heading{top:-.55rem;padding:.2rem 0}
+.kitchen-heading h2{font-size:1.05rem!important}.kitchen-heading p{margin-bottom:.25rem!important;font-size:.65rem!important}
+.kitchen-ticket{padding:.45rem 0}.kitchen-order-actions{margin:.25rem 0}
+.store-orders #kitchen-recent{margin-top:.5rem;padding-top:.4rem}
+.store-footnote{font-size:.6rem;line-height:1.1;flex-shrink:0}
+}
+@media (min-width:850px) and (max-height:800px) and (max-width:1400px) and (orientation:landscape){
+.store-screen .live-store details>summary{display:none}
+.store-screen .live-chart{height:80px}
+.store-category-panel{max-height:110px}
+.store-pace-card{line-height:1.15}
+.store-pace-card small{line-height:1.15}
+.store-pace-card strong{line-height:1.15}
+.store-pace-note{margin:0}
+.store-screen .live-store{padding:.4rem}
+.store-screen .live-chart-title{margin:0}
+.store-intake-detail{line-height:1.1}
+}
+@media (min-width:850px) and (max-width:1100px) and (max-height:800px) and (max-width:1400px) and (orientation:landscape){
+.store-toolbar{flex-wrap:wrap;gap:.2rem}
+.store-toolbar>div:first-child{width:100%}
+.store-toolbar-actions{width:100%;justify-content:space-between}
+.store-screen .live-chart{height:65px}
+.store-screen .live-last{grid-column:1/-1}
+}
+@media (min-width:850px) and (max-height:800px) and (max-width:1400px) and (orientation:landscape){
+.store-pace-card{gap:0;padding:.2rem .3rem}
+.store-pace-card small{font-size:.6rem}
+.store-pace-card>small:first-of-type{white-space:nowrap}
+.store-pace-cards{gap:.2rem}
+.store-screen .store-pace{padding:.3rem .45rem}
+}
+
+/* Tactical panels first; the sales breakdown grows with the page. */
+.store-screen{height:auto;min-height:100dvh;overflow:visible}
+.store-layout{flex:none;overflow:visible;align-items:start}
+.store-left-column{overflow:visible}
+.store-screen .live-store-grid{overflow:visible}
+.store-screen .live-store-header h2{display:none}
+.store-left-column .live-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}
+.store-flow-pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.65rem}
+.store-orders{height:clamp(320px,55dvh,650px);max-height:none;min-width:0}
+#store-sales-breakdown{border:1px solid #dbe4e8;border-radius:12px;padding:1rem;min-width:0}
+#store-sales-breakdown [hidden]{display:none!important}
+#store-sales-breakdown details>summary{display:none}
+#store-sales-breakdown details>p{margin:0 0 .65rem!important}
+.store-sales-panels{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:1.25rem;align-items:start}
+.store-sales-panels>div{min-width:0}
+.store-category-panel{max-height:none;overflow:visible}
+.store-category-panel>button{white-space:normal;height:auto;min-height:38px}
+#store-sales-breakdown .live-chart{height:220px;margin:.5rem 0}
+#store-sales-breakdown .live-chart-title{font-size:1rem;margin:0}
+#store-sales-breakdown .live-category{font-size:.9rem;margin:.65rem 0 0}
+#store-sales-breakdown .live-category td,#store-sales-breakdown .live-category th{padding:.45rem .3rem}
+@media(min-width:850px) and (max-width:1400px) and (max-height:800px) and (orientation:landscape){
+.store-orders{height:clamp(300px,58dvh,480px)}
+#store-sales-breakdown{padding:.6rem}
+#store-sales-breakdown .live-chart{height:145px}
+}
+@media(min-width:600px) and (max-width:1000px) and (orientation:portrait){
+.store-screen{padding:.65rem;gap:.6rem}
+.store-layout{grid-template-columns:1fr;gap:.6rem}
+.store-left-column{gap:.6rem}
+.store-toolbar{gap:.4rem}.store-toolbar .title{font-size:1.3rem!important}
+.store-toolbar-actions{width:100%;gap:.4rem}
+.store-screen .live-store{padding:.65rem}
+.store-screen .live-kpis{margin:.4rem 0}
+.store-screen .live-empty{padding:.35rem 0}
+.store-screen .live-now{padding:.45rem .6rem;display:grid;grid-template-columns:auto 1fr;gap:.15rem .7rem;align-items:center}
+.store-screen .live-now strong{margin:0;font-size:1.15rem}
+.store-screen .live-last{margin:0}
+.store-intake,.store-pace{padding:.5rem .65rem}
+.store-intake-value{font-size:1.35rem}
+.store-pace{gap:.4rem}
+.store-pace-card{padding:.35rem .5rem}
+.store-orders{height:clamp(320px,42dvh,520px)}
+#store-sales-breakdown .live-chart{height:180px}
+}
+@media(min-width:1401px),(min-width:1000px) and (min-height:801px){
+.store-screen{padding:1.25rem;gap:1rem}
+.store-layout{gap:1.25rem}
+.store-screen .live-kpis strong{font-size:1.65rem}
+.store-screen .live-chart{height:240px}
+.store-orders{height:clamp(420px,58dvh,780px)}
+.store-sales-panels{gap:1.5rem}
+#store-sales-breakdown .live-chart{height:260px}
+}
+@media(max-width:599px){
+.store-left-column .live-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+.store-sales-panels{grid-template-columns:1fr;gap:.75rem}
+.store-orders{height:380px}
+#store-sales-breakdown{padding:.65rem}
+.store-flow-pair{gap:.4rem}
+.store-intake{padding:.5rem}
+.store-intake-value{font-size:1.2rem}
+}

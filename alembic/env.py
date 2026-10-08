@@ -26,7 +26,6 @@ if config.config_file_name is not None:
 # target_metadata = mymodel.Base.metadata
 from database import Base
 import models
-import launch_models
 import kitchen_models
 
 target_metadata = Base.metadata

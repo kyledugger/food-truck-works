@@ -124,3 +124,25 @@ and calendar timestamps are omitted. Item text is approximately 18px, modifier
 text 17px, and callout notes 20px at the default browser font size. Preparation
 state labels remain visible to coordinate claims and completions. No additional
 migration is required for this layout update.
+
+## Landscape tablet layout
+
+Landscape displays at least 850 CSS pixels wide use a compact two-column layout.
+Sales/tips/order/item totals share one row; hourly sales and category totals sit
+side by side, followed by intake/completion and order pace. Browser checks at
+1280x625 and 960x650 confirm both flow metrics and all three pace groups fit
+without scrolling the page. Long category tables and kitchen queues scroll in
+their own panels. Shorter viewports retain independent left-panel scrolling.
+Kitchen item/modifier/callout font sizes and touch controls remain legible.
+Portrait/mobile layouts remain stacked. No database migration for this change.
+
+## Responsive tactical-first layout
+
+Hourly sales and category totals now appear below the tactical summary and
+kitchen queue. Category rows grow naturally with the page, without a nested
+scrollbar. Tablet landscape stays compact; tablet portrait stacks the summary
+and queue while preserving paired flow cards and three pace groups; roomy PC
+viewports use larger metrics and charts. The kitchen queue retains an independent
+scroll area. Validation covers 1280x625, 960x650, 800x1100, 1920x1080 and mobile,
+with 18 categories and 25 kitchen tickets, including access revocation cleanup
+of the relocated sales breakdown. No additional migration is required.

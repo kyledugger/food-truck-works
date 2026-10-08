@@ -46,6 +46,13 @@
     const table=el('table','live-category'),head=el('thead'),tr=el('tr');
     ['Category','Qty','Sales','Share'].forEach(label=>tr.append(el('th','',label)));head.append(tr);
     const rows=el('tbody');table.append(head,rows);details.append(table);body.append(details);root.append(body);grid.append(root);
+    if(storeView){
+      const panels=el('div','store-sales-panels'),salesPanel=el('div'),categoryPanel=el('div','store-category-panel');
+      salesPanel.append(details.querySelector('.live-chart-title'),hourlyWrap);
+      const products=details.querySelector('button');if(products)categoryPanel.append(products);
+      categoryPanel.append(table);panels.append(salesPanel,categoryPanel);details.append(panels);
+      document.getElementById('store-sales-breakdown').append(details);
+    }
     const card={root,name,date,badge,message,body,fields,labels,now,recent,pace,last,warning,details,avg,rows,hourly,activity,activityWrap,activityTitle,charts:{}};
     details.addEventListener('toggle',()=>{if(details.open && card.data)drawCharts(card,card.data);});
     cards.set(id,card);return card;
@@ -73,6 +80,7 @@
     for(const s of data.stores){
       alive.add(s.id);const c=cards.get(s.id)||makeCard(s.id);c.name.textContent=s.name;
       c.message.hidden=true;c.body.hidden=false;c.badge.textContent='';
+      if(storeView)c.details.hidden=!!s.setup_required||!!(s.loading??data.initializing);
       if(s.setup_required){c.date.textContent='Setup needed';c.body.hidden=true;c.message.hidden=false;c.message.textContent=s.message;continue;}
       c.data=s;c.date.textContent=s.date+' · '+s.timezone;
       const when=s.historical?'on this date':'today';
@@ -93,7 +101,7 @@
       if(!s.categories.length){const tr=el('tr'),td=el('td','','No items sold '+when);td.colSpan=4;tr.append(td);c.rows.append(tr);}
       if(c.details.open)drawCharts(c,s);
     }
-    for(const [id,c]of cards){if(!alive.has(id)){Object.values(c.charts).forEach(chart=>chart.destroy());c.root.remove();cards.delete(id);}}
+    for(const [id,c]of cards){if(!alive.has(id)){Object.values(c.charts).forEach(chart=>chart.destroy());c.root.remove();if(storeView)c.details.remove();cards.delete(id);}}
     let text;
     if(!data.connected)text='Connect Poynt to see store sales.';
     else if(!data.stores.length)text='Add or activate stores in Store Settings to start tracking today.';
@@ -118,7 +126,7 @@
       const response=await fetch('/dashboard/data?'+new URLSearchParams(storeView?{date:'today',store_id:storeView}:{date:requestedSelection}),{credentials:'same-origin',cache:'no-store',signal:controller.signal});
       if(response.status===401){location.assign('/login');return;}
       if(response.status===403){
-        clearInterval(timer);for(const c of cards.values()){Object.values(c.charts).forEach(chart=>chart.destroy());c.root.remove();}cards.clear();
+        clearInterval(timer);for(const c of cards.values()){Object.values(c.charts).forEach(chart=>chart.destroy());c.root.remove();if(storeView)c.details.remove();}cards.clear();
         if(enable)enable.hidden=true;
         document.getElementById('live-mode').textContent='Access denied';refreshed.textContent='';
         document.dispatchEvent(new Event('store-access-denied'));
@@ -138,7 +146,7 @@
   document.addEventListener('kitchen-queue-changed',()=>{if(storeView)refresh();});
   function choose(value){
     selection=value;const url=new URL(location.href);if(value==='today')url.searchParams.delete('date');else url.searchParams.set('date',value);history.replaceState({},'',url);
-    for(const c of cards.values()){Object.values(c.charts).forEach(chart=>chart.destroy());c.root.remove();}cards.clear();
+    for(const c of cards.values()){Object.values(c.charts).forEach(chart=>chart.destroy());c.root.remove();if(storeView)c.details.remove();}cards.clear();
     if(dateInput)dateInput.value=value==='today'?lastData?.latest_date||'':value;updateArrows();
     if(controller)controller.abort();status.hidden=false;status.className='notification is-light';status.textContent='Loading selected date…';document.getElementById('live-mode')?.classList.remove('live-mode-active');start();
   }
