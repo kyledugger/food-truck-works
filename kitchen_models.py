@@ -1,6 +1,6 @@
 """Anonymous preparation state, independent of POS payment/fulfillment state."""
 from datetime import datetime
-from sqlalchemy import ForeignKey, String, Text, JSON, UniqueConstraint, Index
+from sqlalchemy import ForeignKey, String, Text, JSON, UniqueConstraint, Index, CheckConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 from database import Base
 from instant_type import UTCInstant
@@ -38,3 +38,12 @@ class KitchenAction(Base):
     # Authenticated account for audit only; claims remain anonymous in the UI.
     actor_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     details: Mapped[dict] = mapped_column(JSON)
+
+
+class KitchenTimerProfile(Base):
+    __tablename__ = "kitchen_timer_profiles"
+    __table_args__ = (CheckConstraint("green_seconds >= 0 AND green_seconds < yellow_seconds AND yellow_seconds < red_seconds AND red_seconds <= 86400", name="ck_kitchen_timer_bands"),)
+    store_id: Mapped[int] = mapped_column(ForeignKey("organization_stores.id", ondelete="CASCADE"), primary_key=True)
+    green_seconds: Mapped[int] = mapped_column(default=0)
+    yellow_seconds: Mapped[int] = mapped_column(default=300)
+    red_seconds: Mapped[int] = mapped_column(default=600)

@@ -84,6 +84,8 @@ def sync_ticket(session, order, now=None):
             for field in ("state", "claimed_at", "done_at"):
                 item[field] = old[field]
     state = ticket_state(incoming) if eligible else "cancelled"
+    if state == "active" and ticket.state == "held":
+        state = "held"
     if ticket.items != incoming or ticket.state != state or ticket.store_id != store.id or ticket.notes != notes or ticket.customer_name != customer_name:
         details = {"before": ticket.items, "after": incoming, "before_state": ticket.state, "after_state": state,
                    "before_notes": ticket.notes, "after_notes": notes}
@@ -109,6 +111,20 @@ def transition(session, ticket, action, item_key, expected_revision, actor_user_
     if not targets:
         raise HTTPException(404, "Item no longer exists.")
     now = now or utc_now()
+    if action in {"hold", "resume"}:
+        if item_key is not None or ticket.state != ("active" if action == "hold" else "held"):
+            raise HTTPException(409, "Only active orders can be held; only held orders can be resumed.")
+        new_state = "held" if action == "hold" else "active"
+        result = session.execute(update(KitchenTicket).where(KitchenTicket.id == ticket.id,
+            KitchenTicket.revision == expected_revision).values(state=new_state, updated_at=now,
+            revision=expected_revision+1).execution_options(synchronize_session=False))
+        if result.rowcount != 1:
+            raise HTTPException(409, "Order changed on another screen. Refresh and try again.")
+        session.add(KitchenAction(ticket_id=ticket.id, at=now, action=action, revision=expected_revision+1,
+            actor_user_id=actor_user_id, details={"before_state": ticket.state, "after_state": new_state}))
+        return expected_revision+1
+    if ticket.state == "held":
+        raise HTTPException(409, "Resume this order before preparing or completing it.")
     changed = False
     for item in targets:
         state = item["state"]

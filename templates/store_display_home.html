@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{{ store.display_name or store.poynt_name }} · Store Home{% endblock %}
-{% block head %}<link rel="stylesheet" href="/static/css/store-dashboard.css?v=20261008-cards-1">{% endblock %}
+{% block head %}<link rel="stylesheet" href="/static/css/store-dashboard.css?v=20261008-hold-1">{% endblock %}
 {% block content %}
 <main class="store-home">
     <header class="store-home-header">
@@ -13,14 +13,15 @@
     <section class="store-home-content" aria-labelledby="store-home-title">
         <p class="store-home-eyebrow">Store home</p>
         <h1 id="store-home-title" class="title is-2">{{ store.display_name or store.poynt_name }}</h1>
+        <p class="subtitle is-6">Choose what you need.</p>
         <div class="store-home-actions">
-            <a href="/poynt/claim-tips?store_id={{ store.store_id|urlencode }}" class="store-home-action">
-                <span class="store-home-action-title">Claim Tips</span>
-                <span>Divide and submit your shift's tips.</span>
-            </a>
-            <a href="/dashboard/stores/{{ store.id }}/kitchen-display" class="store-home-action store-home-kitchen-display">
+            <a href="/dashboard/stores/{{ store.id }}/kitchen-display" class="store-home-action">
                 <span class="store-home-action-title">Kitchen Display</span>
                 <span>Prepare orders without displaying sales.</span>
+            </a>
+            <a href="/poynt/claim-tips?store_id={{ store.store_id|urlencode }}" class="store-home-action store-home-claim">
+                <span class="store-home-action-title">Claim Tips</span>
+                <span>Divide and submit your shift's tips.</span>
             </a>
             <form method="post" action="/dashboard/stores/{{ store.id }}/show">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -30,6 +31,7 @@
                 </button>
             </form>
         </div>
+        <p class="store-home-note">Performance stays visible until you select Hide Performance.</p>
     </section>
 </main>
 {% endblock %}

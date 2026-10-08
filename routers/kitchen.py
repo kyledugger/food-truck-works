@@ -5,15 +5,16 @@ from datetime import timedelta
 from typing import Literal
 from urllib.parse import urlsplit
 from zoneinfo import ZoneInfo
+from types import SimpleNamespace
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field
-from sqlalchemy import select, func, String
+from sqlalchemy import select, func, String, delete
 from sqlalchemy.exc import SQLAlchemyError
 from database import SessionLocal
 from models import OrganizationStore, PoyntConnection
 from live_dashboard_models import DashboardOrder
-from kitchen_models import KitchenTicket
+from kitchen_models import KitchenTicket, KitchenAction, KitchenTimerProfile
 from kitchen_service import sync_ticket, transition, serialize
 from live_dashboard_metrics import kitchen_intake, instant
 from store_time import utc_now, utc_iso, local_day_bounds
@@ -43,6 +44,8 @@ def scope(request, session, store_id):
         OrganizationStore.organization_id == organization_id, OrganizationStore.is_active.is_(True)))
     if store is None:
         raise HTTPException(404, "Store not found.")
+    if "/kitchen-test" in getattr(getattr(request, "url", None), "path", ""):
+        return store, SimpleNamespace(business_id=f"kitchen-test:{store.id}")
     connection = session.scalar(select(PoyntConnection).where(PoyntConnection.organization_id == organization_id))
     if connection is None:
         raise HTTPException(409, "Connect Poynt to receive kitchen orders.")
@@ -55,6 +58,7 @@ def filters(store, connection):
 
 
 @router.get("/dashboard/stores/{store_id}/kitchen")
+@router.get("/dashboard/stores/{store_id}/kitchen-test")
 def queue(request: Request, store_id: int):
     now = utc_now()
     try:
@@ -74,7 +78,7 @@ def queue(request: Request, store_id: int):
             for order in orders:
                 sync_ticket(session, order, now)
             session.flush()
-            active = session.scalars(select(KitchenTicket).where(*filters(store, connection), KitchenTicket.state == "active")
+            active = session.scalars(select(KitchenTicket).where(*filters(store, connection), KitchenTicket.state.in_(["active", "held"]))
                 .order_by(KitchenTicket.created_at, KitchenTicket.id)).all()
             recent = session.scalars(select(KitchenTicket).where(*filters(store, connection), KitchenTicket.state == "ready",
                 KitchenTicket.ready_at >= now-timedelta(hours=2)).order_by(KitchenTicket.ready_at.desc()).limit(20)).all()
@@ -83,8 +87,9 @@ def queue(request: Request, store_id: int):
                 DashboardOrder.business_id == connection.business_id, DashboardOrder.store_id == store.store_id,
                 DashboardOrder.created_at >= now-timedelta(minutes=30), DashboardOrder.created_at <= now)).all()
             completed_tickets = session.scalars(select(KitchenTicket).where(*filters(store, connection),
-                KitchenTicket.state.in_(["active", "ready"]), KitchenTicket.updated_at >= now-timedelta(minutes=15))).all()
+                KitchenTicket.state.in_(["active", "held", "ready"]), KitchenTicket.updated_at >= now-timedelta(minutes=15))).all()
             result = {"active": [serialize(t) for t in active], "recent": [serialize(t) for t in recent],
+                      "timer_profile": timer_profile(session, store.id),
                       "generated_at": utc_iso(now), "timezone": store.timezone_name,
                       "flow": {"window_minutes": 15,
                                "intake": kitchen_intake([o.payload for o in flow_orders], now, 15),
@@ -95,14 +100,7 @@ def queue(request: Request, store_id: int):
         raise HTTPException(503, "Kitchen queue unavailable. Check the kitchen migration and database.")
 
 
-class Action(BaseModel):
-    action: Literal["claim", "done", "release", "undo"]
-    revision: int = Field(ge=1)
-    item_key: str | None = Field(default=None, min_length=64, max_length=64)
-
-
-@router.post("/dashboard/stores/{store_id}/kitchen/{ticket_id}")
-def act(request: Request, store_id: int, ticket_id: int, body: Action):
+def check_csrf(request):
     csrf = request.session.get("kitchen_csrf")
     supplied = request.headers.get("x-kitchen-csrf", "")
     if not csrf or not secrets.compare_digest(csrf, supplied):
@@ -110,6 +108,79 @@ def act(request: Request, store_id: int, ticket_id: int, body: Action):
     origin = request.headers.get("origin")
     if origin and urlsplit(origin).netloc != request.headers.get("host"):
         raise HTTPException(403, "Invalid request origin.")
+
+
+def timer_profile(session, store_id):
+    profile = session.get(KitchenTimerProfile, store_id)
+    return {name: getattr(profile, name) if profile else default for name, default in
+        [("green_seconds", 0), ("yellow_seconds", 300), ("red_seconds", 600)]}
+
+
+class TimerProfile(BaseModel):
+    green_seconds: int = Field(ge=0, le=86400)
+    yellow_seconds: int = Field(ge=0, le=86400)
+    red_seconds: int = Field(ge=0, le=86400)
+
+
+@router.post("/dashboard/stores/{store_id}/kitchen-profile")
+def save_timer_profile(request: Request, store_id: int, body: TimerProfile):
+    check_csrf(request)
+    if not body.green_seconds < body.yellow_seconds < body.red_seconds:
+        raise HTTPException(422, "Thresholds must increase: green, yellow, then red.")
+    from routers.live_dashboard import sales_authorized
+    organization_id, role = sales_authorized(request, store_id)
+    if role not in {"owner", "manager"}:
+        raise HTTPException(403, "An owner or manager must change the timer profile.")
+    with SessionLocal() as session:
+        store = session.scalar(select(OrganizationStore).where(OrganizationStore.id == store_id,
+            OrganizationStore.organization_id == organization_id, OrganizationStore.is_active.is_(True)))
+        if store is None:
+            raise HTTPException(404, "Store not found.")
+        profile = session.get(KitchenTimerProfile, store_id)
+        if profile is None:
+            profile = KitchenTimerProfile(store_id=store_id)
+            session.add(profile)
+        for name, value in body.model_dump().items():
+            setattr(profile, name, value)
+        session.commit()
+    return JSONResponse(body.model_dump(), headers={"Cache-Control": "no-store"})
+
+
+class TestOrders(BaseModel):
+    action: Literal["add", "clear"]
+    count: int = Field(default=1, ge=1, le=25)
+    scenario: Literal["mixed", "large"] = "mixed"
+
+
+@router.post("/dashboard/stores/{store_id}/kitchen-test/orders")
+def test_orders(request: Request, store_id: int, body: TestOrders):
+    check_csrf(request)
+    from kitchen_simulation import add_samples
+    with SessionLocal() as session:
+        store, connection = scope(request, session, store_id)
+        if body.action == "clear":
+            ids = select(KitchenTicket.id).where(*filters(store, connection))
+            session.execute(delete(KitchenAction).where(KitchenAction.ticket_id.in_(ids)))
+            session.execute(delete(KitchenTicket).where(*filters(store, connection)))
+        else:
+            active = session.scalar(select(func.count(KitchenTicket.id)).where(*filters(store, connection), KitchenTicket.state.in_(["active", "held"])))
+            if active + body.count > 100:
+                raise HTTPException(409, "Test queue is full. Complete or clear orders first.")
+            add_samples(session, store, connection.business_id, body.count, body.scenario, request.session["user_id"])
+        session.commit()
+    return JSONResponse({"ok": True}, headers={"Cache-Control": "no-store"})
+
+
+class Action(BaseModel):
+    action: Literal["claim", "done", "release", "undo", "hold", "resume"]
+    revision: int = Field(ge=1)
+    item_key: str | None = Field(default=None, min_length=64, max_length=64)
+
+
+@router.post("/dashboard/stores/{store_id}/kitchen/{ticket_id}")
+@router.post("/dashboard/stores/{store_id}/kitchen-test/{ticket_id}")
+def act(request: Request, store_id: int, ticket_id: int, body: Action):
+    check_csrf(request)
     try:
         with SessionLocal() as session:
             store, connection = scope(request, session, store_id)
@@ -139,10 +210,11 @@ def stamp(request, store_id):
     with SessionLocal() as session:
         store, connection = scope(request, session, store_id)
         return tuple(session.execute(select(func.count(KitchenTicket.id), func.coalesce(func.sum(KitchenTicket.revision), 0),
-            func.coalesce(func.max(KitchenTicket.id), 0), func.max(KitchenTicket.updated_at).cast(String)).where(*filters(store, connection))).one())
+            func.coalesce(func.max(KitchenTicket.id), 0), func.max(KitchenTicket.updated_at).cast(String)).where(*filters(store, connection))).one()) + tuple(timer_profile(session, store.id).values())
 
 
 @router.get("/dashboard/stores/{store_id}/kitchen/events")
+@router.get("/dashboard/stores/{store_id}/kitchen-test/events")
 async def events(request: Request, store_id: int):
     try:
         await asyncio.to_thread(stamp, request, store_id)

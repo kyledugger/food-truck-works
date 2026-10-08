@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{{ store.display_name or store.poynt_name }} · Live Store{% endblock %}
-{% block head %}<link rel="stylesheet" href="/static/css/live-dashboard.css?v=20261005-8"><link rel="stylesheet" href="/static/css/store-dashboard.css?v=20261008-cards-1">{% endblock %}
+{% block head %}<link rel="stylesheet" href="/static/css/live-dashboard.css?v=20261005-8"><link rel="stylesheet" href="/static/css/store-dashboard.css?v=20261008-hold-1">{% endblock %}
 {% block content %}
 <main class="store-screen">
     <header class="store-toolbar">
@@ -44,4 +44,4 @@ window.addEventListener('pagehide', () => { document.body.style.visibility = 'hi
 window.addEventListener('pageshow', event => {
     if (event.persisted) window.location.replace(hidePerformance.href);
 });
-</script><script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.min.js"></script><script src="/static/js/store-dashboard.js?v=20261008-cards-1" defer></script><script src="/static/js/kitchen-display.js?v=20261008-cards-1" defer></script><script src="/static/js/live-dashboard.js?v=20261008-cards-1" defer></script>{% endblock %}
+</script><script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.min.js"></script><script src="/static/js/store-dashboard.js?v=20261008-cards-1" defer></script><script src="/static/js/kitchen-display.js?v=20261008-hold-1" defer></script><script src="/static/js/live-dashboard.js?v=20261008-cards-1" defer></script>{% endblock %}

@@ -1,23 +1,27 @@
-.kitchen-board{height:100dvh;padding:.65rem;display:flex;flex-direction:column;gap:.55rem;background:#eef1f4;color:#25313e;overflow:hidden}
+.kitchen-board{height:100dvh;padding:.65rem;display:flex;flex-direction:column;gap:.55rem;background:#cccccc;color:#25313e;overflow:hidden}
 .board-toolbar{display:flex;justify-content:space-between;align-items:center;gap:.6rem;flex-wrap:wrap}
 .board-toolbar h1{font-size:1.2rem;font-weight:700}.board-toolbar #kitchen-count{font-size:.85rem;color:#516169}
 .board-toolbar nav{display:flex;gap:.4rem}.board-toolbar .button,.board-navigation .button{min-height:40px}
 .board-toolbar p{font-size:.8rem}.board-navigation{display:flex;align-items:center;gap:.4rem;font-size:.8rem}.board-navigation span{margin-right:auto}
 .kitchen-board .board-orders{flex:1;min-height:0;height:auto;max-height:none;border:0;padding:0;border-radius:0;overflow:auto;scroll-snap-type:x proximity}
 .board-orders #store-order-feed,#kitchen-recent-feed{display:flex;gap:.65rem;align-items:flex-start;width:max-content;min-width:100%;padding-bottom:.5rem}
-.kitchen-board .kitchen-ticket{width:320px;flex:0 0 320px;background:#fff;border:1px solid #bac5d0;border-radius:10px;overflow:hidden;padding:0;scroll-snap-align:start;box-shadow:0 2px 5px #25313e12}
+.kitchen-board .kitchen-ticket{width:290px;flex:0 0 290px;background:#fff;border:1px solid #bac5d0;border-radius:10px;overflow:hidden;padding:0;scroll-snap-align:start;box-shadow:0 2px 5px #25313e12}
 .kitchen-board .store-order-head{background:#e8edf3;padding:.6rem .65rem;align-items:flex-start;font-size:1.05rem;border-bottom:3px solid #66717d}
 .kitchen-board .ticket-in-progress .store-order-head{background:#e7f0fc;border-bottom-color:#355fa8}
 .kitchen-board .ticket-ready .store-order-head{background:#e6eeea;border-bottom-color:#435f50}
 .kitchen-board .board-callout{font-size:1.3rem;font-weight:800;width:100%;overflow-wrap:anywhere}
-.kitchen-board .kitchen-elapsed{font-size:.95rem}.kitchen-board .kitchen-callout{font-size:1rem;margin:.4rem .5rem}
+.kitchen-board .kitchen-elapsed{font-size:1rem;line-height:1.2}.kitchen-board .kitchen-callout{font-size:1rem;margin:.4rem .5rem}
 .kitchen-board .kitchen-order-actions{padding:0 .5rem;margin:.35rem 0}
 .kitchen-board .kitchen-ticket table{margin:0;font-size:1.1rem;table-layout:fixed}
-.kitchen-board .kitchen-ticket .kitchen-item-name{width:58%}.kitchen-board .kitchen-ticket .kitchen-item-actions{width:42%}
+.kitchen-board .kitchen-ticket .kitchen-item-name{width:100%}
 .kitchen-board .kitchen-ticket td{padding:.4rem .45rem}.kitchen-board .kitchen-modifier{font-size:1rem}
 .kitchen-board .kitchen-ticket .kitchen-action{min-height:40px;font-size:.85rem;margin:.15rem .1rem .15rem 0;padding:.35rem .4rem}
 .kitchen-board #kitchen-recent{flex-shrink:0;background:#fff;border-radius:8px;padding:.4rem .6rem;max-height:40dvh;overflow:auto}
 .kitchen-board #kitchen-recent>p{font-size:.75rem;margin:.35rem 0}
 .kitchen-board .live-empty{padding:1rem}
-@media(min-width:1500px){.kitchen-board .kitchen-ticket{width:360px;flex-basis:360px}}
-@media(max-width:599px){.kitchen-board .kitchen-ticket{width:min(320px,calc(100vw - 1.3rem));flex-basis:min(320px,calc(100vw - 1.3rem))}.board-toolbar h1{font-size:1rem}.board-toolbar .button{font-size:.8rem}}
+@media(max-width:599px){.kitchen-board .kitchen-ticket{width:min(290px,calc(100vw - 1.3rem));flex-basis:min(290px,calc(100vw - 1.3rem))}.board-toolbar h1{font-size:1rem}.board-toolbar .button{font-size:.8rem}}
+.board-test-controls{display:flex;flex-wrap:wrap;align-items:center;gap:.4rem;background:#fff3cd;border:2px solid #946200;border-radius:8px;padding:.45rem;flex-shrink:0;font-size:.9rem}
+.board-test-controls strong{color:#674400}.board-test-controls .button{font-size:.85rem;min-height:38px}.board-test-controls select{padding:.4rem;border:1px solid #697586;border-radius:4px;background:white}#test-message{flex-basis:100%;font-size:.8rem}
+.kitchen-board .kitchen-ticket .kitchen-row-buttons .kitchen-action{height:32px;min-height:32px;font-size:.8rem;margin:0;padding:.2rem .35rem}
+.kitchen-board .kitchen-state{padding:0;line-height:1.2;font-size:.78rem}.kitchen-board .kitchen-row-buttons{margin-top:2px}
+#timer-dialog{margin:auto;padding:1.2rem;border:1px solid #bac5d0;border-radius:10px;width:min(440px,90vw);color:#25313e;background:white}#timer-dialog::backdrop{background:#25313e88}#timer-dialog h2{font-size:1.2rem;font-weight:700}#timer-dialog p{font-size:.9rem;margin:.5rem 0}#timer-dialog label{display:flex;justify-content:space-between;align-items:center;margin:.7rem 0;gap:.5rem}#timer-dialog input{width:85px;border:1px solid #697586;border-radius:4px;padding:.3rem}

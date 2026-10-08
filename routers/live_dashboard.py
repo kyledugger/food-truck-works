@@ -93,7 +93,7 @@ def store_display_home(request: Request, store_id: int):
 
 
 @router.get("/dashboard/stores/{store_id}/kitchen-display")
-def kitchen_display(request: Request, store_id: int):
+def kitchen_display(request: Request, store_id: int, test: bool = False):
     organization_id, role = sales_authorized(request, store_id)
     with SessionLocal() as session:
         store = session.scalar(select(OrganizationStore).where(OrganizationStore.id == store_id,
@@ -101,7 +101,7 @@ def kitchen_display(request: Request, store_id: int):
         if store is None:
             raise HTTPException(404, "Store not found.")
         return templates.TemplateResponse(request=request, name="kitchen_display.html",
-            context={"store": store, "kitchen_csrf": request.session.setdefault("kitchen_csrf", secrets.token_urlsafe(32))},
+            context={"store": store, "test_mode": test, "can_edit_timer": role in {"owner", "manager"}, "kitchen_csrf": request.session.setdefault("kitchen_csrf", secrets.token_urlsafe(32))},
             headers={"Cache-Control": "no-store"})
 
 

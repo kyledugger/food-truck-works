@@ -33,6 +33,129 @@ class KitchenTests(unittest.TestCase):
         self.kitchen_patch.stop()
         DatabaseAndRoutesTests.tearDown(self)
 
+    def test_hold_resume_blocks_preparation_and_preserves_progress(self):
+        self.seed()
+        ticket=self.queue()["active"][0]
+        self.assertEqual(self.action(ticket,"claim",ticket["items"][0]["key"]).status_code,200)
+        ticket=self.queue()["active"][0]
+        original=ticket["created_at"]
+        self.assertEqual(self.action(ticket,"hold").status_code,200)
+        held=self.queue()["active"][0]
+        self.assertEqual(held["state"],"held")
+        self.assertEqual(held["created_at"],original)
+        self.assertEqual(held["items"][0]["state"],"claimed")
+        for action,key in [("done",None),("claim",held["items"][1]["key"]),("release",held["items"][0]["key"]),("undo",None)]:
+            self.assertEqual(self.action(held,action,key).status_code,409)
+        self.seed(notes="New instruction")
+        held=self.queue()["active"][0]
+        self.assertEqual(held["state"],"held")
+        self.assertEqual(self.action(held,"resume").status_code,200)
+        resumed=self.queue()["active"][0]
+        self.assertEqual(resumed["state"],"active")
+        self.assertEqual(resumed["items"][0]["state"],"claimed")
+        self.assertEqual(resumed["created_at"],original)
+        self.assertEqual(self.action(held,"resume").status_code,409)
+        self.assertEqual(self.action(resumed,"done").status_code,200)
+        self.assertEqual(self.action(self.queue()["recent"][0],"hold").status_code,409)
+
+    def test_timer_profile_shared_validated_and_owner_manager_only(self):
+        self.assertEqual(self.queue()["timer_profile"],{"green_seconds":0,"yellow_seconds":300,"red_seconds":600})
+        path="/dashboard/stores/1/kitchen-profile"
+        profile={"green_seconds":0,"yellow_seconds":120,"red_seconds":240}
+        self.assertEqual(self.client.post(path,json=profile).status_code,403)
+        headers={"X-Kitchen-CSRF":self.csrf}
+        request=SimpleNamespace(session={"user_id":1,"organization_id":1})
+        before=kitchen.stamp(request,1)
+        self.assertEqual(self.client.post(path,headers=headers,json=profile).status_code,200)
+        self.assertNotEqual(kitchen.stamp(request,1),before)
+        self.assertEqual(self.queue()["timer_profile"],profile)
+        self.assertEqual(self.client.get("/dashboard/stores/1/kitchen-test").json()["timer_profile"],profile)
+        self.assertEqual(self.client.post(path,headers=headers,json={**profile,"yellow_seconds":300,"red_seconds":200}).status_code,422)
+        self.assertEqual(self.client.post("/dashboard/stores/2/kitchen-profile",headers=headers,json=profile).status_code,404)
+        with self.factory() as session:
+            session.scalar(select(OrganizationMember).where(OrganizationMember.user_id==1)).role="manager";session.commit()
+        self.assertEqual(self.client.post(path,headers=headers,json=profile).status_code,200)
+        DatabaseAndRoutesTests.provision_display(self)
+        self.client.post("/logout")
+        self.client.post("/login/store-display",data={"organization_code":"ftw-1","username":"truck-screen","password":"screen-password-123"})
+        page=self.client.get("/dashboard/stores/1/kitchen-display")
+        self.assertNotIn('id="timer-settings"',page.text)
+        token=re.search(r'data-csrf="([^"]+)"',page.text).group(1)
+        self.assertEqual(self.client.post(path,headers={"X-Kitchen-CSRF":token},json=profile).status_code,403)
+
+    def test_timer_profile_migration_roundtrip(self):
+        from kitchen_models import KitchenTimerProfile
+        KitchenTimerProfile.__table__.drop(self.engine)
+        spec=importlib.util.spec_from_file_location("timer_migration","alembic/versions/c69e1a47f358_kitchen_timer_profile.py")
+        migration=importlib.util.module_from_spec(spec);spec.loader.exec_module(migration)
+        with self.engine.begin() as connection:
+            with Operations.context(MigrationContext.configure(connection)):
+                migration.upgrade()
+                self.assertIn("kitchen_timer_profiles",inspect(connection).get_table_names())
+                migration.downgrade()
+                self.assertNotIn("kitchen_timer_profiles",inspect(connection).get_table_names())
+
+    def test_simulation_isolated_actions_clear_and_signature(self):
+        self.seed()
+        live=self.queue()["active"][0]
+        path="/dashboard/stores/1/kitchen-test"
+        headers={"X-Kitchen-CSRF":self.csrf}
+        response=self.client.post(path+"/orders",headers=headers,json={"action":"add","count":10})
+        self.assertEqual(response.status_code,200,response.text)
+        data=self.client.get(path).json()
+        self.assertEqual(len(data["active"]),10)
+        self.assertEqual(data["flow"]["intake"]["recent_items"],0)
+        self.assertTrue(all(t["number"].startswith("TEST-") for t in data["active"]))
+        times=[t["created_at"] for t in data["active"]]
+        self.assertEqual(times,sorted(times))
+        ticket=data["active"][0]
+        self.assertEqual(self.client.post(path+f"/{live['id']}",headers=headers,json={"action":"done","revision":live["revision"]}).status_code,404)
+        self.assertEqual(self.client.post(f"/dashboard/stores/1/kitchen/{ticket['id']}",headers=headers,json={"action":"done","revision":ticket["revision"]}).status_code,404)
+        for action in ["claim","release","done","undo"]:
+            current=(self.client.get(path).json()["recent"] if action=="undo" else self.client.get(path).json()["active"])
+            ticket=next(t for t in current if t["id"]==ticket["id"])
+            self.assertEqual(self.client.post(path+f"/{ticket['id']}",headers=headers,json={"action":action,"revision":ticket["revision"]}).status_code,200)
+        self.assertEqual(len(self.queue()["active"]),1)
+        self.assertEqual(self.queue()["flow"]["completion"]["completed_items"],0)
+        self.assertEqual(self.client.post(path+"/orders",headers=headers,json={"action":"clear"}).status_code,200)
+        self.assertEqual(self.client.get(path).json()["active"],[])
+        self.assertEqual(len(self.queue()["active"]),1)
+        with self.factory() as session:
+            self.assertEqual(session.scalar(select(func.count(DashboardOrder.id))),1)
+
+    def test_simulation_permissions_limits_and_large_order(self):
+        path="/dashboard/stores/1/kitchen-test"
+        headers={"X-Kitchen-CSRF":self.csrf}
+        self.assertEqual(self.client.post(path+"/orders",json={"action":"add"}).status_code,403)
+        self.assertEqual(self.client.post(path+"/orders",headers=headers,json={"action":"add","count":26}).status_code,422)
+        self.assertEqual(self.client.post(path+"/orders",headers=headers,json={"action":"add","scenario":"large"}).status_code,200)
+        self.assertEqual(len(self.client.get(path).json()["active"][0]["items"]),12)
+        page=self.client.get("/dashboard/stores/1/kitchen-display?test=true")
+        self.assertIn("TEST MODE",page.text)
+        self.assertIn('data-test="true"',page.text)
+        with self.factory() as session:
+            session.scalar(select(OrganizationMember).where(OrganizationMember.user_id==1)).role="member"
+            session.commit()
+        self.assertEqual(self.client.get(path).status_code,403)
+        self.assertEqual(self.client.post(path+"/orders",headers=headers,json={"action":"clear"}).status_code,403)
+
+    def test_simulation_display_scope_and_durable_updates(self):
+        DatabaseAndRoutesTests.provision_display(self)
+        self.client.post("/logout")
+        self.client.post("/login/store-display",data={"organization_code":"ftw-1","username":"truck-screen","password":"screen-password-123"})
+        page=self.client.get("/dashboard/stores/1/kitchen-display?test=true")
+        token=re.search(r'data-csrf="([^"]+)"',page.text).group(1)
+        headers={"X-Kitchen-CSRF":token}
+        path="/dashboard/stores/1/kitchen-test"
+        self.assertEqual(self.client.post(path+"/orders",headers=headers,json={"action":"add"}).status_code,200)
+        self.assertEqual(self.client.get(path).status_code,200)
+        self.assertEqual(self.client.post("/dashboard/stores/2/kitchen-test/orders",headers=headers,json={"action":"clear"}).status_code,403)
+        self.assertEqual(self.client.get("/dashboard/stores/2/kitchen-test").status_code,403)
+        request=SimpleNamespace(session={"user_id":1,"organization_id":1},url=SimpleNamespace(path=path))
+        before=kitchen.stamp(request,1)
+        self.client.post(path+"/orders",headers=headers,json={"action":"add"})
+        self.assertNotEqual(kitchen.stamp(request,1),before)
+
     def seed(self, oid="one", at=None, items=None, **extra):
         payload=sale(at or self.now,order_id=oid,items=items or [
             {"id":"bar","name":"Chocolate bar","sku":"BAR-CUSTOM","quantity":2,"status":"FULFILLED"},

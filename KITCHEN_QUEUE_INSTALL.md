@@ -11,7 +11,7 @@ store home, sales metrics and role restrictions are preserved.
 2. Copy files to the matching locations in your application.
 3. Check the intended database environment and its Alembic revision. This
    migration follows e25a7c03b914. In that selected environment, apply
-   `python -m alembic upgrade b58d0f36e247` before restarting workers.
+   `python -m alembic upgrade c69e1a47f358` before restarting workers.
 4. Restart the app. No new dependency or environment variable is required.
 5. Open Kitchen Display from Store Home, or click Kitchen orders in Store Performance. Test with two displays.
 
@@ -23,11 +23,10 @@ orders, sales, tips, users, existing roles or employee identities.
 
 - Anonymous row states: Available (white / circle), In progress (blue / half
   circle), Done (gray / checkmark and strikethrough). Labels supplement color.
-- Claim covers every unit on a row. Claim available on an order leaves already
-  claimed/done rows alone. Release returns a claim to Available.
+- Claim covers every unit on a row. Release returns a claim to Available.
 - Done completes a row. The final Done makes the order Ready and removes it
-  from the active queue. Complete order completes all rows; the browser asks
-  for confirmation if unclaimed rows remain. Ready does not mean Delivered.
+  from the active queue. Tapping the card header completes all rows without
+  confirmation. Ready does not mean Delivered.
 - Recently completed shows the latest 20 Ready orders from the preceding two
   hours. Undo restores their done rows to Available. Event history is retained
   beyond that recovery display window.
@@ -118,7 +117,7 @@ to the active kitchen queue. Only the embedded customer name and customerUserId 
 
 ## Compact kitchen tickets
 
-Kitchen tickets show order number, elapsed time, order note, quantity beside the
+Kitchen tickets show elapsed time, order note, quantity beside the
 item name, selected modifiers, and preparation controls. SKU, POS status, prices,
 and calendar timestamps are omitted. Item text is approximately 18px, modifier
 text 17px, and callout notes 20px at the default browser font size. Preparation
@@ -156,6 +155,33 @@ button are available. Existing claims, modifiers, notes, elapsed timers, Ready,
 Undo and live updates use the shared kitchen queue. Recent completions remain
 collapsible. The assigned-store restriction applies to this page and its data.
 
+## Kitchen practice mode
+
+Open Kitchen Display and click Test kitchen. The yellow TEST MODE banner marks
+the separate, shared test queue for this store. Use Add order, Add 10 orders,
+or Add large order (12 rows) to exercise layout, modifiers, notes and timers.
+Mixed orders range from one to five rows, with varying quantities. A batch has
+staggered elapsed times. Names and menu items are synthetic examples.
+
+Start stream adds an order immediately and then every 10, 25 or 60 seconds.
+Stop stream stops further additions from this browser. Navigating away or
+backgrounding this browser also stops its stream. Run one stream on one device;
+other devices opening Test kitchen for the same store share its orders, claims
+and completions. Refreshing the page never starts a stream automatically.
+
+Clear test orders removes this store's sample tickets and their sample action
+history only. Stop streams on other devices before clearing; another running
+stream can add new sample orders afterwards. Live kitchen returns to real work.
+Test tickets persist across reloads until cleared. Active test orders are capped
+at 100; generation pauses on errors or a full queue.
+
+Test orders use a dedicated business namespace in existing kitchen tables. They
+never enter DashboardOrder, POS, sales, tips, intake or real completion metrics.
+Claim/Done/Release/Undo, revision conflicts, SSE and polling use the same code as
+real tickets, with the same role, assigned-store and CSRF checks. A Poynt
+connection is not required for the simulation. No additional migration is needed.
+This tests local preparation and display behavior, not Poynt webhook delivery.
+
 ## Separate customer names
 
 Apply b58d0f36e247 after a47c9e25d136; it adds a nullable customer_name column.
@@ -174,3 +200,63 @@ To inspect an exported raw order locally, run:
 The diagnostic prints relevant customer/name references and notes without
 printing payment or full contact data. If only a customerUserId is returned, a
 separate customer lookup will need verification before relying on it.
+
+## Fast kitchen interaction and timer profile
+
+Claim turns the row blue immediately on this display, with a small Saving
+indicator while the request is outstanding. Other orders remain actionable;
+actions on the same order wait for its response and an authoritative refresh.
+Periodic updates do not erase a pending claim. Conflict or save failure restores
+the server state, with an error in the status line. If the queue cannot be read,
+actions pause until it reconnects. Other displays change after the server saves
+the action; optimistic feedback does not bypass revision checks or coordination.
+
+Active card headers have two separate targets: tap the name area to complete all items
+without confirmation. The separate Complete order and Claim available buttons,
+and the visible order number, are removed. Recently completed retains Undo.
+Order identifiers remain in accessible labels and the backend for troubleshooting.
+Item buttons are removed: tap anywhere on an active item row to cycle Available
+to In progress, then Done, then back to Available. Enter or Space does the same
+with keyboard focus. Each tap shows its new state immediately with a Saving
+indicator; only that order is blocked until the authoritative response arrives.
+Completed orders leave the active queue, so use Recently completed / Undo to
+restore an order whose final item was completed accidentally. Inset item dividers
+do not increase row height. Elapsed timers omit their title and use a larger badge.
+
+An owner/manager can open Timer profile on Kitchen Display. Each store has one
+shared profile, also used in Test kitchen and the store dashboard's queue.
+Green defaults to starting at 0 minutes, yellow at 5, and red at 10. Thresholds
+must increase and may use half-minute increments, up to 1440 minutes. Before the
+green threshold the badge is neutral. A circle, triangle and exclamation mark
+supplement the green/yellow/red colors. Ready timers freeze at completion time.
+Store Display accounts consume the shared profile but cannot edit it.
+
+## Compact cards and Hold
+
+Kitchen-only cards are 290px wide on tablet and desktop (narrower on very small
+screens). Timer badges use 1.0rem and share a line with the name. The page
+background is #cccccc; header colors are unchanged. Item/preparation headings
+and visible item state labels are removed, so items use the full card width.
+Blue/double-border claimed rows and gray/struck-through done rows preserve
+visual distinction. Accessible labels still describe the next item action.
+
+Tap the timer to Hold an active order, then tap it again to Resume. This is
+preparation hold, not a stopped clock: order age and timer colors keep advancing.
+Held cards show Held and a dashed outline, and their item rows and completion
+header are disabled. Existing item progress is preserved. The server also
+rejects preparation/completion while held, including stale-screen attempts.
+Hold is shared across displays through the same revision checks and live
+updates, and applies in Test kitchen too. Clicking the timer never triggers
+header completion. Cancellation can still remove a held POS ticket.
+
+Hold uses the existing ticket state field; this update requires no additional
+migration beyond the previously supplied timer profile migration. Keep your
+locally generated merge migrations when copying this cumulative patch.
+
+Apply c69e1a47f358, which follows b58d0f36e247 and creates kitchen_timer_profiles.
+No production database was accessed. If you created a merge revision after the
+previous patch, this new migration may create a second head next to that merge.
+After copying the patch, run `alembic heads`. If two heads are listed, merge
+them using `alembic merge -m "merge kitchen timer profile" FIRST_HEAD SECOND_HEAD`,
+replacing the placeholders with those listed revision IDs, then run
+`alembic upgrade head`. Include the generated merge file in your deployment.

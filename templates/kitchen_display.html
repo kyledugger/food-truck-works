@@ -1,16 +1,42 @@
 {% extends "base.html" %}
 {% block title %}{{ store.display_name or store.poynt_name }} · Kitchen{% endblock %}
-{% block head %}<link rel="stylesheet" href="/static/css/store-dashboard.css?v=20261008-cards-1"><link rel="stylesheet" href="/static/css/kitchen-board.css?v=20261008-1">{% endblock %}
+{% block head %}<link rel="stylesheet" href="/static/css/store-dashboard.css?v=20261008-hold-1"><link rel="stylesheet" href="/static/css/kitchen-board.css?v=20261008-hold-1">{% endblock %}
 {% block content %}
 <main class="kitchen-board" data-kitchen-board="true">
   <header class="board-toolbar">
     <div><h1>{{ store.display_name or store.poynt_name }} · Kitchen <span id="kitchen-count"></span></h1><p id="kitchen-status" role="status" aria-live="polite">Connecting…</p></div>
-    <nav aria-label="Kitchen controls"><a class="button" href="/dashboard/stores/{{ store.id }}/home">Store home</a><button id="store-fullscreen" class="button">Full screen</button><button id="live-refresh" class="button">Refresh</button><button id="board-left" class="button" aria-label="Scroll to older orders">← Older</button><button id="board-right" class="button" aria-label="Scroll to newer orders">Newer →</button></nav>
+    <nav aria-label="Kitchen controls"><a class="button" href="/dashboard/stores/{{ store.id }}/home">Store home</a><a class="button" href="/dashboard/stores/{{ store.id }}/kitchen-display{% if not test_mode %}?test=true{% endif %}">{{ 'Live kitchen' if test_mode else 'Test kitchen' }}</a>{% if can_edit_timer %}<button id="timer-settings" class="button">Timer profile</button>{% endif %}<button id="store-fullscreen" class="button">Full screen</button><button id="live-refresh" class="button">Refresh</button></nav>
   </header>
+  {% if test_mode %}
+  <section class="board-test-controls" aria-label="Kitchen simulation">
+    <strong>TEST MODE · Sample orders only</strong>
+    <button class="button" data-test-count="1">Add order</button>
+    <button class="button" data-test-count="10">Add 10 orders</button>
+    <button class="button" data-test-count="1" data-test-scenario="large">Add large order</button>
+    <label>New order every <select id="test-interval"><option value="10">10 seconds</option><option value="25" selected>25 seconds</option><option value="60">60 seconds</option></select></label>
+    <button id="test-stream" class="button" aria-pressed="false">Start stream</button>
+    <button id="test-clear" class="button">Clear test orders</button>
+    <span id="test-message" role="status">Open Test kitchen on another tablet to share this queue.</span>
+  </section>
+  {% endif %}
+  <div class="board-navigation"><span>Oldest on the left · Swipe to browse</span><button id="board-left" class="button" aria-label="Scroll to older orders">← Older</button><button id="board-right" class="button" aria-label="Scroll to newer orders">Newer →</button></div>
   <section class="store-orders board-orders" tabindex="0" aria-label="Active kitchen orders">
-    <div id="store-order-feed" data-kitchen="true" data-store-id="{{ store.id }}" data-csrf="{{ kitchen_csrf }}"><p>Loading orders…</p></div>
+    <div id="store-order-feed" data-kitchen="true" data-test="{{ 'true' if test_mode else 'false' }}" data-store-id="{{ store.id }}" data-csrf="{{ kitchen_csrf }}"><p>Loading orders…</p></div>
   </section>
   <details id="kitchen-recent"><summary>Recently completed <span id="kitchen-recent-count"></span></summary><p>Latest 20 from the last 2 hours · Undo returns an order to the queue.</p><div id="kitchen-recent-feed"></div></details>
 </main>
+{% if can_edit_timer %}
+<dialog id="timer-dialog" aria-labelledby="timer-profile-title">
+  <form id="timer-profile-form">
+    <h2 id="timer-profile-title">Kitchen timer profile</h2>
+    <p>Shared by this store’s displays, including Test kitchen. Each color starts at its threshold. Earlier times are neutral.</p>
+    <label>● Green from (minutes)<input id="timer-green" type="number" min="0" max="1440" step="0.5" value="0" required></label>
+    <label>▲ Yellow from (minutes)<input id="timer-yellow" type="number" min="0" max="1440" step="0.5" value="5" required></label>
+    <label>! Red from (minutes)<input id="timer-red" type="number" min="0" max="1440" step="0.5" value="10" required></label>
+    <p id="timer-message" role="status"></p>
+    <div><button id="timer-save" class="button" type="submit">Save profile</button><button id="timer-cancel" class="button" type="button">Cancel</button></div>
+  </form>
+</dialog>
+{% endif %}
 {% endblock %}
-{% block scripts %}<script src="/static/js/kitchen-display.js?v=20261008-cards-1" defer></script><script src="/static/js/kitchen-board.js?v=20261008-1" defer></script>{% endblock %}
+{% block scripts %}<script src="/static/js/kitchen-display.js?v=20261008-hold-1" defer></script><script src="/static/js/kitchen-board.js?v=20261008-hold-1" defer></script>{% endblock %}
