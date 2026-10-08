@@ -292,6 +292,19 @@ until its queued saves finish. Queued Undo or failure clears the completing
 appearance as the row states return. Normal/in-progress header backgrounds are
 white; claimed item rows retain their blue preparation distinction. No migration.
 
+## Names in notes and Store Home
+
+When a separate customer name is present, it wins and the full order note remains
+instructions. Otherwise, a leading `Name: Skye Dugger | No coconut` or
+`Name: Skye Dugger` followed by a newline and instructions provides an explicit
+multi-word name. Without that prefix, the first whitespace-delimited word is
+treated as the name and the remaining words become the order note. This is a
+display convention, not name recognition: instruction-only notes also follow
+that first-word fallback. The original cached POS note is preserved unchanged.
+Active, Held and Recently completed tickets use the same display parsing in both
+kitchen views. The performance navigation button now reads Store Home, retaining
+the existing sales-clearing/privacy behavior. No migration required.
+
 ## Performance test queue and Customer Wait
 
 Click Test queue in the Performance screen's Kitchen orders heading. Its queue

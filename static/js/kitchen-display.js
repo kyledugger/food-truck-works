@@ -11,6 +11,14 @@
   let serverTime=Date.now(),observed=performance.now(),snapshot=null;
   const el=(tag,cls,text)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=text;return n;};
   const itemIdentity=item=>JSON.stringify([item?.key,item?.name,item?.quantity,item?.modifiers||[]]);
+  function customerCallout(ticket){
+    const notes=(ticket.notes||'').trim();
+    if(ticket.customer_name)return {name:ticket.customer_name,notes};
+    const explicit=notes.match(/^name:\s*([^|\n]+)(?:[|\n]([\s\S]*))?$/i);
+    if(explicit)return {name:explicit[1].trim(),notes:(explicit[2]||'').trim()};
+    const words=notes.match(/^(\S+)(?:\s+([\s\S]*))?$/);
+    return {name:words?words[1].replace(/[:,]$/,''):'',notes:words?(words[2]||'').trim():''};
+  }
   function buttonsEnabled(){document.querySelectorAll('[data-kitchen-action]').forEach(b=>{const disabled=!available||(b.tagName==='BUTTON'&&pending.has(Number(b.dataset.ticketId)))||b.dataset.blocked==='true';if(b.tagName==='BUTTON')b.disabled=disabled;else b.setAttribute('aria-disabled',String(disabled));});}
   function tick(){
     const now=serverTime+performance.now()-observed;
@@ -32,15 +40,16 @@
   }
   function card(ticket,finished=false){
     const held=ticket.state==='held';
+    const callout=customerCallout(ticket);
     const root=el('article','store-order kitchen-ticket'+(ticket.completing?' ticket-completing':held?' ticket-held':finished?' ticket-ready':ticket.items.some(i=>i.state==='claimed')?' ticket-in-progress':'')),head=el('div','store-order-head');
     if(ticket.completing){root.setAttribute('aria-busy','true');root.setAttribute('aria-label','Order '+ticket.number+' completing; saving changes');}
-    const title=el(finished?'strong':'button','kitchen-complete-header',(held?'Ⅱ Held · ':'')+(ticket.customer_name||ticket.notes||''));
+    const title=el(finished?'strong':'button','kitchen-complete-header',(held?'Ⅱ Held · ':'')+callout.name);
     if(!finished){title.type='button';title.dataset.kitchenAction='done';title.dataset.ticketId=ticket.id;title.dataset.blocked=String(held);title.setAttribute('aria-label','Complete order '+ticket.number);title.title=held?'Resume using the timer before completing':'Tap header to complete this order';title.addEventListener('click',event=>{event.stopPropagation();act(ticket,'done',null);});head.addEventListener('click',event=>{if(event.target===head)act(ticket,'done',null);});}
     const timer=el(finished?'strong':'button','kitchen-elapsed');timer.dataset.orderCreated=ticket.created_at;timer.dataset.held=String(held);timer.dataset.orderNumber=ticket.number;
     if(!finished){timer.type='button';timer.dataset.kitchenAction=held?'resume':'hold';timer.dataset.ticketId=ticket.id;timer.title=held?'Resume preparation':'Hold preparation; order age keeps counting';timer.addEventListener('click',event=>{event.stopPropagation();act(ticket,held?'resume':'hold',null);});}
     if(finished)timer.dataset.orderReady=ticket.ready_at;
     head.append(title,timer);root.append(head);
-    if(ticket.notes&&ticket.customer_name)root.append(el('p','kitchen-callout','Order note: '+ticket.notes));
+    if(callout.notes)root.append(el('p','kitchen-callout','Order note: '+callout.notes));
     if(finished){const controls=el('div','kitchen-order-actions');controls.append(el('span','kitchen-state kitchen-done','✓ Ready'),button('Undo order',ticket,'undo'));root.append(controls);}
     const table=el('table');table.setAttribute('aria-label','Order '+ticket.number+' preparation');
     const body=el('tbody');
