@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{{ store.display_name or store.poynt_name }} · Live Store{% endblock %}
-{% block head %}<link rel="stylesheet" href="/static/css/live-dashboard.css?v=20261005-8"><link rel="stylesheet" href="/static/css/store-dashboard.css?v=20261008-responsive-2">{% endblock %}
+{% block head %}<link rel="stylesheet" href="/static/css/live-dashboard.css?v=20261005-8"><link rel="stylesheet" href="/static/css/store-dashboard.css?v=20261008-cards-1">{% endblock %}
 {% block content %}
 <main class="store-screen">
     <header class="store-toolbar">
@@ -29,7 +29,7 @@
         <div id="store-pace-cards" class="store-pace-cards"><p class="store-pace-note">Collecting order intervals…</p></div>
     </section>
     </div>
-        <section class="store-orders"><div class="kitchen-heading"><h2 class="title is-5 mb-1">Kitchen orders <span id="kitchen-count" class="is-size-7 has-text-grey"></span></h2><p class="is-size-7 has-text-grey mb-2">Oldest first · Anonymous claims · Complete means ready, not delivered.</p><p id="kitchen-status" class="is-size-7 mb-2" role="status" aria-live="polite">Connecting to the kitchen queue…</p></div><div id="store-order-feed" data-kitchen="true" data-csrf="{{ kitchen_csrf }}"><p>Loading orders…</p></div><details id="kitchen-recent"><summary>Recently completed <span id="kitchen-recent-count"></span></summary><p class="is-size-7 has-text-grey">Latest 20 from the last 2 hours. Undo returns an order to the active queue.</p><div id="kitchen-recent-feed"></div></details></section>
+        <section class="store-orders"><div class="kitchen-heading"><h2 class="title is-5 mb-1"><a href="/dashboard/stores/{{ store.id }}/kitchen-display" class="kitchen-drilldown">Kitchen orders ↗</a> <span id="kitchen-count" class="is-size-7 has-text-grey"></span></h2><p class="is-size-7 has-text-grey mb-2">Oldest first · Anonymous claims · Complete means ready, not delivered.</p><p id="kitchen-status" class="is-size-7 mb-2" role="status" aria-live="polite">Connecting to the kitchen queue…</p></div><div id="store-order-feed" data-kitchen="true" data-csrf="{{ kitchen_csrf }}"><p>Loading orders…</p></div><details id="kitchen-recent"><summary>Recently completed <span id="kitchen-recent-count"></span></summary><p class="is-size-7 has-text-grey">Latest 20 from the last 2 hours. Undo returns an order to the active queue.</p><div id="kitchen-recent-feed"></div></details></section>
     </div>
     <section id="store-sales-breakdown" aria-label="Hourly sales and category totals"></section>
     <p class="store-footnote">Sales include tax and exclude tips. Refunds reduce the original sale. Times use this store's timezone. This display updates every 15 seconds.</p>
@@ -44,4 +44,4 @@ window.addEventListener('pagehide', () => { document.body.style.visibility = 'hi
 window.addEventListener('pageshow', event => {
     if (event.persisted) window.location.replace(hidePerformance.href);
 });
-</script><script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.min.js"></script><script src="/static/js/store-dashboard.js?v=20261008-responsive-2" defer></script><script src="/static/js/kitchen-display.js?v=20261008-responsive-2" defer></script><script src="/static/js/live-dashboard.js?v=20261008-responsive-2" defer></script>{% endblock %}
+</script><script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.min.js"></script><script src="/static/js/store-dashboard.js?v=20261008-cards-1" defer></script><script src="/static/js/kitchen-display.js?v=20261008-cards-1" defer></script><script src="/static/js/live-dashboard.js?v=20261008-cards-1" defer></script>{% endblock %}

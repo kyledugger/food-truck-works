@@ -53,7 +53,7 @@ class StoreDisplayMiddleware(BaseHTTPMiddleware):
         store_path = f"/dashboard/stores/{store_id}"
         if request.method == "GET" and request.url.path in {"/", "/dashboard"}:
             return RedirectResponse(store_path + "/home", status_code=303)
-        if request.method == "GET" and request.url.path in {store_path, store_path + "/home"}:
+        if request.method == "GET" and request.url.path in {store_path, store_path + "/home", store_path + "/kitchen-display"}:
             return await call_next(request)
         if request.method == "POST" and request.url.path == store_path + "/show":
             return await call_next(request)

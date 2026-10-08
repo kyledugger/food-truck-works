@@ -78,6 +78,7 @@ def release(organization_id, token):
 
 
 def save_order(session, organization_id, business_id, order):
+    from order_preparation import customer_name
     at = instant(order.get("createdAt"))
     updated = instant(order.get("updatedAt") or order.get("createdAt"))
     order_id = str(order["id"])
@@ -93,6 +94,8 @@ def save_order(session, organization_id, business_id, order):
         session.add(row)
     # Persist reporting fields only, excluding customer/contact/payment details.
     payload = {key: order.get(key) for key in ("id", "orderNumber", "createdAt", "updatedAt", "amounts", "statuses", "notes")}
+    payload["customer_name"] = customer_name(order)
+    payload["customerUserId"] = order.get("customerUserId")
     payload["items"] = [{key: item.get(key) for key in
         ("id", "name", "sku", "quantity", "unitPrice", "discount", "status", "selectedVariants")} for item in order.get("items") or []]
     row.payload = payload

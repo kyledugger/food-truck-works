@@ -11,9 +11,9 @@ store home, sales metrics and role restrictions are preserved.
 2. Copy files to the matching locations in your application.
 3. Check the intended database environment and its Alembic revision. This
    migration follows e25a7c03b914. In that selected environment, apply
-   `python -m alembic upgrade a47c9e25d136` before restarting workers.
+   `python -m alembic upgrade b58d0f36e247` before restarting workers.
 4. Restart the app. No new dependency or environment variable is required.
-5. Open Store Performance from the store home screen and test with two displays.
+5. Open Kitchen Display from Store Home, or click Kitchen orders in Store Performance. Test with two displays.
 
 No production database operation was performed while preparing this patch.
 The migration adds kitchen_tickets and kitchen_actions. It does not change POS
@@ -37,15 +37,15 @@ orders, sales, tips, users, existing roles or employee identities.
   loads never create old tickets; previously admitted old tickets remain active.
 - Open/draft and cancelled orders are not added. Returned/cancelled item rows
   and zero quantities are omitted. Fully cancelled tickets leave the queue.
-- Names, SKUs and quantities use the existing safe order cache. This does not
-  add modifier/guest-note collection or write fulfillment state back to Poynt.
+- Names, SKUs and quantities use the existing safe order cache. Modifiers and notes are retained as described below. This does not
+  write fulfillment state back to Poynt.
 - Provider item IDs identify rows when available. Legacy rows use SKU/name plus
   occurrence; a unique match upgrades to provider IDs without losing progress.
   Ambiguous edits may reset a row conservatively. Quantity/product changes
   return that row to Available. Other unchanged rows retain their states.
 - Original UTC order creation timestamps drive elapsed timers; timers tick
   locally every second, anchored to server time. Ready durations are frozen.
-- Store Display accounts can access only their assigned store after choosing
+- Store Display accounts can access only their assigned store; kitchen access does not require showing
   Store Performance. Owners/managers can use their organization's stores.
   Member/payroll personal accounts are denied. Mutations require a session
   CSRF token, checked store access and an expected ticket revision.
@@ -114,7 +114,7 @@ a nullable notes column to kitchen_tickets. If the kitchen migration is already
 applied, only this additional migration is needed. Modifiers use existing JSON
 storage. Previously cached orders omitted these fields and must be fetched again
 from Poynt; historical reports can fetch them without admitting historical tickets
-to the active kitchen queue. No customer/payment objects are newly collected.
+to the active kitchen queue. Only the embedded customer name and customerUserId reference are retained; full customer/contact/payment objects are not added to the cache.
 
 ## Compact kitchen tickets
 
@@ -146,3 +146,31 @@ viewports use larger metrics and charts. The kitchen queue retains an independen
 scroll area. Validation covers 1280x625, 960x650, 800x1100, 1920x1080 and mobile,
 with 18 categories and 25 kitchen tickets, including access revocation cleanup
 of the relocated sales breakdown. No additional migration is required.
+
+## Dedicated kitchen display
+
+Kitchen Display opens from Store Home without showing sales. The Kitchen orders
+heading in Store Performance links to the same screen. Cards scroll horizontally
+with the oldest order on the left; arrows, touch scrolling and a Full screen
+button are available. Existing claims, modifiers, notes, elapsed timers, Ready,
+Undo and live updates use the shared kitchen queue. Recent completions remain
+collapsible. The assigned-store restriction applies to this page and its data.
+
+## Separate customer names
+
+Apply b58d0f36e247 after a47c9e25d136; it adds a nullable customer_name column.
+Embedded Poynt customer firstName/lastName (or nickName) display above the order
+number, with order notes separate underneath. Without an embedded name, the
+order note remains the header callout. Name changes preserve preparation state.
+
+The POS Customer Name button has not yet been verified against a raw order
+created with that field filled in. Poynt documents customerUserId as well as an
+embedded customer object, but a reference alone is not a name. This patch does
+not add customer API requests. Previously cached orders must be fetched again
+to acquire newly retained name fields.
+
+To inspect an exported raw order locally, run:
+`python tools/inspect_order_customer.py path/to/order.json`
+The diagnostic prints relevant customer/name references and notes without
+printing payment or full contact data. If only a customerUserId is returned, a
+separate customer lookup will need verification before relying on it.

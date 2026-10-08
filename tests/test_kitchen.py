@@ -107,6 +107,28 @@ class KitchenTests(unittest.TestCase):
                 module.upgrade()
                 self.assertIn("notes",[c["name"] for c in inspect(connection).get_columns("kitchen_tickets")])
 
+    def test_customer_name_separate_from_notes_and_no_payment_name(self):
+        self.seed(customer={"firstName":"Sarah","lastName":"Test","emails":["private@example.test"]},notes="No coconut")
+        ticket=self.queue()["active"][0]
+        self.assertEqual(ticket["customer_name"],"Sarah Test")
+        self.assertEqual(ticket["notes"],"No coconut")
+        with self.factory() as session:
+            cached=session.scalar(select(DashboardOrder)).payload
+            self.assertNotIn("customer",cached)
+            self.assertNotIn("transactions",cached)
+        self.assertEqual(self.client.get("/dashboard/stores/1/kitchen-display").status_code,200)
+        with self.factory() as session:
+            session.scalar(select(OrganizationMember).where(OrganizationMember.user_id==1)).role="member";session.commit()
+        self.assertEqual(self.client.get("/dashboard/stores/1/kitchen-display").status_code,403)
+
+    def test_customer_name_migration_roundtrip(self):
+        spec=importlib.util.spec_from_file_location("customer_migration","alembic/versions/b58d0f36e247_kitchen_customer_name.py")
+        module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+        with self.engine.begin() as connection:
+            with Operations.context(MigrationContext.configure(connection)):
+                module.downgrade();module.upgrade()
+                self.assertIn("customer_name",[c["name"] for c in inspect(connection).get_columns("kitchen_tickets")])
+
     def test_item_claim_complete_release_and_undo(self):
         self.seed()
         ticket=self.queue()["active"][0]
@@ -215,14 +237,16 @@ class KitchenTests(unittest.TestCase):
         DatabaseAndRoutesTests.provision_display(self)
         self.client.post("/logout")
         self.client.post("/login/store-display",data={"organization_code":"ftw-1","username":"truck-screen","password":"screen-password-123"})
-        self.assertEqual(self.client.get("/dashboard/stores/1/kitchen").status_code,403)
+        self.assertEqual(self.client.get("/dashboard/stores/1/kitchen").status_code,200)
         home=self.client.get("/dashboard/stores/1/home")
         token=re.search(r'name="csrf_token" value="([^"]+)"',home.text).group(1)
         self.client.post("/dashboard/stores/1/show",data={"csrf_token":token})
         self.assertEqual(self.client.get("/dashboard/stores/1/kitchen").status_code,200)
         self.assertEqual(self.client.get("/dashboard/stores/2/kitchen").status_code,403)
         self.client.get("/dashboard/stores/1/home")
-        self.assertEqual(self.client.get("/dashboard/stores/1/kitchen").status_code,403)
+        self.assertEqual(self.client.get("/dashboard/stores/1/kitchen").status_code,200)
+        self.assertEqual(self.client.get("/dashboard/stores/1/kitchen-display").status_code,200)
+        self.assertEqual(self.client.get("/dashboard/data?store_id=1").status_code,403)
         with self.factory() as s:
             user=s.scalar(select(User).where(User.account_type=="store_display"));user.is_active=False;s.commit()
         self.assertEqual(self.client.get("/dashboard/stores/1/kitchen",follow_redirects=False).status_code,401)

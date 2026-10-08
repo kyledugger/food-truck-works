@@ -24,6 +24,7 @@ class KitchenTicket(Base):
     revision: Mapped[int] = mapped_column(default=1)
     items: Mapped[list] = mapped_column(JSON)
     notes: Mapped[str | None] = mapped_column(Text)
+    customer_name: Mapped[str | None] = mapped_column(Text)
 
 
 class KitchenAction(Base):

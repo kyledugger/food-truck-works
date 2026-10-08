@@ -39,8 +39,6 @@ def completion_rate(tickets, now, minutes=15):
 def scope(request, session, store_id):
     from routers.live_dashboard import sales_authorized
     organization_id, role = sales_authorized(request, store_id)
-    if role == "store_display" and request.session.get("store_performance_id") != store_id:
-        raise HTTPException(403, "Open Store Performance from the store home screen first.")
     store = session.scalar(select(OrganizationStore).where(OrganizationStore.id == store_id,
         OrganizationStore.organization_id == organization_id, OrganizationStore.is_active.is_(True)))
     if store is None:

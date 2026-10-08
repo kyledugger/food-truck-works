@@ -1,8 +1,9 @@
 (() => {
   'use strict';
   const feed=document.getElementById('store-order-feed'),grid=document.getElementById('live-stores');
-  if(feed?.dataset.kitchen!=='true'||!grid?.dataset.storeId)return;
-  const base='/dashboard/stores/'+grid.dataset.storeId+'/kitchen';
+  const storeId=feed?.dataset.storeId||grid?.dataset.storeId,board=!!document.querySelector('[data-kitchen-board]');
+  if(feed?.dataset.kitchen!=='true'||!storeId)return;
+  const base='/dashboard/stores/'+storeId+'/kitchen';
   const recent=document.getElementById('kitchen-recent-feed'),status=document.getElementById('kitchen-status');
   let source=null,loading=false,queued=false,stopped=false,pending=false,available=false,live=false,fingerprint='',controller=null;
   let serverTime=Date.now(),observed=performance.now(),snapshot=null;
@@ -24,11 +25,13 @@
     b.addEventListener('click',()=>act(ticket,action,key));return b;
   }
   function card(ticket,finished=false){
-    const root=el('article','store-order kitchen-ticket'),head=el('div','store-order-head');
+    const root=el('article','store-order kitchen-ticket'+(finished?' ticket-ready':ticket.items.some(i=>i.state==='claimed')?' ticket-in-progress':'')),head=el('div','store-order-head');
     const timer=el('strong','kitchen-elapsed');timer.dataset.orderCreated=ticket.created_at;
     if(finished)timer.dataset.orderReady=ticket.ready_at;
+    if(board&&(ticket.customer_name||ticket.notes))head.append(el('strong','board-callout',ticket.customer_name||ticket.notes));
     head.append(el('strong','','Order '+ticket.number),timer);root.append(head);
-    if(ticket.notes)root.append(el('p','kitchen-callout','Order note: '+ticket.notes));
+    if(!board&&ticket.customer_name)root.append(el('p','kitchen-callout',ticket.customer_name));
+    if(ticket.notes&&(!board||ticket.customer_name))root.append(el('p','kitchen-callout','Order note: '+ticket.notes));
     const controls=el('div','kitchen-order-actions');
     if(finished){controls.append(el('span','kitchen-state kitchen-done','✓ Ready'),button('Undo order',ticket,'undo'));}
     else{
@@ -58,12 +61,13 @@
     serverTime=Date.parse(data.generated_at);observed=performance.now();snapshot=data;
     const next=JSON.stringify([data.active,data.recent]);
     if(next!==fingerprint){
-      fingerprint=next;const container=feed.closest('.store-orders'),scroll=container.scrollTop;
+      fingerprint=next;const container=feed.closest('.store-orders'),scroll=container.scrollTop,left=container.scrollLeft;
       feed.replaceChildren(...data.active.map(t=>card(t)));recent.replaceChildren(...data.recent.map(t=>card(t,true)));
       if(!data.active.length)feed.append(el('p','live-empty','No unfinished orders.'));
       document.getElementById('kitchen-count').textContent=data.active.length+' active';
       document.getElementById('kitchen-recent-count').textContent='('+data.recent.length+')';
       container.scrollTop=scroll;
+      container.scrollLeft=left;
     }
     tick();buttonsEnabled();
   }

@@ -38,7 +38,7 @@
 .store-home-actions form{display:flex}
 .store-home-action{width:100%;min-height:180px;border:1px solid #dbe4e8;border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.8rem;padding:2rem;font:inherit;cursor:pointer;text-align:center;color:#233f40;background:white;transition:box-shadow .15s}
 .store-home-action:hover,.store-home-action:focus-visible{box-shadow:0 8px 24px #173d3d18;outline:3px solid #25846c;outline-offset:3px}
-.store-home-claim{background:#e5f5ef;border-color:#b5dece}.store-home-action-title{font-size:1.65rem;font-weight:700}
+.store-home-kitchen-display{background:#e5f5ef;border-color:#b5dece}.store-home-action-title{font-size:1.65rem;font-weight:700}
 .store-home-note{font-size:.85rem;color:#637477;margin-top:1.5rem}
 @media(max-width:600px){.store-home{padding:1rem}.store-home-content{padding:2rem 0}.store-home-actions{grid-template-columns:1fr}.store-home-action{min-height:150px;padding:1.5rem}}
 .kitchen-order-actions{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;margin:.5rem 0}
@@ -203,3 +203,6 @@
 .store-intake{padding:.5rem}
 .store-intake-value{font-size:1.2rem}
 }
+
+.kitchen-drilldown{color:#374151}.kitchen-drilldown:hover{text-decoration:underline}.kitchen-drilldown:focus-visible{outline:3px solid #355fa8;outline-offset:3px}
+.store-home-actions{grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr))}

@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}{{ store.display_name or store.poynt_name }} · Kitchen{% endblock %}
+{% block head %}<link rel="stylesheet" href="/static/css/store-dashboard.css?v=20261008-cards-1"><link rel="stylesheet" href="/static/css/kitchen-board.css?v=20261008-1">{% endblock %}
+{% block content %}
+<main class="kitchen-board" data-kitchen-board="true">
+  <header class="board-toolbar">
+    <div><h1>{{ store.display_name or store.poynt_name }} · Kitchen <span id="kitchen-count"></span></h1><p id="kitchen-status" role="status" aria-live="polite">Connecting…</p></div>
+    <nav aria-label="Kitchen controls"><a class="button" href="/dashboard/stores/{{ store.id }}/home">Store home</a><button id="store-fullscreen" class="button">Full screen</button><button id="live-refresh" class="button">Refresh</button><button id="board-left" class="button" aria-label="Scroll to older orders">← Older</button><button id="board-right" class="button" aria-label="Scroll to newer orders">Newer →</button></nav>
+  </header>
+  <section class="store-orders board-orders" tabindex="0" aria-label="Active kitchen orders">
+    <div id="store-order-feed" data-kitchen="true" data-store-id="{{ store.id }}" data-csrf="{{ kitchen_csrf }}"><p>Loading orders…</p></div>
+  </section>
+  <details id="kitchen-recent"><summary>Recently completed <span id="kitchen-recent-count"></span></summary><p>Latest 20 from the last 2 hours · Undo returns an order to the queue.</p><div id="kitchen-recent-feed"></div></details>
+</main>
+{% endblock %}
+{% block scripts %}<script src="/static/js/kitchen-display.js?v=20261008-cards-1" defer></script><script src="/static/js/kitchen-board.js?v=20261008-1" defer></script>{% endblock %}

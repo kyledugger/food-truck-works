@@ -46,6 +46,7 @@ def sync_ticket(session, order, now=None):
         .execution_options(populate_existing=True).with_for_update())
     incoming = lines(order.payload)
     notes = str(order.payload.get("notes") or "") or None
+    customer_name = order.payload.get("customer_name") or None
     eligible = completed(order.payload) and bool(incoming)
     if ticket is None:
         start, end = local_day_bounds(now.astimezone(ZoneInfo(store.timezone_name)).date(), ZoneInfo(store.timezone_name))
@@ -56,7 +57,7 @@ def sync_ticket(session, order, now=None):
             with session.begin_nested():
                 ticket = KitchenTicket(organization_id=order.organization_id, store_id=store.id, business_id=order.business_id,
                     order_id=order.order_id, number=str(order.payload.get("orderNumber") or order.order_id)[:100],
-                    created_at=as_utc(order.created_at), updated_at=now, items=incoming, notes=notes, state="active", revision=1)
+                    created_at=as_utc(order.created_at), updated_at=now, items=incoming, notes=notes, customer_name=customer_name, state="active", revision=1)
                 session.add(ticket)
                 session.flush()
         except IntegrityError:
@@ -83,11 +84,12 @@ def sync_ticket(session, order, now=None):
             for field in ("state", "claimed_at", "done_at"):
                 item[field] = old[field]
     state = ticket_state(incoming) if eligible else "cancelled"
-    if ticket.items != incoming or ticket.state != state or ticket.store_id != store.id or ticket.notes != notes:
+    if ticket.items != incoming or ticket.state != state or ticket.store_id != store.id or ticket.notes != notes or ticket.customer_name != customer_name:
         details = {"before": ticket.items, "after": incoming, "before_state": ticket.state, "after_state": state,
                    "before_notes": ticket.notes, "after_notes": notes}
         ticket.items = incoming
         ticket.notes = notes
+        ticket.customer_name = customer_name
         ticket.state = state
         ticket.store_id = store.id
         ticket.updated_at = now
@@ -139,4 +141,4 @@ def transition(session, ticket, action, item_key, expected_revision, actor_user_
 def serialize(ticket):
     return {"id": ticket.id, "number": ticket.number, "created_at": utc_iso(ticket.created_at),
             "ready_at": utc_iso(ticket.ready_at), "state": ticket.state, "revision": ticket.revision, "items": ticket.items,
-            "notes": ticket.notes}
+            "notes": ticket.notes, "customer_name": ticket.customer_name}
