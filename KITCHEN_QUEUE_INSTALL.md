@@ -332,3 +332,19 @@ After copying the patch, run `alembic heads`. If two heads are listed, merge
 them using `alembic merge -m "merge kitchen timer profile" FIRST_HEAD SECOND_HEAD`,
 replacing the placeholders with those listed revision IDs, then run
 `alembic upgrade head`. Include the generated merge file in your deployment.
+# Editable kitchen notes (October 8)
+
+Tap the small note icon beside the timer on an unfinished order in either kitchen queue. Edit the customer name and preparation note independently. Existing single-word POS note names populate the name field automatically. Saving updates the card immediately and syncs other displays through the existing queue updates. Held orders can also be edited.
+
+These edits are FTW overrides, not POS updates. Original POS notes are retained, and later POS synchronization preserves the kitchen edits. Blank fields deliberately clear the displayed name or note. Concurrent revisions reject a stale edit instead of overwriting another screen's work; reopen the editor after a conflict.
+
+The word `allergy`, case-insensitive, in original notes, kitchen notes, customer names, item names, or modifiers adds a yellow outline and an ALLERGY label. The original-note warning remains even if the displayed note is edited. This highlights written information, not inferred allergens.
+
+Apply the new migration to your intended development database before starting the updated app:
+
+```powershell
+alembic upgrade head
+```
+
+Revision `d7a2c84e9016` follows your supplied merge `a4fdd72edc57`. It adds two nullable text columns to `kitchen_tickets`. No migration has been run against your database. Claim Tips has been removed from the Store Performance toolbar; Store Home remains unchanged.
+

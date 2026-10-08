@@ -15,7 +15,7 @@ from database import SessionLocal
 from models import OrganizationStore, PoyntConnection
 from live_dashboard_models import DashboardOrder
 from kitchen_models import KitchenTicket, KitchenAction, KitchenTimerProfile
-from kitchen_service import sync_ticket, transition, serialize
+from kitchen_service import sync_ticket, transition, serialize, edit_note
 from live_dashboard_metrics import kitchen_intake, instant
 from store_time import utc_now, utc_iso, local_day_bounds
 
@@ -186,9 +186,11 @@ def test_orders(request: Request, store_id: int, body: TestOrders):
 
 
 class Action(BaseModel):
-    action: Literal["claim", "done", "release", "undo", "hold", "resume"]
+    action: Literal["claim", "done", "release", "undo", "hold", "resume", "edit_note"]
     revision: int = Field(ge=1)
     item_key: str | None = Field(default=None, min_length=64, max_length=64)
+    notes: str | None = Field(default=None, max_length=4000)
+    customer_name: str | None = Field(default=None, max_length=200)
 
 
 @router.post("/dashboard/stores/{store_id}/kitchen/{ticket_id}")
@@ -211,7 +213,12 @@ def act(request: Request, store_id: int, ticket_id: int, body: Action):
             if ticket.revision != body.revision:
                 session.commit()
                 raise HTTPException(409, "Order changed. Review its current items before acting.")
-            revision = transition(session, ticket, body.action, body.item_key, body.revision, request.session["user_id"])
+            if body.action == "edit_note":
+                if body.item_key is not None or body.notes is None or body.customer_name is None:
+                    raise HTTPException(422, "Provide an order note and customer name.")
+                revision = edit_note(session, ticket, body.notes.strip(), body.customer_name.strip(), body.revision, request.session["user_id"])
+            else:
+                revision = transition(session, ticket, body.action, body.item_key, body.revision, request.session["user_id"])
             session.commit()
             session.refresh(ticket)
             saved = serialize(ticket)

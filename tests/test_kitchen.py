@@ -20,6 +20,31 @@ from store_time import utc_now
 
 
 class KitchenTests(unittest.TestCase):
+    def test_note_edit_persists_through_pos_sync_and_conflicts(self):
+        payload=self.seed(notes="Sarah allergy peanuts")
+        ticket=self.queue()["active"][0]
+        path=f"/dashboard/stores/1/kitchen/{ticket['id']}"
+        body={"action":"edit_note","revision":ticket["revision"],"notes":"Allergy: peanuts. No coconut.","customer_name":"Sara"}
+        headers={"X-Kitchen-CSRF":self.csrf}
+        self.assertEqual(self.client.post(path,json=body).status_code,403)
+        response=self.client.post(path,headers=headers,json=body)
+        self.assertEqual(response.status_code,200,response.text)
+        saved=response.json()["ticket"]
+        self.assertEqual(saved["kitchen_customer_name"],"Sara")
+        self.assertEqual(saved["notes"],"Sarah allergy peanuts")
+        self.assertEqual(self.client.post(path,headers=headers,json=body).status_code,409)
+        with self.factory() as session:
+            save_order(session,1,"business",payload)
+            session.commit()
+        current=self.queue()["active"][0]
+        self.assertEqual(current["kitchen_notes"],body["notes"])
+        held=self.action(current,"hold").json()["ticket"]
+        body.update(revision=held["revision"],notes="",customer_name="")
+        cleared=self.client.post(path,headers=headers,json=body).json()["ticket"]
+        self.assertEqual(cleared["state"],"held")
+        self.assertEqual(cleared["kitchen_notes"],"")
+        self.assertEqual(cleared["kitchen_customer_name"],"")
+
     def setUp(self):
         DatabaseAndRoutesTests.setUp(self)
         self.kitchen_patch=patch("routers.kitchen.SessionLocal",self.factory)

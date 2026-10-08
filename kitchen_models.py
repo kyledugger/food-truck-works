@@ -25,6 +25,8 @@ class KitchenTicket(Base):
     items: Mapped[list] = mapped_column(JSON)
     notes: Mapped[str | None] = mapped_column(Text)
     customer_name: Mapped[str | None] = mapped_column(Text)
+    kitchen_notes: Mapped[str | None] = mapped_column(Text)
+    kitchen_customer_name: Mapped[str | None] = mapped_column(Text)
 
 
 class KitchenAction(Base):

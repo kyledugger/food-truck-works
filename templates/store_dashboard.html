@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 {% block title %}{{ store.display_name or store.poynt_name }} · Live Store{% endblock %}
-{% block head %}<link rel="stylesheet" href="/static/css/live-dashboard.css?v=20261005-8"><link rel="stylesheet" href="/static/css/store-dashboard.css?v=20261008-heading-1">{% endblock %}
+{% block head %}<link rel="stylesheet" href="/static/css/live-dashboard.css?v=20261005-8"><link rel="stylesheet" href="/static/css/store-dashboard.css?v=20261008-notes-1">{% endblock %}
 {% block content %}
 <main class="store-screen">
     <header class="store-toolbar">
         <div>{% if not is_store_display %}<a href="/dashboard" class="is-size-7">← All stores</a>{% endif %}<h1 class="title is-4 mb-0">{{ store.display_name or store.poynt_name }}</h1></div>
-        <div class="store-toolbar-actions"><a id="hide-performance" href="/dashboard/stores/{{ store.id }}/home" class="button is-small is-dark">Store Home</a><a href="/poynt/claim-tips?store_id={{ store.store_id|urlencode }}" class="button is-small is-primary">Claim Tips</a><button id="store-fullscreen" class="button is-small is-light">Full screen</button><button id="live-refresh" class="button is-small is-light">Refresh</button>
+        <div class="store-toolbar-actions"><a id="hide-performance" href="/dashboard/stores/{{ store.id }}/home" class="button is-small is-dark">Store Home</a><button id="store-fullscreen" class="button is-small is-light">Full screen</button><button id="live-refresh" class="button is-small is-light">Refresh</button>
             <div class="has-text-right"><span id="live-mode" class="tag is-success is-light">Loading sales</span><p id="live-refreshed" class="is-size-7 mt-1">Connecting…</p></div>
             {% if is_store_display %}<form method="post" action="/logout"><button class="button is-small is-light">Log out</button></form>{% endif %}</div>
     </header>
@@ -50,4 +50,4 @@ window.addEventListener('pagehide', () => { document.body.style.visibility = 'hi
 window.addEventListener('pageshow', event => {
     if (event.persisted) window.location.replace(hidePerformance.href);
 });
-</script><script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.min.js"></script><script src="/static/js/store-dashboard.js?v=20261008-wait-1" defer></script><script src="/static/js/kitchen-display.js?v=20261008-name-1" defer></script><script src="/static/js/live-dashboard.js?v=20261008-cards-1" defer></script><script src="/static/js/kitchen-simulation.js?v=20261008-wait-1" defer></script>{% endblock %}
+</script><script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.min.js"></script><script src="/static/js/store-dashboard.js?v=20261008-wait-1" defer></script><script src="/static/js/kitchen-display.js?v=20261008-notes-1" defer></script><script src="/static/js/live-dashboard.js?v=20261008-cards-1" defer></script><script src="/static/js/kitchen-simulation.js?v=20261008-wait-1" defer></script>{% endblock %}

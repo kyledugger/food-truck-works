@@ -12,12 +12,23 @@
   const el=(tag,cls,text)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=text;return n;};
   const itemIdentity=item=>JSON.stringify([item?.key,item?.name,item?.quantity,item?.modifiers||[]]);
   function customerCallout(ticket){
+    if(ticket.kitchen_notes!==null&&ticket.kitchen_notes!==undefined)return {name:ticket.kitchen_customer_name||'',notes:ticket.kitchen_notes};
     const notes=(ticket.notes||'').trim();
     if(ticket.customer_name)return {name:ticket.customer_name,notes};
     const explicit=notes.match(/^name:\s*([^|\n]+)(?:[|\n]([\s\S]*))?$/i);
     if(explicit)return {name:explicit[1].trim(),notes:(explicit[2]||'').trim()};
     const words=notes.match(/^(\S+)(?:\s+([\s\S]*))?$/);
     return {name:words?words[1].replace(/[:,]$/,''):'',notes:words?(words[2]||'').trim():''};
+  }
+  function editNote(ticket){
+    if(!available||stopped||pending.has(ticket.id))return;
+    const callout=customerCallout(ticket),dialog=el('dialog','kitchen-note-editor'),form=el('form');
+    form.append(el('strong',null,'Edit order '+ticket.number));
+    const name=el('input'),notes=el('textarea');name.value=callout.name;name.maxLength=200;notes.value=callout.notes;notes.maxLength=4000;notes.rows=4;
+    const nameLabel=el('label',null,'Customer name'),noteLabel=el('label',null,'Kitchen note');nameLabel.append(name);noteLabel.append(notes);form.append(nameLabel,noteLabel);
+    const error=el('p','has-text-danger'),save=el('button','button is-primary','Save'),cancel=el('button','button','Cancel');save.type='submit';cancel.type='button';cancel.onclick=()=>dialog.close();form.append(error,save,cancel);
+    form.onsubmit=event=>{event.preventDefault();if(!available||stopped||pending.has(ticket.id)){error.textContent='Reconnect or wait for this order to finish saving.';return;}act(ticket,'edit_note',null,{notes:notes.value.trim(),customer_name:name.value.trim()});dialog.close();};
+    dialog.append(form);document.body.append(dialog);dialog.addEventListener('close',()=>dialog.remove());dialog.showModal();name.focus();
   }
   function buttonsEnabled(){document.querySelectorAll('[data-kitchen-action]').forEach(b=>{const disabled=!available||(b.tagName==='BUTTON'&&pending.has(Number(b.dataset.ticketId)))||b.dataset.blocked==='true';if(b.tagName==='BUTTON')b.disabled=disabled;else b.setAttribute('aria-disabled',String(disabled));});}
   function tick(){
@@ -49,6 +60,9 @@
     if(!finished){timer.type='button';timer.dataset.kitchenAction=held?'resume':'hold';timer.dataset.ticketId=ticket.id;timer.title=held?'Resume preparation':'Hold preparation; order age keeps counting';timer.addEventListener('click',event=>{event.stopPropagation();act(ticket,held?'resume':'hold',null);});}
     if(finished)timer.dataset.orderReady=ticket.ready_at;
     head.append(title,timer);root.append(head);
+    const allergy=/\ballergy\b/i.test([ticket.notes,ticket.kitchen_notes,ticket.customer_name,ticket.kitchen_customer_name,...ticket.items.flatMap(i=>[i.name,...(i.modifiers||[]).flatMap(m=>[m.attribute,...m.values])])].filter(Boolean).join(' '));
+    if(allergy){root.classList.add('ticket-allergy');root.append(el('strong','kitchen-allergy-label','⚠ ALLERGY'));}
+    if(!finished){const edit=el('button','kitchen-edit-note','▤');edit.type='button';edit.title='Edit customer name or kitchen note';edit.setAttribute('aria-label','Edit customer name or note for order '+ticket.number);edit.dataset.kitchenAction='edit_note';edit.dataset.ticketId=ticket.id;edit.onclick=event=>{event.stopPropagation();editNote(ticket);};head.append(edit);}
     if(callout.notes)root.append(el('p','kitchen-callout','Order note: '+callout.notes));
     if(finished){const controls=el('div','kitchen-order-actions');controls.append(el('span','kitchen-state kitchen-done','✓ Ready'),button('Undo order',ticket,'undo'));root.append(controls);}
     const table=el('table');table.setAttribute('aria-label','Order '+ticket.number+' preparation');
@@ -79,6 +93,7 @@
     for(const queue of pending.values()){
       const ticket=structuredClone(queue.confirmed);
       for(const op of queue.ops){
+        if(op.action==='edit_note'){ticket.kitchen_notes=op.extra.notes;ticket.kitchen_customer_name=op.extra.customer_name;continue;}
         if(op.action==='hold'||op.action==='resume'){ticket.state=op.action==='hold'?'held':'active';continue;}
         for(const item of ticket.items){if(op.key&&item.key!==op.key)continue;item.state=op.action==='claim'?(item.state==='available'?'claimed':item.state):op.action==='done'?'done':'available';item.saving=true;}
       }
@@ -125,13 +140,13 @@
     }catch(error){if(!stopped){available=false;document.dispatchEvent(new Event('kitchen-flow-unavailable'));buttonsEnabled();status.textContent=(error.name==='AbortError'?'Queue refresh timed out.':error.message)+' Actions paused until the queue reconnects.';}}
     finally{clearTimeout(timeout);controller=null;loading=false;}
   }
-  async function act(ticket,action,key){
+  async function act(ticket,action,key,extra={}){
     if(!available||stopped)return;
     if(pending.has(ticket.id)&&!key)return;
-    if(ticket.state==='held'&&action!=='resume')return;
+    if(ticket.state==='held'&&action!=='resume'&&action!=='edit_note')return;
     const existing=pending.get(ticket.id),queue=existing||{confirmed:structuredClone(ticket),ops:[]};
     const item=key?ticket.items.find(i=>i.key===key):null;
-    queue.ops.push({action,key,from:item?.state,identity:key?itemIdentity(item):null});
+    queue.ops.push({action,key,extra,from:item?.state,identity:key?itemIdentity(item):null});
     pending.set(ticket.id,queue);if(snapshot)render(snapshot,true);
     if(!existing)saveQueue(ticket.id,queue);
   }
@@ -152,7 +167,7 @@
       if(op.key&&(item?.state!==op.from||itemIdentity(item)!==op.identity))throw new Error('Item changed while saving. Review the current order before continuing.');
       const response=await fetch(base+'/'+id,{method:'POST',credentials:'same-origin',
         headers:{'Content-Type':'application/json','X-Kitchen-CSRF':feed.dataset.csrf},
-        body:JSON.stringify({action:op.action,revision:ticket.revision,item_key:op.key}),signal:AbortSignal.timeout(10000)});
+        body:JSON.stringify({action:op.action,revision:ticket.revision,item_key:op.key,...op.extra}),signal:AbortSignal.timeout(10000)});
       if(response.status===401||response.status===403){revoke();document.dispatchEvent(new Event('store-access-denied'));return;}
       const data=await response.json();if(!response.ok)throw new Error(data.detail||'Action could not be saved.');
       let saved=data.ticket;

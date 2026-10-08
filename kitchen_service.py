@@ -154,7 +154,25 @@ def transition(session, ticket, action, item_key, expected_revision, actor_user_
     return expected_revision+1
 
 
+def edit_note(session, ticket, notes, customer_name, expected_revision, actor_user_id):
+    if ticket.state == "cancelled":
+        raise HTTPException(409, "This order was cancelled.")
+    now = utc_now()
+    result = session.execute(update(KitchenTicket).where(KitchenTicket.id == ticket.id,
+        KitchenTicket.revision == expected_revision).values(kitchen_notes=notes,
+        kitchen_customer_name=customer_name, updated_at=now, revision=expected_revision+1)
+        .execution_options(synchronize_session=False))
+    if result.rowcount != 1:
+        raise HTTPException(409, "Order changed on another screen. Reopen the note before saving.")
+    session.add(KitchenAction(ticket_id=ticket.id, at=now, action="edit_note",
+        revision=expected_revision+1, actor_user_id=actor_user_id,
+        details={"before_notes": ticket.kitchen_notes, "after_notes": notes,
+                 "before_name": ticket.kitchen_customer_name, "after_name": customer_name}))
+    return expected_revision+1
+
+
 def serialize(ticket):
     return {"id": ticket.id, "number": ticket.number, "created_at": utc_iso(ticket.created_at),
             "ready_at": utc_iso(ticket.ready_at), "state": ticket.state, "revision": ticket.revision, "items": ticket.items,
-            "notes": ticket.notes, "customer_name": ticket.customer_name}
+            "notes": ticket.notes, "customer_name": ticket.customer_name,
+            "kitchen_notes": ticket.kitchen_notes, "kitchen_customer_name": ticket.kitchen_customer_name}
