@@ -241,7 +241,9 @@ async def enable_webhook(request: Request):
     if origin and urlsplit(origin).netloc != request.headers.get("host"):
         raise HTTPException(403, "Invalid request origin.")
     secret, url = os.getenv("POYNT_WEBHOOK_SECRET"), os.getenv("POYNT_WEBHOOK_URL")
-    if not secret or len(secret) < 32 or not url or urlsplit(url).scheme != "https" or urlsplit(url).path != "/webhooks/poynt/orders":
+    if (not secret or len(secret) < 32 or not url or urlsplit(url).scheme != "https"
+            or urlsplit(url).path != "/webhooks/poynt/orders" or not urlsplit(url).hostname
+            or urlsplit(url).query or urlsplit(url).fragment or urlsplit(url).username or urlsplit(url).password):
         raise HTTPException(400, "Configure POYNT_WEBHOOK_SECRET (at least 32 characters) and the HTTPS POYNT_WEBHOOK_URL first.")
     credentials = get_poynt_credentials(organization_id)
     if not credentials:
@@ -262,7 +264,7 @@ async def enable_webhook(request: Request):
             if state and state.hook_id:
                 return {"registered": True}
         client = PoyntClient(credentials, organization_id)
-        result = await client.register_order_webhook(url, secret)
+        result = await client.register_order_webhook(url.rstrip("/") + "/" + str(organization_id), secret)
         if not result.get("id"):
             raise PoyntAPIError("Missing webhook ID")
         with SessionLocal() as session:
@@ -279,6 +281,7 @@ async def enable_webhook(request: Request):
 
 
 @router.post("/webhooks/poynt/orders", include_in_schema=False)
+@router.post("/webhooks/poynt/orders/{organization_id:int}", include_in_schema=False)
 async def order_webhook(request: Request):
     secret = os.getenv("POYNT_WEBHOOK_SECRET")
     if not secret:
@@ -305,9 +308,17 @@ async def order_webhook(request: Request):
     except (ValueError, TypeError):
         raise HTTPException(400, "Invalid order notification.")
     with SessionLocal() as session:
-        connections = session.scalars(select(PoyntConnection).where(PoyntConnection.business_id == data["businessId"])).all()
+        # A registered hook belongs to one organization. Business ID alone is
+        # ambiguous when several independently authorized accounts share a POS.
+        target_org = request.path_params.get("organization_id")
+        criteria = [PoyntConnection.business_id == data["businessId"],
+            DashboardSync.business_id == data["businessId"], DashboardSync.hook_id == data["hookId"]]
+        if target_org is not None:
+            criteria.append(PoyntConnection.organization_id == target_org)
+        connections = session.scalars(select(PoyntConnection).join(DashboardSync,
+            DashboardSync.organization_id == PoyntConnection.organization_id).where(*criteria)).all()
         if len(connections) != 1:
-            raise HTTPException(409, "Poynt business must belong to exactly one organization.")
+            raise HTTPException(403, "Webhook does not match an active organization connection and registration.")
         connection = connections[0]
         state = ensure_sync(session, connection.organization_id, connection.business_id)
         if state.hook_id and state.hook_id != data["hookId"]:

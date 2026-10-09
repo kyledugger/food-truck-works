@@ -211,7 +211,7 @@ class DatabaseAndRoutesTests(unittest.TestCase):
                 PoyntConnection(organization_id=1,business_id="business",access_token="unused",expires_at=now+timedelta(days=1)),
                 OrganizationStore(organization_id=1,store_id="truck",poynt_name="Truck",timezone_name="America/Phoenix"),
                 OrganizationStore(organization_id=2,store_id="truck",poynt_name="Other",timezone_name="America/Phoenix"),
-                DashboardSync(organization_id=1,business_id="business",last_reconciled_at=now,next_reconcile_at=now+timedelta(minutes=5))]);s.commit()
+                DashboardSync(organization_id=1,business_id="business",hook_id="hook",last_reconciled_at=now,next_reconcile_at=now+timedelta(minutes=5))]);s.commit()
         app=FastAPI();app.add_middleware(StoreDisplayMiddleware);app.add_middleware(SessionMiddleware,secret_key="test-secret");app.include_router(routes.router)
         app.include_router(store_displays.router);app.include_router(auth_routes.router)
         @app.get("/test-login")
@@ -420,9 +420,9 @@ class DatabaseAndRoutesTests(unittest.TestCase):
             rows=s.scalars(select(DashboardOrder)).all();self.assertEqual(len(rows),1)
             self.assertEqual(rows[0].payload["amounts"]["netTotal"],2083);self.assertNotIn("customer",rows[0].payload)
 
-    def signed(self,data):
+    def signed(self,data,path="/webhooks/poynt/orders"):
         raw=json.dumps(data).encode();sig=base64.b64encode(hmac.new(b"s"*40,raw,hashlib.sha1).digest()).decode()
-        return self.client.post("/webhooks/poynt/orders",content=raw,headers={"Poynt-Webhook-Signature":sig})
+        return self.client.post(path,content=raw,headers={"Poynt-Webhook-Signature":sig})
 
     def notification(self,**changes):
         data={"id":"notification","businessId":"business","resourceId":"a","hookId":"hook",
@@ -441,9 +441,34 @@ class DatabaseAndRoutesTests(unittest.TestCase):
             self.assertIsNotNone(s.scalar(select(DashboardNotification)).processed_at)
             self.assertEqual(s.scalar(select(func.count()).select_from(DashboardOrder)),1)
 
+    def test_shared_business_hooks_are_routed_without_broadcast(self):
+        with self.factory() as s:
+            s.add(PoyntConnection(organization_id=2,business_id="business",access_token="unused",expires_at=utc_now()+timedelta(days=1)))
+            s.add(DashboardSync(organization_id=2,business_id="business",hook_id="second"));s.commit()
+        one=self.notification()
+        two=self.notification(hookId="second")
+        self.assertEqual(self.signed(one).status_code,200) # Existing callback remains valid.
+        self.assertEqual(self.signed(one,"/webhooks/poynt/orders/1").status_code,200)
+        self.assertEqual(self.signed(two,"/webhooks/poynt/orders/2").status_code,200)
+        self.assertEqual(self.signed(two,"/webhooks/poynt/orders/1").status_code,403)
+        self.assertEqual(self.signed(one,"/webhooks/poynt/orders/2").status_code,403)
+        self.assertEqual(self.signed(self.notification(hookId="unknown")).status_code,403)
+        with self.factory() as s:
+            self.assertEqual(s.scalar(select(func.count()).select_from(DashboardNotification)),2)
+            s.get(DashboardSync,2).business_id="replacement";s.commit()
+        self.assertEqual(self.signed(two,"/webhooks/poynt/orders/2").status_code,403)
+
+    def test_unregistered_or_disconnected_hook_is_rejected(self):
+        with self.factory() as s:s.get(DashboardSync,1).hook_id=None;s.commit()
+        self.assertEqual(self.signed(self.notification(),"/webhooks/poynt/orders/1").status_code,403)
+        with self.factory() as s:
+            s.get(DashboardSync,1).hook_id="hook"
+            s.delete(s.scalar(select(PoyntConnection)));s.commit()
+        self.assertEqual(self.signed(self.notification()).status_code,403)
+
     def test_signed_wrong_app_hook_and_cross_business(self):
         self.assertEqual(self.signed(self.notification(applicationId="other")).status_code,400)
-        self.assertEqual(self.signed(self.notification(businessId="unknown")).status_code,409)
+        self.assertEqual(self.signed(self.notification(businessId="unknown")).status_code,403)
         with self.factory() as s:s.get(DashboardSync,1).hook_id="expected";s.commit()
         self.assertEqual(self.signed(self.notification()).status_code,403)
 
@@ -478,6 +503,7 @@ class DatabaseAndRoutesTests(unittest.TestCase):
         with self.factory() as s:self.assertIsNotNone(s.get(DashboardSync,1).last_reconciled_at)
 
     def test_enable_manager_auth_and_registration(self):
+        with self.factory() as s:s.get(DashboardSync,1).hook_id=None;s.commit()
         self.assertEqual(self.client.post("/dashboard/webhook/enable").status_code,401)
         self.client.get("/test-login")
         self.assertEqual(self.client.post("/dashboard/webhook/enable").status_code,403)
@@ -486,6 +512,7 @@ class DatabaseAndRoutesTests(unittest.TestCase):
             self.assertEqual(response.status_code,200)
             self.client.post("/dashboard/webhook/enable",headers={"X-Requested-With":"FoodTruckWorks"})
             self.assertEqual(mock.await_count,1)
+            self.assertEqual(mock.call_args.args[0],"https://example.test/webhooks/poynt/orders/1")
         with self.factory() as s:
             s.scalar(select(OrganizationMember)).role="member";s.commit()
         self.assertEqual(self.client.post("/dashboard/webhook/enable",headers={"X-Requested-With":"FoodTruckWorks"}).status_code,403)

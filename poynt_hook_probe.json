@@ -1,0 +1,81 @@
+{
+  "business_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+  "organization_id": 1,
+  "application_id": "urn:aid:9f26d55d-243e-411a-9619-3d85116a90a1",
+  "delivery_url": "https://foodtruckworks.com/webhooks/poynt/orders?ftw_probe=c3ab9559488d4d95b518edc576d4b866",
+  "before_ids": [
+    "4672d922-f396-4677-904c-2398ccc3e72c",
+    "48ba655b-cc12-459e-8d41-5d5cae7866ac",
+    "d9ccd98f-df0b-4adf-a556-b2df0eb14267",
+    "0931f9f3-a525-4425-a6ae-1e4da4c46cb2",
+    "a5ea8625-8be1-4107-8b15-eb4d066a9715"
+  ],
+  "before_hooks": [
+    {
+      "id": "4672d922-f396-4677-904c-2398ccc3e72c",
+      "applicationId": "urn:aid:072d6a8f-0b90-4cf7-995b-ff33e0e92a27",
+      "businessId": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+      "eventTypes": [
+        "ORDER_OPENED",
+        "ORDER_CANCELLED",
+        "ORDER_COMPLETED",
+        "ORDER_UPDATED"
+      ],
+      "active": true,
+      "deliveryUrl": "https://sms.appkogent.com/hooks/orderCRUD"
+    },
+    {
+      "id": "48ba655b-cc12-459e-8d41-5d5cae7866ac",
+      "applicationId": "urn:aid:526160da-a802-4c3a-8992-f1d790951dc7",
+      "businessId": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+      "eventTypes": [
+        "ORDER_UPDATED",
+        "ORDER_COMPLETED",
+        "ORDER_CANCELLED",
+        "ORDER_OPENED"
+      ],
+      "active": true,
+      "deliveryUrl": "https://onlinestore.godaddy.com/api/v1/global/poynt/events"
+    },
+    {
+      "id": "d9ccd98f-df0b-4adf-a556-b2df0eb14267",
+      "applicationId": "urn:aid:526160da-a802-4c3a-8992-f1d790951dc7",
+      "businessId": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+      "eventTypes": [
+        "ORDER_UPDATED",
+        "ORDER_COMPLETED",
+        "ORDER_CANCELLED",
+        "ORDER_OPENED"
+      ],
+      "active": true,
+      "deliveryUrl": "https://onlinestore.godaddy.com/api/v1/global/poynt/events"
+    },
+    {
+      "id": "0931f9f3-a525-4425-a6ae-1e4da4c46cb2",
+      "applicationId": "urn:aid:526160da-a802-4c3a-8992-f1d790951dc7",
+      "businessId": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+      "eventTypes": [
+        "TRANSACTION_REFUNDED",
+        "TRANSACTION_CAPTURED",
+        "TRANSACTION_VOIDED"
+      ],
+      "active": true,
+      "deliveryUrl": "https://gopay-webhooks.godaddy.com/v1/webhook/poynt"
+    },
+    {
+      "id": "a5ea8625-8be1-4107-8b15-eb4d066a9715",
+      "applicationId": "urn:aid:9f26d55d-243e-411a-9619-3d85116a90a1",
+      "businessId": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+      "eventTypes": [
+        "ORDER_OPENED",
+        "ORDER_COMPLETED",
+        "ORDER_CANCELLED",
+        "ORDER_UPDATED"
+      ],
+      "active": true,
+      "deliveryUrl": "https://foodtruckworks.com/webhooks/poynt/orders"
+    }
+  ],
+  "started_at": "2026-10-09T08:29:07.421378+00:00",
+  "hook_id": "5312bb71-0464-4779-b389-c8c48a84ca45"
+}
