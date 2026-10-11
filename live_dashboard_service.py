@@ -16,6 +16,7 @@ from poynt.connection import get_poynt_credentials
 from store_time import utc_now, utc_iso, local_day_bounds
 
 logger = logging.getLogger(__name__)
+RECONCILE_SECONDS = 30
 
 
 def ensure_sync(session, organization_id, business_id):
@@ -106,15 +107,17 @@ def save_order(session, organization_id, business_id, order):
     sync_ticket(session, row)
 
 
-async def process_organization(organization_id, business_id, token):
+async def process_organization(organization_id, business_id, token, refresh_only=False):
     credentials = get_poynt_credentials(organization_id)
     if not credentials or credentials.business_id != business_id:
+        if refresh_only:
+            raise ValueError("Poynt connection changed")
         return
     client = PoyntClient(credentials, organization_id)
     now = utc_now()
     with SessionLocal() as session:
         state = session.get(DashboardSync, organization_id)
-        reconcile = state.next_reconcile_at <= now
+        reconcile = refresh_only or state.next_reconcile_at <= now
         stores = session.scalars(select(OrganizationStore).where(
             OrganizationStore.organization_id == organization_id, OrganizationStore.is_active.is_(True))).all()
         valid = []
@@ -135,6 +138,9 @@ async def process_organization(organization_id, business_id, token):
             DashboardDay.next_load_at <= now, DashboardDay.requested_at >= now - timedelta(minutes=5)
         ).order_by(DashboardDay.next_load_at).limit(1)).all()]
     # Notifications first; reconciliation may be a larger initial fetch.
+    if refresh_only:
+        pending = []
+        historical_days = []
     for notification_id, order_id in pending:
         try:
             order = await client.get_order(order_id)
@@ -198,7 +204,7 @@ async def process_organization(organization_id, business_id, token):
             for order in orders:
                 save_order(session, organization_id, business_id, order)
             state.last_reconciled_at = utc_now()
-            state.next_reconcile_at = utc_now() + timedelta(minutes=5)
+            state.next_reconcile_at = utc_now() + timedelta(seconds=RECONCILE_SECONDS)
             state.error = None
             cutoff = utc_now() - timedelta(days=90)
             session.execute(delete(DashboardOrder).where(DashboardOrder.organization_id == organization_id,
@@ -212,7 +218,7 @@ async def process_organization(organization_id, business_id, token):
         with SessionLocal() as session:
             state = owned_state(session, organization_id, business_id, token)
             if state:
-                state.next_reconcile_at = utc_now() + timedelta(minutes=5)
+                state.next_reconcile_at = utc_now() + timedelta(seconds=RECONCILE_SECONDS)
                 session.commit()
 
 

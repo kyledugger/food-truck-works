@@ -1,0 +1,168 @@
+{
+  "organization_id": 1,
+  "business_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+  "export_mode": "diagnostic",
+  "orders": [
+    {
+      "id": "7fa12470-0d4b-4a8a-8f6b-136957c80981",
+      "orderNumber": "688",
+      "createdAt": "2026-10-09T23:35:31Z",
+      "updatedAt": "2026-10-09T23:35:33Z",
+      "owner": "urn:com.godaddy:commerce.order",
+      "externalId": "Order_F1csIlF5wfI9Cpvsu31D2pfY9Cf",
+      "statuses": {
+        "fulfillmentStatus": "FULFILLED",
+        "status": "COMPLETED",
+        "transactionStatusSummary": "COMPLETED"
+      },
+      "valid": true,
+      "accepted": true,
+      "context": {
+        "businessId": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+        "storeId": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+        "channelId": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+        "source": "WEB",
+        "transactionInstruction": "NONE"
+      },
+      "transactions": [
+        {
+          "id": "23057965-01a1-1000-fe78-27772e2196c5",
+          "createdAt": "2026-10-09T23:35:23Z",
+          "updatedAt": "2026-10-10T01:59:32Z",
+          "status": "CAPTURED",
+          "action": "SALE",
+          "voided": false,
+          "context": {
+            "businessId": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "storeId": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "channelId": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "source": "INSTORE",
+            "sourceApp": "com.godaddy.pointofsale",
+            "storeDeviceId": "urn:tid:5112d39a-f8d0-317f-83f2-d066d3920816",
+            "businessType": "MERCHANT",
+            "transactionInstruction": "ONLINE_AUTH_REQUIRED"
+          }
+        }
+      ],
+      "items": [
+        {
+          "id": 1,
+          "name": "Almond Addiction Signature Bar",
+          "sku": "BR-LMNDDDCTN",
+          "externalId": "LineItem_3KTkQc1fejMN3tRlDCD8LiKX2Hf",
+          "externalProductId": "984183ad-6cb7-493b-b90d-239ca60f7298",
+          "quantity": 1.0,
+          "status": "FULFILLED",
+          "createdAt": "2026-10-09T23:35:31Z",
+          "updatedAt": "2026-10-09T23:35:33Z",
+          "selectedVariants": []
+        },
+        {
+          "id": 2,
+          "name": "Oreo Obsession Signature Bar",
+          "sku": "BAR-OREOOBSESSION",
+          "productId": "3153fc37-6432-4b3f-97a1-b32423bc2925",
+          "externalId": "LineItem_3KTkQjUvOCK9XbkjPypfQcZErzS",
+          "externalProductId": "4ee0248a-73f8-4304-be68-0b1263333691",
+          "quantity": 1.0,
+          "status": "FULFILLED",
+          "createdAt": "2026-10-09T23:35:31Z",
+          "updatedAt": "2026-10-09T23:35:33Z",
+          "selectedVariants": []
+        }
+      ]
+    },
+    {
+      "id": "23aa6888-01a1-1000-5018-bfb21f8ffe96",
+      "orderNumber": "10817",
+      "createdAt": "2026-10-10T02:40:35Z",
+      "updatedAt": "2026-10-10T02:40:35Z",
+      "externalId": "Order_3KU6wBjTbMdrRDYJPzHVNwCZOGc",
+      "statuses": {
+        "fulfillmentStatus": "FULFILLED",
+        "status": "COMPLETED",
+        "transactionStatusSummary": "COMPLETED"
+      },
+      "valid": true,
+      "accepted": true,
+      "context": {
+        "businessId": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+        "storeId": "6440e3cd-757f-4e2d-8076-d4895722f044",
+        "channelId": "c1cdba40-55b5-4053-b0f1-2f2a7f8eeff6",
+        "source": "INSTORE",
+        "sourceApp": "co.poynt.register",
+        "storeDeviceId": "urn:tid:f281ce19-d12d-304f-8f32-bbe68a0018c9",
+        "transactionInstruction": "NONE"
+      },
+      "transactions": [
+        {
+          "id": "23abc1b4-01a1-1000-5f8e-bca2ef058c7c",
+          "createdAt": "2026-10-10T02:37:02Z",
+          "updatedAt": "2026-10-10T02:37:04Z",
+          "status": "CAPTURED",
+          "action": "SALE",
+          "voided": false,
+          "context": {
+            "businessId": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "storeId": "6440e3cd-757f-4e2d-8076-d4895722f044",
+            "channelId": "c1cdba40-55b5-4053-b0f1-2f2a7f8eeff6",
+            "source": "INSTORE",
+            "sourceApp": "co.poynt.register",
+            "storeDeviceId": "urn:tid:f281ce19-d12d-304f-8f32-bbe68a0018c9",
+            "businessType": "MERCHANT",
+            "transactionInstruction": "ONLINE_AUTH_REQUIRED"
+          }
+        }
+      ],
+      "items": [
+        {
+          "id": 1,
+          "name": "Skinny Dip Signature Banana",
+          "sku": "BAN-SKNNY-DP",
+          "productId": "1f3b95e5-735f-445a-a735-6ac3ff24ed65",
+          "externalId": "LineItem_3KU6wCHFIk3nJDFSThJ2iabM88V",
+          "quantity": 1.0,
+          "status": "FULFILLED",
+          "createdAt": "2026-10-10T02:40:35Z",
+          "updatedAt": "2026-10-10T02:40:35Z",
+          "selectedVariants": []
+        },
+        {
+          "id": 2,
+          "name": "Shark Bite Energy Drink",
+          "sku": "ENE-SharkBite",
+          "productId": "39858968-a932-4374-a0fa-fc5b12511c1d",
+          "externalId": "LineItem_3KU6wDZ0EsnPJwW3quzGQLVvJVg",
+          "quantity": 1.0,
+          "status": "FULFILLED",
+          "createdAt": "2026-10-10T02:40:35Z",
+          "updatedAt": "2026-10-10T02:40:35Z",
+          "selectedVariants": [
+            {
+              "createdAt": "2026-10-10T02:40:35Z",
+              "updatedAt": "2026-10-10T02:40:35Z",
+              "price": {
+                "currency": "USD"
+              },
+              "selectableVariations": [
+                {
+                  "values": [
+                    {
+                      "priceDelta": {
+                        "amount": 0,
+                        "currency": "USD"
+                      },
+                      "name": "Caffeine Free"
+                    }
+                  ],
+                  "attribute": "Base"
+                }
+              ],
+              "sku": "ENE-SharkBite"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

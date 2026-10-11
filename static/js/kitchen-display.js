@@ -167,20 +167,24 @@
     document.getElementById('kitchen-count').textContent='';document.getElementById('kitchen-recent-count').textContent='';
     status.textContent='Kitchen access changed. Sign in again.';
   }
-  async function refresh(force=false){
+  async function refresh(force=false,provider=false){
     if(stopped||document.hidden)return;
-    if(loading){await refreshTask;if(force===true)return refresh(true);return;}
-    refreshTask=load();await refreshTask;
+    if(loading){await refreshTask;if(force===true||provider)return refresh(force,provider);return;}
+    refreshTask=load(provider);await refreshTask;
   }
-  async function load(){
-    loading=true;controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),10000);
+  async function load(provider=false){
+    loading=true;controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),provider?65000:10000);
+    const button=document.getElementById('live-refresh');
+    if(provider){if(button)button.disabled=true;status.textContent='Checking Poynt for current orders…';}
     try{
-      const response=await fetch(base,{credentials:'same-origin',cache:'no-store',signal:controller.signal});
+      const response=await fetch(provider?base+'/refresh':base,{method:provider?'POST':'GET',
+        headers:provider?{'X-Kitchen-CSRF':feed.dataset.csrf}:{},credentials:'same-origin',cache:'no-store',signal:controller.signal});
       if(response.status===401||response.status===403){revoke();document.dispatchEvent(new Event('store-access-denied'));return;}
       const data=await response.json();if(!response.ok)throw new Error(data.detail||'Queue could not refresh.');
       available=true;render(data);status.textContent=live?(feed.dataset.test==='true'?'Shared test kitchen updates':'Live kitchen updates'):'Kitchen updates · polling fallback every 5 seconds';
+      if(provider)document.dispatchEvent(new Event('kitchen-queue-changed'));
     }catch(error){if(!stopped){available=false;document.dispatchEvent(new Event('kitchen-flow-unavailable'));buttonsEnabled();status.textContent=(error.name==='AbortError'?'Queue refresh timed out.':error.message)+' Actions paused until the queue reconnects.';}}
-    finally{clearTimeout(timeout);controller=null;loading=false;}
+    finally{clearTimeout(timeout);controller=null;loading=false;if(provider&&button)button.disabled=stopped;}
   }
   async function act(ticket,action,key,extra={}){
     if(!available||stopped)return;
@@ -230,7 +234,7 @@
   }
   document.addEventListener('store-access-denied',revoke);
   document.addEventListener('visibilitychange',()=>{if(document.hidden){source?.close();source=null;live=false;}else{refresh();connect();}});
-  document.getElementById('live-refresh')?.addEventListener('click',refresh);
+  document.getElementById('live-refresh')?.addEventListener('click',()=>refresh(true,feed.dataset.test!=='true'));
   document.addEventListener('store-data',refresh);
   window.addEventListener('pagehide',()=>{stopped=true;soundOn=false;audioContext?.close().catch(()=>{});source?.close();controller?.abort();feed.replaceChildren();recent.replaceChildren();});
   setInterval(()=>{if(!document.hidden)tick();},1000);

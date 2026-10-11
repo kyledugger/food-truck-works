@@ -124,6 +124,53 @@ def check_csrf(request):
         raise HTTPException(403, "Invalid request origin.")
 
 
+@router.post("/dashboard/stores/{store_id}/kitchen/refresh")
+async def refresh_orders(request: Request, store_id: int):
+    """Wait for a provider check, sharing the worker's organization lease."""
+    from live_dashboard_service import ensure_sync, acquire, release, process_organization, owned_state
+    from live_dashboard_models import DashboardSync
+    check_csrf(request)
+    requested_at = utc_now()
+    with SessionLocal() as session:
+        store, connection = scope(request, session, store_id)
+        if not store.timezone_name:
+            raise HTTPException(409, "Configure the store timezone first.")
+        organization_id, business_id = store.organization_id, connection.business_id
+        state = ensure_sync(session, organization_id, business_id)
+        session.commit()
+    deadline = asyncio.get_running_loop().time() + 55
+    while asyncio.get_running_loop().time() < deadline:
+        with SessionLocal() as session:
+            scope(request, session, store_id)
+            state = session.get(DashboardSync, organization_id)
+            if state and state.business_id == business_id and state.last_reconciled_at and state.last_reconciled_at >= requested_at:
+                return queue(request, store_id)
+        claim = acquire(organization_id)
+        if claim is None:
+            await asyncio.sleep(.25)
+            continue
+        claimed_business, token = claim
+        try:
+            if claimed_business != business_id:
+                raise HTTPException(409, "Poynt connection changed. Reload the page.")
+            remaining = deadline - asyncio.get_running_loop().time()
+            await asyncio.wait_for(process_organization(organization_id, business_id, token, refresh_only=True), timeout=max(.1, remaining))
+            return queue(request, store_id)
+        except HTTPException:
+            raise
+        except Exception:
+            with SessionLocal() as session:
+                state = owned_state(session, organization_id, business_id, token)
+                if state:
+                    state.error = "Order sync failed. Retrying shortly."
+                    state.next_reconcile_at = utc_now() + timedelta(seconds=60)
+                    session.commit()
+            raise HTTPException(502, "Poynt refresh failed or timed out. Try again shortly.") from None
+        finally:
+            release(organization_id, token)
+    raise HTTPException(503, "An order sync is still running. Try Refresh again shortly.")
+
+
 def timer_profile(session, store_id):
     profile = session.get(KitchenTimerProfile, store_id)
     return {name: getattr(profile, name) if profile else default for name, default in

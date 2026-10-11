@@ -20,6 +20,36 @@ from store_time import utc_now
 
 
 class KitchenTests(unittest.TestCase):
+    def test_provider_refresh_fetches_even_when_not_due_and_returns_new_ticket(self):
+        from live_dashboard_models import DashboardSync
+        mock = AsyncMock(return_value=[sale(utc_now(), "fresh")])
+        with patch("poynt.client.PoyntClient.get_recent_orders", new=mock):
+            response = self.client.post("/dashboard/stores/1/kitchen/refresh", headers={"X-Kitchen-CSRF": self.csrf})
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual(len(response.json()["active"]), 1)
+        mock.assert_awaited_once()
+        with self.factory() as session:
+            state = session.get(DashboardSync, 1)
+            self.assertIsNone(state.lease_token)
+            self.assertAlmostEqual((state.next_reconcile_at-state.last_reconciled_at).total_seconds(), 30, delta=1)
+
+    def test_provider_refresh_failure_releases_lease_and_backs_off(self):
+        from live_dashboard_models import DashboardSync
+        with patch("poynt.client.PoyntClient.get_recent_orders", new=AsyncMock(side_effect=RuntimeError("offline"))):
+            response = self.client.post("/dashboard/stores/1/kitchen/refresh", headers={"X-Kitchen-CSRF": self.csrf})
+        self.assertEqual(response.status_code, 502)
+        with self.factory() as session:
+            state = session.get(DashboardSync, 1)
+            self.assertIsNone(state.lease_token)
+            self.assertGreater(state.next_reconcile_at, utc_now()+timedelta(seconds=50))
+
+    def test_provider_refresh_checks_csrf_and_store_scope(self):
+        mock = AsyncMock(return_value=[])
+        with patch("poynt.client.PoyntClient.get_recent_orders", new=mock):
+            self.assertEqual(self.client.post("/dashboard/stores/1/kitchen/refresh").status_code, 403)
+            self.assertEqual(self.client.post("/dashboard/stores/2/kitchen/refresh", headers={"X-Kitchen-CSRF": self.csrf}).status_code, 404)
+        mock.assert_not_awaited()
+
     def test_last_item_waits_for_explicit_pickup_and_pos_sync_preserves_it(self):
         payload=self.seed()
         ticket=self.queue()["active"][0]
@@ -85,6 +115,12 @@ class KitchenTests(unittest.TestCase):
         DatabaseAndRoutesTests.tearDown(self)
 
     def test_customer_wait_oldest_unheld_and_performance_test_mode(self):
+        # This test measures elapsed time, not admission across local midnight.
+        self.now = self.now.replace(hour=19, minute=0, second=0, microsecond=0)
+        for target in ("routers.kitchen.utc_now", "kitchen_service.utc_now"):
+            clock = patch(target, return_value=self.now)
+            clock.start()
+            self.addCleanup(clock.stop)
         self.seed("older",at=self.now-timedelta(minutes=10))
         self.seed("newer",at=self.now-timedelta(minutes=3))
         data=self.queue()
