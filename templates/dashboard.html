@@ -73,7 +73,9 @@
 
             {% endif %}
             <div class="columns">
+                {% if organization_role in ["owner", "manager", "payroll"] %}
                 <div class="column"><a href="/poynt/claim-tips" class="button is-primary is-fullwidth">Claim Tips</a></div>
+                {% endif %}
 
                 {% if can_manage_poynt %}
                 <div class="column">
