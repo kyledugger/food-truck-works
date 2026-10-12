@@ -22,16 +22,44 @@
   const endService=el('button','button is-light','End service');
   const clearService=el('button','button is-light','Clear queue');
   const recoverService=el('button','button is-light','Get recent past orders');
-  const recoveryMenu=el('details','');recoveryMenu.append(el('summary','','Kitchen options'));
+  const recoveryMenu=el('details','kitchen-ticket-menu');recoveryMenu.append(el('summary','','Ticket options'));
   const recoveryLater=el('button','button is-small','Get recent past orders');recoveryMenu.append(recoveryLater);
   const archiveReview=el('button','button is-small','Review cleared tickets');
-  recoveryMenu.append(clearService,endService,archiveReview);
-  serviceControls.append(startService,resumeService,recoverService,recoveryMenu);
+  recoveryMenu.replaceChildren(recoveryMenu.firstChild,clearService,recoveryLater,archiveReview);
+  serviceControls.append(startService,resumeService,recoverService);
   serviceControls.style.cssText='display:flex;gap:.25rem;align-items:center;flex-wrap:wrap;margin:0';
   if(feed.dataset.test!=='true'){
     const toolbar=document.querySelector('.board-toolbar nav')||document.querySelector('.kitchen-heading-row');
     if(toolbar){toolbar.style.flexWrap='wrap';toolbar.prepend(serviceControls);}else status.before(serviceControls);
   }
+  const refreshButton=document.getElementById('live-refresh');
+  if(refreshButton){refreshButton.textContent='↻';refreshButton.setAttribute('aria-label','Refresh');refreshButton.title='Check Poynt for current orders';refreshButton.style.fontSize='1.35rem';}
+  const moreMenu=el('details','kitchen-more-menu'),moreToggle=el('summary','button','⋯');
+  moreToggle.setAttribute('aria-label','More kitchen options');moreToggle.title='More kitchen options';
+  const morePanel=el('div','kitchen-more-panel');moreMenu.append(moreToggle,morePanel);
+  morePanel.append(soundButton);
+  if(feed.dataset.test!=='true')morePanel.append(recoveryMenu);
+  const timerButton=document.getElementById('timer-settings');if(timerButton)morePanel.append(timerButton);
+  const toolbar=document.querySelector('.board-toolbar nav')||document.querySelector('.kitchen-heading-row');
+  const testLink=toolbar&&[...toolbar.querySelectorAll('a')].find(a=>/^(Test kitchen|Live kitchen|Test queue|Live queue)$/.test(a.textContent.trim()));
+  if(testLink)morePanel.append(testLink);
+  if(feed.dataset.test!=='true')morePanel.append(endService);
+  if(toolbar)toolbar.append(moreMenu);else refreshButton?.after(moreMenu);
+  const menuStyle=el('style','');menuStyle.textContent=`
+    .kitchen-more-menu{position:relative;align-self:center;flex-shrink:0}
+    .kitchen-more-menu>summary{list-style:none;min-width:40px;cursor:pointer}
+    .kitchen-more-menu>summary::-webkit-details-marker{display:none}
+    .kitchen-more-panel{position:absolute;right:0;top:calc(100% + 6px);z-index:1000;min-width:240px;max-width:calc(100vw - 24px);max-height:75vh;overflow:auto;background:white;border:1px solid #c8cdd2;border-radius:8px;padding:6px;box-shadow:0 6px 20px #0003}
+    .kitchen-more-panel .button,.kitchen-more-panel summary{display:flex;width:100%;justify-content:flex-start;text-align:left;min-height:40px;margin:0;border:0;border-radius:4px;font-size:.9rem;padding:8px 10px;white-space:normal;color:#30363b;background:white;cursor:pointer}
+    .kitchen-more-panel .button:hover,.kitchen-more-panel summary:hover{background:#edf0f3}
+    .kitchen-ticket-menu>summary::after{content:'▸';margin-left:auto}
+    .kitchen-ticket-menu[open]>summary::after{content:'▾'}
+    .kitchen-ticket-menu .button{padding-left:24px}
+    .kitchen-more-panel [hidden]{display:none!important}
+  `;document.head.append(menuStyle);
+  document.addEventListener('click',event=>{if(!moreMenu.contains(event.target))moreMenu.open=false;});
+  document.addEventListener('keydown',event=>{if(event.key==='Escape'&&moreMenu.open){moreMenu.open=false;moreToggle.focus();}});
+  morePanel.addEventListener('click',event=>{if(event.target.closest('button,a'))moreMenu.open=false;});
   let serviceBusy=false;
   function serviceState(){
     if(!snapshot?.session||feed.dataset.test==='true')return;
@@ -40,8 +68,8 @@
     resumeService.hidden=!s.needs_resume;endService.hidden=!s.active;clearService.hidden=!on;
     const age=serverTime+performance.now()-observed-Date.parse(s.started_at);
     recoverService.hidden=!on||age>=60000;recoveryLater.hidden=!on;
-    for(const node of serviceControls.querySelectorAll('button'))node.style.display=node.hidden?'none':'';
-    for(const b of serviceControls.querySelectorAll('button'))b.disabled=serviceBusy||pending.size>0;
+    for(const node of [startService,resumeService,recoverService,recoveryLater,clearService,endService])node.style.display=node.hidden?'none':'';
+    for(const b of [startService,resumeService,recoverService,recoveryLater,clearService,endService,archiveReview])b.disabled=serviceBusy||pending.size>0;
   }
   async function serviceRequest(action,extra={}){
     const response=await fetch(base+'/service',{method:'POST',credentials:'same-origin',
