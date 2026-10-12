@@ -18,15 +18,21 @@
   const seenTickets=new Set();
   const serviceControls=el('div','buttons are-small');
   const startService=el('button','button is-success','Start service');
-  const resumeService=el('button','button is-light','Resume previous service');
+  const resumeService=el('button','button is-light','Resume previous queue');
+  resumeService.title='Continue the previous service with its uncleared tickets. Start service begins fresh.';
   const endService=el('button','button is-light','End service');
   const clearService=el('button','button is-light','Clear queue');
   const recoverService=el('button','button is-light','Get recent past orders');
-  const recoveryMenu=el('details','kitchen-ticket-menu');recoveryMenu.append(el('summary','','Ticket options'));
+  const recoveryMenu=el('details','kitchen-ticket-menu'),ticketSummary=el('summary','');
+  const ticketArrow=el('span','','▸');ticketArrow.setAttribute('aria-hidden','true');ticketArrow.style.marginLeft='auto';
+  ticketSummary.append(el('strong','','Ticket options'),ticketArrow);ticketSummary.setAttribute('aria-expanded','false');recoveryMenu.append(ticketSummary);
+  recoveryMenu.addEventListener('toggle',()=>{ticketArrow.textContent=recoveryMenu.open?'▾':'▸';ticketSummary.setAttribute('aria-expanded',String(recoveryMenu.open));});
   const recoveryLater=el('button','button is-small','Get recent past orders');recoveryMenu.append(recoveryLater);
   const archiveReview=el('button','button is-small','Review cleared tickets');
-  recoveryMenu.replaceChildren(recoveryMenu.firstChild,clearService,recoveryLater,archiveReview);
-  serviceControls.append(startService,resumeService,recoverService);
+  recoveryMenu.replaceChildren(recoveryMenu.firstChild,resumeService,clearService,recoveryLater,archiveReview);
+  serviceControls.append(startService,recoverService);
+  for(const button of [startService,resumeService,recoverService,recoveryLater,clearService,endService]){button.hidden=true;button.style.display='none';}
+  let recoveryShortcutUntil=0;
   serviceControls.style.cssText='display:flex;gap:.25rem;align-items:center;flex-wrap:wrap;margin:0';
   if(feed.dataset.test!=='true'){
     const toolbar=document.querySelector('.board-toolbar nav')||document.querySelector('.kitchen-heading-row');
@@ -49,12 +55,16 @@
     .kitchen-more-menu{position:relative;align-self:center;flex-shrink:0}
     .kitchen-more-menu>summary{list-style:none;min-width:40px;cursor:pointer}
     .kitchen-more-menu>summary::-webkit-details-marker{display:none}
-    .kitchen-more-panel{position:absolute;right:0;top:calc(100% + 6px);z-index:1000;min-width:240px;max-width:calc(100vw - 24px);max-height:75vh;overflow:auto;background:white;border:1px solid #c8cdd2;border-radius:8px;padding:6px;box-shadow:0 6px 20px #0003}
-    .kitchen-more-panel .button,.kitchen-more-panel summary{display:flex;width:100%;justify-content:flex-start;text-align:left;min-height:40px;margin:0;border:0;border-radius:4px;font-size:.9rem;padding:8px 10px;white-space:normal;color:#30363b;background:white;cursor:pointer}
+    .kitchen-more-panel{position:absolute;right:0;top:calc(100% + 6px);z-index:1000;width:260px;max-width:calc(100vw - 24px);max-height:75vh;box-sizing:border-box;overflow-y:auto;overflow-x:hidden;background:white;border:1px solid #c8cdd2;border-radius:8px;padding:6px;box-shadow:0 6px 20px #0003}
+    .kitchen-more-panel *{box-sizing:border-box;min-width:0}
+    .kitchen-more-panel .button,.kitchen-more-panel summary{display:flex;width:100%;justify-content:flex-start;text-align:left;height:auto!important;min-height:34px!important;margin:0!important;border:0;border-radius:4px;font-size:.85rem;line-height:1.25;padding:6px 10px!important;white-space:normal;overflow-wrap:anywhere;color:#30363b;background:white;cursor:pointer;box-shadow:none!important}
     .kitchen-more-panel .button:hover,.kitchen-more-panel summary:hover{background:#edf0f3}
-    .kitchen-ticket-menu>summary::after{content:'▸';margin-left:auto}
-    .kitchen-ticket-menu[open]>summary::after{content:'▾'}
-    .kitchen-ticket-menu .button{padding-left:24px}
+    .kitchen-ticket-menu>summary{background:#f0f2f4;list-style:none;gap:12px}
+    .kitchen-ticket-menu>summary::-webkit-details-marker{display:none}
+    .kitchen-ticket-menu>summary>span{font-size:1.15rem;flex-shrink:0}
+    .kitchen-ticket-menu .button{padding-left:22px!important}
+    .board-toolbar nav{align-items:center}
+    .board-toolbar nav>.button,.board-toolbar .kitchen-more-menu>summary,.board-toolbar .buttons>.button{box-sizing:border-box;height:36px!important;min-height:36px!important;padding:4px 12px;font-size:.85rem;line-height:1.2;margin:0}
     .kitchen-more-panel [hidden]{display:none!important}
   `;document.head.append(menuStyle);
   document.addEventListener('click',event=>{if(!moreMenu.contains(event.target))moreMenu.open=false;});
@@ -64,10 +74,9 @@
   function serviceState(){
     if(!snapshot?.session||feed.dataset.test==='true')return;
     const s=snapshot.session,on=s.active&&!s.needs_resume;
-    startService.hidden=on;startService.textContent=s.needs_resume?'Start fresh service':'Start service';
+    startService.hidden=on;startService.textContent='Start service';
     resumeService.hidden=!s.needs_resume;endService.hidden=!s.active;clearService.hidden=!on;
-    const age=serverTime+performance.now()-observed-Date.parse(s.started_at);
-    recoverService.hidden=!on||age>=60000;recoveryLater.hidden=!on;
+    recoverService.hidden=!on||performance.now()>=recoveryShortcutUntil;recoveryLater.hidden=!on;
     for(const node of [startService,resumeService,recoverService,recoveryLater,clearService,endService])node.style.display=node.hidden?'none':'';
     for(const b of [startService,resumeService,recoverService,recoveryLater,clearService,endService,archiveReview])b.disabled=serviceBusy||pending.size>0;
   }
@@ -79,7 +88,7 @@
   }
   async function changeService(action){
     if(serviceBusy)return;serviceBusy=true;serviceState();
-    try{await serviceRequest(action);await refresh(true);}
+    try{await serviceRequest(action);if(action==='start')recoveryShortcutUntil=performance.now()+60000;await refresh(true);}
     catch(error){await refresh(true);status.textContent=error.message;}
     finally{serviceBusy=false;serviceState();}
   }
