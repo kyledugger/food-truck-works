@@ -64,6 +64,7 @@ class StoreDisplayMiddleware(BaseHTTPMiddleware):
                     or (request.url.path.startswith(test_path + "/") and request.url.path[len(test_path)+1:].isdigit())))):
             return await call_next(request)
         if ((request.method == "GET" and request.url.path in {kitchen_path, kitchen_path + "/events"})
+                or (request.method == "POST" and request.url.path in {kitchen_path + "/service", kitchen_path + "/refresh"})
                 or (request.method == "POST" and request.url.path.startswith(kitchen_path + "/")
                     and request.url.path[len(kitchen_path)+1:].isdigit())):
             return await call_next(request)
@@ -73,6 +74,7 @@ class StoreDisplayMiddleware(BaseHTTPMiddleware):
                 return await call_next(request)
         # Claim routes repeat assignment, store, date and signed-window checks.
         if ((request.method == "GET" and request.url.path == "/poynt/claim-tips")
+                or (request.method == "GET" and request.url.path == "/poynt/tip-submissions")
                 or (request.method == "POST" and request.url.path in {
                     "/poynt/claim-tips/load", "/poynt/tip-submissions"})):
             return await call_next(request)

@@ -8,12 +8,13 @@
         <div class="level mb-5">
             <div class="level-left">
                 <div>
-                    <h1 class="title">Tip Submission Report</h1>
+                    <h1 class="title">{{ "Today's Tip History" if tip_report_terminal else "Tip History" }}</h1>
                     <p class="subtitle is-6">Submitted tip ranges</p>
                 </div>
             </div>
             <div class="level-right">
-                <a href="/poynt/orders" class="button is-primary">Back to Orders Report</a>
+                {% if tip_report_terminal %}<a href="/dashboard/stores/{{ tip_report_home_id }}/home" class="button is-primary">Store Home</a>
+                {% else %}<a href="/dashboard" class="button is-primary">Dashboard</a>{% endif %}
             </div>
         </div>
 
@@ -21,15 +22,21 @@
             <form method="get" action="/poynt/tip-submissions">
                 <div class="columns is-vcentered is-variable is-3">
                     <div class="column is-narrow">
+                        {% if tip_report_terminal %}
+                        <p class="label">{{ tip_report_store_name }}</p><p>Today · {{ tip_report_start_date }}</p>
+                        <input type="hidden" name="store_id" value="{{ tip_report_store_id }}">
+                        {% else %}
                         <label class="label" for="tip-report-store">Store</label>
                         <div class="select"><select id="tip-report-store" name="store_id">
+                            <option value="all" {% if tip_report_store_id == "all" %}selected{% endif %}>All stores</option>
                             {% for store in tip_report_stores %}
                             <option value="{{ store.id }}" {% if store.id == tip_report_store_id %}selected{% endif %}>{{ store.name }}</option>
                             {% endfor %}
                         </select></div>
-                        <p class="help">{{ tip_report_store_timezone }}</p>
+                        <p class="help">{{ "Dates use each store's timezone" if tip_report_store_id == "all" else tip_report_store_timezone }}</p>
+                        {% endif %}
                     </div>
-                    <div class="column is-narrow">
+                    {% if not tip_report_terminal %}<div class="column is-narrow">
                         <label class="label" for="tip-report-start">Date Range</label>
                         <div class="is-flex is-align-items-center" style="gap: 0.5rem;">
                             <div class="control">
@@ -56,6 +63,7 @@
                         </div>
                     </div>
 
+                    {% endif %}
                     <div class="column is-narrow">
                         <label class="label" for="tip-report-payment">Payment</label>
                         <div class="control">
@@ -120,8 +128,8 @@
 
         <div class="box mb-5">
             <h2 class="title is-5">Employee totals for date range</h2>
-            <p class="mb-3">{{ tip_report_start_date }} to {{ tip_report_end_date }} · {{ tip_report_store_timezone }}<br>
-                Based on submission dates for the selected store. Payment and Status filters apply only to the list below.
+            <p class="mb-3">{{ tip_report_start_date }} to {{ tip_report_end_date }} · {{ "Each store's local timezone" if tip_report_store_id == "all" else tip_report_store_timezone }}<br>
+                Based on shift start dates in each store's timezone. Payment and Status filters apply to both totals and the list.
                 Rejected payouts are excluded. Paid means confirmed paid in Food Truck Works.</p>
             {% if tip_range_totals %}
             <div class="table-container">
@@ -161,7 +169,7 @@
                     </thead>
                     <tbody>
                         {% for submission in submissions %}
-                            <tr>
+                            <tr data-timezone="{{ submission.store_timezone }}">
                                 <td style="white-space: nowrap;">
                                     <span
                                         class="tip-report-time"
@@ -204,6 +212,7 @@
                                             {% if payout.paid_at %}<span class="tip-report-time is-size-7" data-value="{{ payout.paid_at }}"></span>{% endif %}
                                             {% if payout.status == "pending" and payout.can_confirm %}
                                             <form method="post" action="/poynt/tip-payouts/{{ payout.id }}/paid" class="is-inline-block">
+                                                <input type="hidden" name="return_store_id" value="{{ tip_report_store_id }}">
                                                 <input type="hidden" name="return_start" value="{{ tip_report_start_date }}">
                                                 <input type="hidden" name="return_end" value="{{ tip_report_end_date }}">
                                                 <input type="hidden" name="return_payment" value="{{ tip_report_payment }}">
@@ -257,9 +266,10 @@
                                 {% if tip_report_can_process %}
                                     <td style="white-space: nowrap;">
                                         {% if submission.payouts %}
-                                            {% if tip_report_role in ["owner", "manager"] and submission.processing_status == "pending" %}
+                                            {% if tip_report_role in ["owner", "manager", "payroll"] and submission.processing_status == "pending" %}
                                                 <form method="post" action="/poynt/tip-submissions/{{ submission.id }}/reject" onsubmit="return confirm('Reject this unpaid submission and release its orders?');">
-                                                    <input type="hidden" name="return_start" value="{{ tip_report_start_date }}">
+                                                    <input type="hidden" name="return_store_id" value="{{ tip_report_store_id }}">
+                                                <input type="hidden" name="return_start" value="{{ tip_report_start_date }}">
                                                     <input type="hidden" name="return_end" value="{{ tip_report_end_date }}">
                                                     <input type="hidden" name="return_payment" value="{{ tip_report_payment }}">
                                                     <input type="hidden" name="return_status" value="{{ tip_report_status }}">
@@ -274,6 +284,7 @@
                                                 class="is-inline-block mr-1"
                                             >
                                                 <input type="hidden" name="processing_status" value="paid">
+                                                <input type="hidden" name="return_store_id" value="{{ tip_report_store_id }}">
                                                 <input type="hidden" name="return_start" value="{{ tip_report_start_date }}">
                                                 <input type="hidden" name="return_store_id" value="{{ tip_report_store_id }}">
                                                 <input type="hidden" name="return_end" value="{{ tip_report_end_date }}">
@@ -293,6 +304,7 @@
                                                 onsubmit="return confirm('Reject this tip submission?');"
                                             >
                                                 <input type="hidden" name="processing_status" value="rejected">
+                                                <input type="hidden" name="return_store_id" value="{{ tip_report_store_id }}">
                                                 <input type="hidden" name="return_start" value="{{ tip_report_start_date }}">
                                                 <input type="hidden" name="return_store_id" value="{{ tip_report_store_id }}">
                                                 <input type="hidden" name="return_end" value="{{ tip_report_end_date }}">
@@ -331,7 +343,7 @@
         }
 
         element.textContent = new Intl.DateTimeFormat(undefined, {
-            timeZone: {{ tip_report_store_timezone | tojson }},
+            timeZone: element.closest('[data-timezone]')?.dataset.timezone || {{ tip_report_store_timezone | tojson }},
             month: "short",
             day: "numeric",
             year: "numeric",

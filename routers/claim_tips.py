@@ -105,6 +105,7 @@ async def load_claim(request: Request, store_id: str = Form(...), token: str = F
         _validate_tip_submission_window(setting, start, role)
         store_name, zone = store.display_name or store.poynt_name, store.timezone_name
         policy = setting.payout_policy
+        require_approval = setting.require_split_approval
         activation, hours = utc_iso(setting.tip_allocation_start_at), setting.employee_submission_hours
     credentials = get_poynt_credentials(organization_id)
     if credentials is None:
@@ -135,4 +136,5 @@ async def load_claim(request: Request, store_id: str = Form(...), token: str = F
         "tip_employee_submission_hours": hours, "tip_employee_window_exempt": manager,
         "total_tips": total / 100, "claimed_tips": (total - available_total) / 100,
         "available_tips": available_total / 100, "display": display,
+        "require_split_approval": require_approval,
     }, headers={"Cache-Control": "no-store"})

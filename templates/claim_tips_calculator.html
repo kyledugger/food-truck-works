@@ -1390,6 +1390,24 @@ const reportTimezone = {{ store_timezone|tojson }};
                 payoutChoices[select.dataset.employeeId] = select.value;
             });
 
+            const approval = await new Promise(resolve => {
+                const dialog=document.createElement('dialog');dialog.style.cssText='max-width:min(640px,92vw);max-height:85vh;overflow:auto';
+                const form=document.createElement('form'),title=document.createElement('h2');title.textContent='Review tip split';title.className='title is-4';form.append(title);
+                const add=text=>{const p=document.createElement('p');p.textContent=text;form.append(p);};
+                add(tipCalculatorStoreName+' · Total tips: $'+(totalTipCents/100).toFixed(2));
+                payload.ranges.forEach(range=>{add(formatTipDateTime(range.start)+' – '+formatTipDateTime(range.end));const share=Math.floor(range.total_tip_cents/range.employees.length),remainder=range.total_tip_cents%range.employees.length;range.employees.forEach((e,i)=>add(e.name+': $'+((share+(i<remainder))/100).toFixed(2)+' · '+(payoutChoices[e.id]||{{ tip_payout_policy|tojson }})));});
+                const paidLabel=document.createElement('label'),paid=document.createElement('input');paid.type='checkbox';paidLabel.append(paid,document.createTextNode(' Cash allocations have actually been handed out'));form.append(paidLabel);
+                const policy={{ tip_payout_policy|tojson }};paidLabel.hidden=policy!=='cash'&&!(policy==='choice'&&Object.values(payoutChoices).includes('cash'));
+                const email=document.createElement('input'),password=document.createElement('input');email.type='email';email.placeholder='Approver email';email.className='input';password.type='password';password.placeholder='Approver password';password.className='input';password.autocomplete='off';
+                const note=document.createElement('p');note.textContent='An owner, manager, or designated store approver must authorize when required, or to confirm cash handed out. Otherwise cash remains pending.';form.append(note,email,password);
+                const required={{ require_split_approval|default(false)|tojson }};
+                const update=()=>{email.required=password.required=required||paid.checked;email.hidden=password.hidden=!(required||paid.checked);email.style.display=password.style.display=required||paid.checked?'':'none';};paid.onchange=update;update();
+                const submit=document.createElement('button'),cancel=document.createElement('button');submit.type='submit';submit.className='button is-primary';submit.textContent=required?'Approve and submit':'Submit split';cancel.type='button';cancel.className='button';cancel.textContent='Cancel';form.append(submit,cancel);
+                let result=null;cancel.onclick=()=>dialog.close();form.onsubmit=e=>{e.preventDefault();result={email:email.value,password:password.value,cashPaid:paid.checked};dialog.close();};
+                dialog.append(form);document.body.append(dialog);dialog.addEventListener('close',()=>{password.value='';dialog.remove();resolve(result);});dialog.showModal();
+            });
+            if(!approval)return;
+
             const formData = new FormData();
             formData.append("claim_token", {{ token | tojson }});
             formData.append("store_id", tipCalculatorStoreId);
@@ -1399,6 +1417,7 @@ const reportTimezone = {{ store_timezone|tojson }};
             formData.append("total_tip_cents", String(totalTipCents));
             formData.append("payout_choices", JSON.stringify(payoutChoices));
             formData.append("submission_json", JSON.stringify(payload));
+            formData.append('approver_email',approval.email);formData.append('approver_password',approval.password);formData.append('cash_paid',String(approval.cashPaid));approval.password='';
 
             tipCalculatorSubmit.disabled = true;
             tipCalculatorSubmit.textContent = "Submitting...";
@@ -1408,6 +1427,7 @@ const reportTimezone = {{ store_timezone|tojson }};
                     method: "POST",
                     body: formData
                 });
+                formData.delete('approver_password');
 
                 if (!response.ok) {
                     const body = await response.json().catch(() => ({}));

@@ -18,6 +18,9 @@ class TipSubmission(Base):
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    approved_by_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    approved_at: Mapped[datetime | None] = mapped_column(UTCInstant(), nullable=True)
+    approval_digest: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
     organization_id: Mapped[int] = mapped_column(
         ForeignKey("organizations.id"),
@@ -101,6 +104,7 @@ class TipStoreSettings(Base):
         CheckConstraint("employee_submission_hours BETWEEN 1 AND 720", name="ck_tip_employee_submission_hours"),
     )
     id: Mapped[int] = mapped_column(primary_key=True)
+    require_split_approval: Mapped[bool] = mapped_column(default=False)
     organization_id: Mapped[int] = mapped_column(ForeignKey("organizations.id"), nullable=False)
     store_id: Mapped[str] = mapped_column(String(100), nullable=False)
     payout_policy: Mapped[str] = mapped_column(String(20), nullable=False, default="choice")
@@ -108,6 +112,13 @@ class TipStoreSettings(Base):
     cash_confirmer_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
     tip_allocation_start_at: Mapped[datetime | None] = mapped_column(UTCInstant(), nullable=True)
     employee_submission_hours: Mapped[int] = mapped_column(Integer, nullable=False, default=24)
+
+
+class TipApprovalThrottle(Base):
+    __tablename__ = "tip_approval_throttles"
+    key: Mapped[str] = mapped_column(String(64), primary_key=True)
+    window_at: Mapped[datetime] = mapped_column(UTCInstant())
+    attempts: Mapped[int] = mapped_column(default=0)
 
 
 class TipOrderClaim(Base):

@@ -256,9 +256,14 @@ class DatabaseAndRoutesTests(unittest.TestCase):
         self.assertEqual(self.client.get("/dashboard",follow_redirects=False).headers["location"],"/dashboard/stores/1/home")
         for url in ("/dashboard/data", "/dashboard/data?store_id=2&date=today", "/dashboard/data?store_id=1&date=yesterday",
                     "/dashboard/data?store_id=1&store_id=2&date=today", "/dashboard/stores/2", "/poynt/orders",
-                    "/poynt/tip-submissions", "/employees", "/account", "/integrations", "/settings/stores", "/settings/store-displays", "/organizations/select"):
+                    "/employees", "/account", "/integrations", "/settings/stores", "/settings/store-displays", "/organizations/select"):
             self.assertEqual(self.client.get(url).status_code,403,url)
         self.assertEqual(self.client.post("/dashboard/webhook/enable").status_code,403)
+        # This fixture has no Poynt router; 404 proves middleware now admits history GET.
+        self.assertEqual(self.client.get("/poynt/tip-submissions").status_code,404)
+        self.assertEqual(self.client.post("/poynt/tip-payouts/1/paid").status_code,403)
+        self.assertEqual(self.client.post("/dashboard/stores/1/kitchen/service",json={}).status_code,422)
+        self.assertEqual(self.client.post("/dashboard/stores/2/kitchen/service",json={}).status_code,403)
         with self.factory() as session:
             self.assertEqual(session.get(User,user_id).account_type,"store_display")
             self.assertEqual(session.scalar(select(OrganizationMember.role).where(OrganizationMember.user_id==user_id)),"member")

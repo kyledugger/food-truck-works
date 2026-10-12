@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="section"><div class="container">
+{% include "_app_brand.html" %}
+<h1 class="title">My Tip History</h1>
+<form method="get" class="box">
+  <div class="field is-grouped is-grouped-multiline">
+    <label>From <input class="input" type="date" name="start" value="{{ tip_report_start_date }}" required></label>
+    <label>Through <input class="input" type="date" name="end" value="{{ tip_report_end_date }}" required></label>
+    <button class="button is-primary" type="submit">Apply</button>
+  </div>
+</form>
+<div class="box"><h2 class="title is-5">Your tips · ${{ '%.2f'|format(tip_personal_total_cents / 100) }}</h2>
+<p>Rejected claims are excluded from this total.</p>
+{% for total in tip_range_totals %}<p>Cash: ${{ '%.2f'|format(total.cash_cents/100) }} · Paycheck: ${{ '%.2f'|format(total.paycheck_cents/100) }} · Pending: ${{ '%.2f'|format((total.cash_pending_cents+total.paycheck_pending_cents)/100) }}</p>{% endfor %}
+</div>
+{% for submission in submissions %}
+<article class="box" data-timezone="{{ submission.store_timezone }}">
+<h2 class="title is-5">{{ submission.store_name }}</h2>
+{% for payout in submission.payouts %}<p><strong>Your allocation: ${{ '%.2f'|format(payout.amount_cents/100) }}</strong> · {{ payout.method|capitalize }} · {{ payout.status|capitalize }}</p>{% endfor %}
+{% if not submission.payouts %}{% for employee in submission.employee_totals %}<p>Your allocation: ${{ '%.2f'|format(employee.total_tip_cents/100) }} · {{ submission.payout_method|capitalize }} · {{ submission.processing_status|capitalize }}</p>{% endfor %}{% endif %}
+{% for shift in submission.shifts %}
+<p><span class="tip-time" data-value="{{ shift.start }}"></span> – <span class="tip-time" data-value="{{ shift.end }}"></span></p>
+<ul>{% for person in shift.participants %}<li>{{ person.name }}{% if person.own %} (you){% endif %}: ${{ '%.2f'|format(person.amount_cents/100) }}</li>{% endfor %}</ul>
+{% endfor %}
+</article>
+{% else %}<p>No tips were recorded for you in this date range.</p>{% endfor %}
+</div></section>
+{% endblock %}
+{% block scripts %}<script>
+document.querySelectorAll('.tip-time').forEach(n=>{const d=new Date(n.dataset.value);n.textContent=Number.isNaN(d.getTime())?'':new Intl.DateTimeFormat(undefined,{timeZone:n.closest('[data-timezone]').dataset.timezone,dateStyle:'medium',timeStyle:'short'}).format(d);});
+</script>{% endblock %}
