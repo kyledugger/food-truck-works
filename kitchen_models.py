@@ -7,6 +7,16 @@ from instant_type import UTCInstant
 from store_time import utc_now
 
 
+class KitchenSession(Base):
+    __tablename__ = "kitchen_sessions"
+    store_id: Mapped[int] = mapped_column(ForeignKey("organization_stores.id", ondelete="CASCADE"), primary_key=True)
+    business_id: Mapped[str] = mapped_column(String(100))
+    active: Mapped[bool] = mapped_column(default=False)
+    started_at: Mapped[datetime | None] = mapped_column(UTCInstant())
+    last_seen_at: Mapped[datetime | None] = mapped_column(UTCInstant())
+    revision: Mapped[int] = mapped_column(default=1)
+
+
 class KitchenTicket(Base):
     __tablename__ = "kitchen_tickets"
     __table_args__ = (UniqueConstraint("organization_id", "business_id", "order_id", name="uq_kitchen_order"),

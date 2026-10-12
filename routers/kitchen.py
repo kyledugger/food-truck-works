@@ -14,7 +14,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from database import SessionLocal
 from models import OrganizationStore, PoyntConnection
 from live_dashboard_models import DashboardOrder
-from kitchen_models import KitchenTicket, KitchenAction, KitchenTimerProfile
+from kitchen_models import KitchenTicket, KitchenAction, KitchenTimerProfile, KitchenSession
 from kitchen_service import sync_ticket, transition, serialize, edit_note
 from live_dashboard_metrics import kitchen_intake, instant
 from store_time import utc_now, utc_iso, local_day_bounds
@@ -22,7 +22,7 @@ from store_time import utc_now, utc_iso, local_day_bounds
 router = APIRouter()
 
 
-def completion_rate(tickets, now, minutes=15):
+def completion_rate(tickets, now, minutes=15, since=None):
     """Count current done quantities once; undo removes them from the window."""
     total = 0.0
     for ticket in tickets:
@@ -32,7 +32,7 @@ def completion_rate(tickets, now, minutes=15):
             if item.get("state") != "done" or not item.get("done_at"):
                 continue
             at = instant(item["done_at"])
-            if now-timedelta(minutes=minutes) <= at <= now:
+            if max(now-timedelta(minutes=minutes), since or now-timedelta(minutes=minutes)) <= at <= now:
                 total += max(0, float(item.get("quantity", 0)))
     return {"completed_items": total, "items_per_minute": total/minutes}
 
@@ -71,6 +71,15 @@ def queue(request: Request, store_id: int):
     try:
         with SessionLocal() as session:
             store, connection = scope(request, session, store_id)
+            simulated = "/kitchen-test" in request.url.path
+            tracking = session.get(KitchenSession, store.id)
+            tracking_on = simulated or bool(tracking and tracking.active and tracking.business_id == connection.business_id)
+            needs_resume = bool(not simulated and tracking_on and tracking.last_seen_at and tracking.last_seen_at < now-timedelta(minutes=15))
+            if not simulated and tracking_on and not needs_resume:
+                tracking.last_seen_at = now
+            session_info = {"active": tracking_on, "needs_resume": needs_resume,
+                "started_at": utc_iso(tracking.started_at) if tracking and tracking_on else None,
+                "revision": tracking.revision if tracking else 0}
             if not store.timezone_name:
                 raise HTTPException(409, "Configure the store timezone first.")
             start, end = local_day_bounds(now.astimezone(ZoneInfo(store.timezone_name)).date(), ZoneInfo(store.timezone_name))
@@ -81,11 +90,12 @@ def queue(request: Request, store_id: int):
             orders = session.scalars(select(DashboardOrder).where(~admitted, DashboardOrder.organization_id == store.organization_id,
                 DashboardOrder.business_id == connection.business_id, DashboardOrder.store_id == store.store_id,
                 DashboardOrder.created_at >= start, DashboardOrder.created_at < end,
-                DashboardOrder.created_at <= now)).all()
+                DashboardOrder.created_at >= (tracking.started_at if tracking and not simulated and tracking_on else start),
+                DashboardOrder.created_at <= now)).all() if tracking_on and not needs_resume else []
             for order in orders:
                 sync_ticket(session, order, now)
             session.flush()
-            active = session.scalars(select(KitchenTicket).where(*filters(store, connection), KitchenTicket.state.in_(["active", "held"]))
+            active = session.scalars(select(KitchenTicket).where(*filters(store, connection), KitchenTicket.state.in_(["active", "held"] if tracking_on and not needs_resume else []))
                 .order_by(KitchenTicket.created_at, KitchenTicket.id)).all()
             recent = session.scalars(select(KitchenTicket).where(*filters(store, connection), KitchenTicket.state == "ready",
                 KitchenTicket.ready_at >= now-timedelta(hours=2)).order_by(KitchenTicket.ready_at.desc()).limit(20)).all()
@@ -101,13 +111,19 @@ def queue(request: Request, store_id: int):
                 flow_payloads = [{"createdAt": utc_iso(t.created_at), "statuses": {"status": "COMPLETED", "transactionStatusSummary": "COMPLETED"}, "items": t.items} for t in samples]
             completed_tickets = session.scalars(select(KitchenTicket).where(*filters(store, connection),
                 KitchenTicket.state.in_(["active", "held", "ready"]), KitchenTicket.updated_at >= now-timedelta(minutes=15))).all()
+            if not tracking_on or needs_resume:
+                active, recent, completed_tickets = [], [], []
+            elif tracking and not simulated:
+                recent = [t for t in recent if t.ready_at >= tracking.started_at]
             result = {"active": [serialize(t) for t in active], "recent": [serialize(t) for t in recent],
+                      "session": session_info,
                       "timer_profile": timer_profile(session, store.id),
                       "generated_at": utc_iso(now), "timezone": store.timezone_name,
                       "flow": {"window_minutes": 15,
                                "customer_wait": customer_wait(active, now),
                                "intake": kitchen_intake(flow_payloads, now, 15),
-                               "completion": completion_rate(completed_tickets, now)}}
+                               "tracking": tracking_on and not needs_resume,
+                               "completion": completion_rate(completed_tickets, now, since=tracking.started_at if tracking and not simulated else None) if tracking_on and not needs_resume else None}}
             session.commit()
         return JSONResponse(result, headers={"Cache-Control": "no-store"})
     except SQLAlchemyError:
@@ -122,6 +138,82 @@ def check_csrf(request):
     origin = request.headers.get("origin")
     if origin and urlsplit(origin).netloc != request.headers.get("host"):
         raise HTTPException(403, "Invalid request origin.")
+
+
+class ServiceAction(BaseModel):
+    action: Literal["start", "resume", "end", "clear", "recent", "import", "archived"]
+    revision: int = Field(ge=0)
+    minutes: Literal[10, 30, 60] = 10
+    order_ids: list[str] = Field(default_factory=list, max_length=100)
+
+
+def archive_queue(session, store, connection, actor):
+    for ticket in session.scalars(select(KitchenTicket).where(*filters(store, connection),
+        KitchenTicket.state.in_(["active", "held"])).with_for_update()).all():
+        ticket.state = "archived"
+        ticket.revision += 1
+        ticket.updated_at = utc_now()
+        session.add(KitchenAction(ticket_id=ticket.id, action="archived", revision=ticket.revision,
+            actor_user_id=actor, details={"reason": "cleared_without_tracking"}))
+
+
+@router.post("/dashboard/stores/{store_id}/kitchen/service")
+def service(request: Request, store_id: int, body: ServiceAction):
+    check_csrf(request)
+    now = utc_now()
+    with SessionLocal() as session:
+        store, connection = scope(request, session, store_id)
+        # Serialize session creation and lifecycle changes with order admission.
+        session.scalar(select(OrganizationStore).where(OrganizationStore.id == store.id).with_for_update())
+        tracking = session.scalar(select(KitchenSession).where(KitchenSession.store_id == store.id).with_for_update())
+        if body.revision != (tracking.revision if tracking else 0):
+            raise HTTPException(409, "Kitchen session changed on another screen. Refresh and try again.")
+        if body.action == "archived":
+            tickets = session.scalars(select(KitchenTicket).where(*filters(store, connection),
+                KitchenTicket.state == "archived").order_by(KitchenTicket.updated_at.desc()).limit(100)).all()
+            return {"tickets": [serialize(t) for t in tickets]}
+        if tracking is None:
+            tracking = KitchenSession(store_id=store.id, business_id=connection.business_id, active=False, revision=0)
+            session.add(tracking)
+        if body.action in {"recent", "import", "resume", "clear"} and (not tracking.active or tracking.business_id != connection.business_id):
+            raise HTTPException(409, "Start kitchen service first.")
+        if body.action in {"start", "end", "clear"}:
+            archive_queue(session, store, connection, request.session["user_id"])
+        if body.action == "start":
+            tracking.business_id = connection.business_id
+            tracking.started_at = now
+            tracking.last_seen_at = now
+            tracking.active = True
+        elif body.action == "end":
+            tracking.active = False
+        elif body.action == "resume":
+            tracking.last_seen_at = now
+        if body.action in {"start", "resume"}:
+            from live_dashboard_service import ensure_sync
+            ensure_sync(session, store.organization_id, connection.business_id).next_reconcile_at = now
+        if body.action in {"recent", "import"}:
+            exists = select(KitchenTicket.id).where(KitchenTicket.organization_id == store.organization_id,
+                KitchenTicket.business_id == connection.business_id, KitchenTicket.order_id == DashboardOrder.order_id).exists()
+            candidates = session.scalars(select(DashboardOrder).where(
+                DashboardOrder.organization_id == store.organization_id, DashboardOrder.business_id == connection.business_id,
+                DashboardOrder.store_id == store.store_id, DashboardOrder.created_at >= tracking.started_at-timedelta(minutes=body.minutes),
+                DashboardOrder.created_at < tracking.started_at, ~exists).order_by(DashboardOrder.created_at).limit(100)).all()
+            from live_dashboard_metrics import completed
+            from kitchen_service import lines
+            candidates = [o for o in candidates if completed(o.payload) and lines(o.payload)]
+            if body.action == "recent":
+                return {"orders": [{"id": o.order_id, "number": o.payload.get("orderNumber") or o.order_id,
+                    "created_at": utc_iso(o.created_at), "items": [i["name"] for i in lines(o.payload)]} for o in candidates],
+                    "revision": tracking.revision}
+            requested = set(body.order_ids)
+            if not requested.issubset({o.order_id for o in candidates}):
+                raise HTTPException(409, "Some orders are no longer eligible. Search again.")
+            for order in candidates:
+                if order.order_id in requested:
+                    sync_ticket(session, order, now, import_recent=True)
+        tracking.revision += 1
+        session.commit()
+    return {"ok": True}
 
 
 @router.post("/dashboard/stores/{store_id}/kitchen/refresh")
@@ -248,6 +340,12 @@ def act(request: Request, store_id: int, ticket_id: int, body: Action):
         with SessionLocal() as session:
             store, connection = scope(request, session, store_id)
             ticket = session.scalar(select(KitchenTicket).where(*filters(store, connection), KitchenTicket.id == ticket_id))
+            if "/kitchen-test" not in request.url.path:
+                tracking = session.scalar(select(KitchenSession).where(KitchenSession.store_id == store.id).with_for_update())
+                if not tracking or not tracking.active or tracking.business_id != connection.business_id:
+                    raise HTTPException(409, "Kitchen tracking is off. Start service first.")
+                if ticket and ticket.state == "ready" and ticket.ready_at and ticket.ready_at < tracking.started_at:
+                    raise HTTPException(409, "This ticket belongs to an earlier kitchen service.")
             if ticket is None:
                 raise HTTPException(404, "Order not found in this store.")
             # Refresh the latest cached POS payload under the same row lock as
@@ -279,8 +377,9 @@ def stamp(request, store_id):
     # No connection is held while waiting on the network or sleeping.
     with SessionLocal() as session:
         store, connection = scope(request, session, store_id)
+        tracking = session.get(KitchenSession, store.id)
         return tuple(session.execute(select(func.count(KitchenTicket.id), func.coalesce(func.sum(KitchenTicket.revision), 0),
-            func.coalesce(func.max(KitchenTicket.id), 0), func.max(KitchenTicket.updated_at).cast(String)).where(*filters(store, connection))).one()) + tuple(timer_profile(session, store.id).values())
+            func.coalesce(func.max(KitchenTicket.id), 0), func.max(KitchenTicket.updated_at).cast(String)).where(*filters(store, connection))).one()) + tuple(timer_profile(session, store.id).values()) + (tracking.revision if tracking else 0,)
 
 
 @router.get("/dashboard/stores/{store_id}/kitchen/events")

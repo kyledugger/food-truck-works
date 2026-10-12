@@ -11,7 +11,7 @@
   function customerWait(){
     if(!waitData)return;waitData.replaceChildren();
     if(waitUnavailable){waitData.append(el('p','store-pace-note','Wait temporarily unavailable.'));return;}
-    if(!waiting){waitData.append(el('strong','store-intake-value','—'),el('p','store-intake-detail','No active orders off hold'));return;}
+    if(!waiting){waitData.append(el('strong','store-intake-value','—'),el('p','store-intake-detail',flow?.tracking===false?'Kitchen tracking off or awaiting resume':'No active orders off hold'));return;}
     const seconds=Math.max(0,Math.floor((waitClock+performance.now()-waitObserved-Date.parse(waiting))/1000));
     waitData.append(el('strong','store-intake-value',Math.floor(seconds/60)+'m '+String(seconds%60).padStart(2,'0')+'s'),el('p','store-intake-detail','Oldest active · Holds excluded'));
   }
@@ -24,8 +24,10 @@
     const metric=flow.intake,number=new Intl.NumberFormat('en-US',{maximumFractionDigits:1}),minutes=flow.window_minutes;
     intakeData.append(el('strong','store-intake-value',metric.items_per_minute.toFixed(1)+' items/min'));
     intakeData.append(el('p','store-intake-detail',number.format(metric.recent_items)+' items · '+metric.recent_orders+' orders in the last '+minutes+' minutes'));
-    completionData.append(el('strong','store-intake-value',flow.completion.items_per_minute.toFixed(1)+' items/min'));
-    completionData.append(el('p','store-intake-detail',number.format(flow.completion.completed_items)+' items marked done in the last '+minutes+' minutes'));
+    if(flow.completion){
+      completionData.append(el('strong','store-intake-value',flow.completion.items_per_minute.toFixed(1)+' items/min'));
+      completionData.append(el('p','store-intake-detail',number.format(flow.completion.completed_items)+' items marked done in the last '+minutes+' minutes'));
+    }else completionData.append(el('p','store-pace-note','Kitchen tracking off or awaiting resume'));
     const labels={rising:'↑ Rising',steady:'→ Steady',falling:'↓ Falling'};
     const trend=el('p','store-intake-detail',(labels[metric.trend]||labels.steady)+' · Preceding 15 min: '+metric.baseline_items_per_minute.toFixed(1)+' items/min');
     trend.title='Rising or falling means more than 20% above or below the preceding 15-minute rate.';

@@ -16,6 +16,87 @@
   document.getElementById('live-refresh')?.after(soundButton);
   let audioContext=null,soundOn=false,soundStarting=false,arrivalBaseline=null;
   const seenTickets=new Set();
+  const serviceControls=el('div','buttons are-small');
+  const startService=el('button','button is-success','Start service');
+  const resumeService=el('button','button is-light','Resume previous service');
+  const endService=el('button','button is-light','End service');
+  const clearService=el('button','button is-light','Clear queue');
+  const recoverService=el('button','button is-light','Get recent past orders');
+  const recoveryMenu=el('details','');recoveryMenu.append(el('summary','','Kitchen options'));
+  const recoveryLater=el('button','button is-small','Get recent past orders');recoveryMenu.append(recoveryLater);
+  const archiveReview=el('button','button is-small','Review cleared tickets');
+  recoveryMenu.append(clearService,endService,archiveReview);
+  serviceControls.append(startService,resumeService,recoverService,recoveryMenu);
+  serviceControls.style.cssText='display:flex;gap:.25rem;align-items:center;flex-wrap:wrap;margin:0';
+  if(feed.dataset.test!=='true'){
+    const toolbar=document.querySelector('.board-toolbar nav')||document.querySelector('.kitchen-heading-row');
+    if(toolbar){toolbar.style.flexWrap='wrap';toolbar.prepend(serviceControls);}else status.before(serviceControls);
+  }
+  let serviceBusy=false;
+  function serviceState(){
+    if(!snapshot?.session||feed.dataset.test==='true')return;
+    const s=snapshot.session,on=s.active&&!s.needs_resume;
+    startService.hidden=on;startService.textContent=s.needs_resume?'Start fresh service':'Start service';
+    resumeService.hidden=!s.needs_resume;endService.hidden=!s.active;clearService.hidden=!on;
+    const age=serverTime+performance.now()-observed-Date.parse(s.started_at);
+    recoverService.hidden=!on||age>=60000;recoveryLater.hidden=!on;
+    for(const node of serviceControls.querySelectorAll('button'))node.style.display=node.hidden?'none':'';
+    for(const b of serviceControls.querySelectorAll('button'))b.disabled=serviceBusy||pending.size>0;
+  }
+  async function serviceRequest(action,extra={}){
+    const response=await fetch(base+'/service',{method:'POST',credentials:'same-origin',
+      headers:{'Content-Type':'application/json','X-Kitchen-CSRF':feed.dataset.csrf},
+      body:JSON.stringify({action,revision:snapshot?.session?.revision||0,...extra})});
+    const result=await response.json();if(!response.ok)throw new Error(result.detail||'Kitchen service could not change.');return result;
+  }
+  async function changeService(action){
+    if(serviceBusy)return;serviceBusy=true;serviceState();
+    try{await serviceRequest(action);await refresh(true);}
+    catch(error){await refresh(true);status.textContent=error.message;}
+    finally{serviceBusy=false;serviceState();}
+  }
+  startService.addEventListener('click',()=>changeService('start'));
+  resumeService.addEventListener('click',()=>changeService('resume'));
+  endService.addEventListener('click',()=>{if(confirm('End service and archive remaining tickets without counting completions?'))changeService('end');});
+  clearService.addEventListener('click',()=>{if(confirm('Clear open tickets without counting them as completed?'))changeService('clear');});
+  async function recoverOrders(){
+    if(serviceBusy)return;serviceBusy=true;serviceState();
+    const dialog=el('dialog','');dialog.style.maxWidth='min(600px,90vw)';dialog.style.maxHeight='85vh';dialog.style.overflowY='auto';
+    const title=el('h3','','Get recent past orders'),windowSelect=el('select','');
+    for(const minutes of [10,30,60]){const option=el('option','','Last '+minutes+' minutes before service started');option.value=minutes;windowSelect.append(option);}
+    const message=el('p',''),list=el('div',''),search=el('button','button','Search'),include=el('button','button is-success','Include selected orders'),skip=el('button','button','Skip');
+    dialog.append(title,windowSelect,search,message,list,include,skip);document.body.append(dialog);dialog.showModal();
+    let ids=[];
+    async function searchOrders(){
+      search.disabled=true;include.disabled=true;message.textContent='Checking Poynt…';list.replaceChildren();
+      try{
+        // A successful provider check is required; cache emptiness is not proof of no recent orders.
+        const response=await fetch(base+'/refresh',{method:'POST',credentials:'same-origin',signal:AbortSignal.timeout(65000),headers:{'X-Kitchen-CSRF':feed.dataset.csrf}});
+        const current=await response.json();if(!response.ok)throw new Error(current.detail||'Could not check Poynt. Retry.');render(current);
+        const result=await serviceRequest('recent',{minutes:Number(windowSelect.value)});ids=result.orders.map(o=>o.id);
+        message.textContent=ids.length?result.orders.length+' eligible orders found. Select orders to include.':'No eligible recent orders found.';
+        for(const order of result.orders){const label=el('label','');label.style.display='block';const check=el('input','');check.type='checkbox';check.checked=true;check.value=order.id;label.append(check,document.createTextNode(' '+order.number+' · '+order.items.join(', ')));list.append(label);}
+        include.disabled=!ids.length;
+      }catch(error){ids=[];message.textContent=error.message;}
+      finally{search.disabled=false;}
+    }
+    search.addEventListener('click',searchOrders);windowSelect.addEventListener('change',searchOrders);
+    include.addEventListener('click',async()=>{include.disabled=true;try{await serviceRequest('import',{minutes:Number(windowSelect.value),order_ids:[...list.querySelectorAll('input:checked')].map(i=>i.value)});dialog.close();await refresh(true);}catch(error){message.textContent=error.message;include.disabled=false;}});
+    skip.addEventListener('click',()=>dialog.close());
+    dialog.addEventListener('close',()=>{dialog.remove();serviceBusy=false;serviceState();});await searchOrders();
+  }
+  recoverService.addEventListener('click',recoverOrders);recoveryLater.addEventListener('click',recoverOrders);
+  archiveReview.addEventListener('click',async()=>{
+    if(serviceBusy)return;serviceBusy=true;serviceState();
+    try{
+      const result=await serviceRequest('archived'),dialog=el('dialog','');dialog.style.cssText='max-width:min(600px,90vw);max-height:85vh;overflow:auto';
+      dialog.append(el('h3','','Cleared without tracking · Latest 100'));
+      if(!result.tickets.length)dialog.append(el('p','','No cleared tickets.'));
+      for(const ticket of result.tickets){const callout=customerCallout(ticket),section=el('section','');section.append(el('strong','',ticket.number+' · '+callout.name));for(const item of ticket.items)section.append(el('p','',item.quantity+'  '+item.name+(item.modifiers?.length?' · '+item.modifiers.join(', '):'')));if(callout.notes)section.append(el('p','',callout.notes));dialog.append(section);}
+      const close=el('button','button','Close');close.onclick=()=>dialog.close();dialog.append(close);document.body.append(dialog);dialog.addEventListener('close',()=>dialog.remove());dialog.showModal();
+    }catch(error){status.textContent=error.message;}finally{serviceBusy=false;serviceState();}
+  });
+  setInterval(serviceState,1000);
   function soundState(){soundButton.textContent=soundOn?'♫ Sound on':'♫ Sound off';soundButton.setAttribute('aria-pressed',String(soundOn));soundButton.title=soundOn?'Mute new-order bell':'Enable new-order bell and play a preview';}
   function bell(){
     if(!soundOn||stopped||document.hidden)return;
@@ -128,7 +209,7 @@
   }
   function render(data,local=false){
     document.dispatchEvent(new CustomEvent('kitchen-flow',{detail:data.flow}));
-    if(!local){arrivals(data);serverTime=Date.parse(data.generated_at);observed=performance.now();snapshot=data;}
+    if(!local){arrivals(data);serverTime=Date.parse(data.generated_at);observed=performance.now();snapshot=data;serviceState();}
     if(data.timer_profile){timerProfile=data.timer_profile;document.dispatchEvent(new CustomEvent('kitchen-timer-profile',{detail:timerProfile}));}
     const active=data.active.filter(t=>!pending.has(t.id));
     for(const queue of pending.values()){
@@ -182,6 +263,8 @@
       if(response.status===401||response.status===403){revoke();document.dispatchEvent(new Event('store-access-denied'));return;}
       const data=await response.json();if(!response.ok)throw new Error(data.detail||'Queue could not refresh.');
       available=true;render(data);status.textContent=live?(feed.dataset.test==='true'?'Shared test kitchen updates':'Live kitchen updates'):'Kitchen updates · polling fallback every 5 seconds';
+      if(data.session&&!data.session.active)status.textContent='Kitchen tracking off. Start service to receive new tickets.';
+      else if(data.session?.needs_resume)status.textContent='Previous service found. Resume it or start fresh.';
       if(provider)document.dispatchEvent(new Event('kitchen-queue-changed'));
     }catch(error){if(!stopped){available=false;document.dispatchEvent(new Event('kitchen-flow-unavailable'));buttonsEnabled();status.textContent=(error.name==='AbortError'?'Queue refresh timed out.':error.message)+' Actions paused until the queue reconnects.';}}
     finally{clearTimeout(timeout);controller=null;loading=false;if(provider&&button)button.disabled=stopped;}

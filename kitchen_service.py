@@ -8,7 +8,7 @@ from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException
 from models import OrganizationStore
-from kitchen_models import KitchenTicket, KitchenAction
+from kitchen_models import KitchenTicket, KitchenAction, KitchenSession
 from live_dashboard_metrics import completed, number
 from order_preparation import modifiers
 from store_time import utc_now, utc_iso, as_utc, local_day_bounds
@@ -35,11 +35,14 @@ def ticket_state(items):
     return "ready" if items and all(i["state"] == "done" for i in items) else "active"
 
 
-def sync_ticket(session, order, now=None):
+def sync_ticket(session, order, now=None, import_recent=False):
     now = now or utc_now()
     store = session.scalar(select(OrganizationStore).where(OrganizationStore.organization_id == order.organization_id,
         OrganizationStore.store_id == order.store_id, OrganizationStore.is_active.is_(True)))
     if store is None or not store.timezone_name:
+        return
+    tracking = session.scalar(select(KitchenSession).where(KitchenSession.store_id == store.id).with_for_update())
+    if not tracking or not tracking.active or tracking.business_id != order.business_id:
         return
     ticket = session.scalar(select(KitchenTicket).where(KitchenTicket.organization_id == order.organization_id,
         KitchenTicket.business_id == order.business_id, KitchenTicket.order_id == order.order_id)
@@ -48,10 +51,20 @@ def sync_ticket(session, order, now=None):
     notes = str(order.payload.get("notes") or "") or None
     customer_name = order.payload.get("customer_name") or None
     eligible = completed(order.payload) and bool(incoming)
+    if ticket is not None and ticket.state == "archived":
+        return ticket
+    if ticket is not None and (not tracking or not tracking.active or tracking.business_id != order.business_id):
+        return ticket
+    if ticket is not None and ticket.state == "ready" and ticket.created_at < tracking.started_at:
+        return ticket
     if ticket is None:
+        if not tracking or not tracking.active or tracking.business_id != order.business_id:
+            return
+        if not import_recent and as_utc(order.created_at) < tracking.started_at:
+            return
         start, end = local_day_bounds(now.astimezone(ZoneInfo(store.timezone_name)).date(), ZoneInfo(store.timezone_name))
         # Historical cache loads must never reopen old orders as new kitchen work.
-        if not eligible or not start <= as_utc(order.created_at) < end or as_utc(order.created_at) > now:
+        if not eligible or (not import_recent and not start <= as_utc(order.created_at) < end) or as_utc(order.created_at) > now:
             return
         try:
             with session.begin_nested():
@@ -104,7 +117,7 @@ def sync_ticket(session, order, now=None):
 
 
 def transition(session, ticket, action, item_key, expected_revision, actor_user_id, now=None):
-    if ticket.state == "cancelled":
+    if ticket.state in {"cancelled", "archived"}:
         raise HTTPException(409, "This order was cancelled or has no preparable items.")
     if expected_revision != ticket.revision:
         raise HTTPException(409, "Order changed on another screen. Review its current state.")
@@ -158,7 +171,7 @@ def transition(session, ticket, action, item_key, expected_revision, actor_user_
 
 
 def edit_note(session, ticket, notes, customer_name, expected_revision, actor_user_id):
-    if ticket.state == "cancelled":
+    if ticket.state in {"cancelled", "archived"}:
         raise HTTPException(409, "This order was cancelled.")
     now = utc_now()
     result = session.execute(update(KitchenTicket).where(KitchenTicket.id == ticket.id,

@@ -1,6 +1,10 @@
 Kitchen refresh and fallback update
 ==================================
 
+Superseded by KITCHEN_SESSIONS_INSTALL.md: the current cumulative patch requires
+the kitchen-session migration and uses fast polling only for connected active
+kitchens. The immediate Refresh behavior below remains in place.
+
 Copy the patch files over the corresponding project files and deploy/restart.
 No database migration or environment change is needed.
 

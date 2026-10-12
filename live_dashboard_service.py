@@ -11,6 +11,7 @@ from models import OrganizationStore, PoyntConnection
 from live_dashboard_models import DashboardOrder, DashboardSync, DashboardNotification, DashboardDay
 from live_dashboard_metrics import instant, order_store
 from kitchen_service import sync_ticket
+from kitchen_models import KitchenSession
 from poynt.client import PoyntClient, PoyntReauthorizationRequired
 from poynt.connection import get_poynt_credentials
 from store_time import utc_now, utc_iso, local_day_bounds
@@ -204,7 +205,11 @@ async def process_organization(organization_id, business_id, token, refresh_only
             for order in orders:
                 save_order(session, organization_id, business_id, order)
             state.last_reconciled_at = utc_now()
-            state.next_reconcile_at = utc_now() + timedelta(seconds=RECONCILE_SECONDS)
+            watched = session.scalar(select(KitchenSession.store_id).join(OrganizationStore,
+                OrganizationStore.id == KitchenSession.store_id).where(
+                OrganizationStore.organization_id == organization_id, KitchenSession.business_id == business_id,
+                KitchenSession.active.is_(True), KitchenSession.last_seen_at >= utc_now()-timedelta(seconds=180)).limit(1))
+            state.next_reconcile_at = utc_now() + timedelta(seconds=RECONCILE_SECONDS if watched else 300)
             state.error = None
             cutoff = utc_now() - timedelta(days=90)
             session.execute(delete(DashboardOrder).where(DashboardOrder.organization_id == organization_id,

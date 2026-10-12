@@ -26,6 +26,7 @@ from models import User, Organization, OrganizationMember, OrganizationStore, Po
 from live_dashboard_models import DashboardOrder, DashboardNotification, DashboardSync, DashboardDay
 from live_dashboard_metrics import summarize, money, instant, order_store, categories, store_details
 from live_dashboard_service import save_order, acquire, release, process_organization
+from kitchen_models import KitchenSession
 from routers import live_dashboard as routes
 from store_time import local_day_bounds, utc_now
 from zoneinfo import ZoneInfo
@@ -211,7 +212,8 @@ class DatabaseAndRoutesTests(unittest.TestCase):
                 PoyntConnection(organization_id=1,business_id="business",access_token="unused",expires_at=now+timedelta(days=1)),
                 OrganizationStore(organization_id=1,store_id="truck",poynt_name="Truck",timezone_name="America/Phoenix"),
                 OrganizationStore(organization_id=2,store_id="truck",poynt_name="Other",timezone_name="America/Phoenix"),
-                DashboardSync(organization_id=1,business_id="business",hook_id="hook",last_reconciled_at=now,next_reconcile_at=now+timedelta(minutes=5))]);s.commit()
+                DashboardSync(organization_id=1,business_id="business",hook_id="hook",last_reconciled_at=now,next_reconcile_at=now+timedelta(minutes=5))]);s.flush()
+            s.add(KitchenSession(store_id=1,business_id="business",active=True,started_at=now-timedelta(days=2),last_seen_at=now,revision=1));s.commit()
         app=FastAPI();app.add_middleware(StoreDisplayMiddleware);app.add_middleware(SessionMiddleware,secret_key="test-secret");app.include_router(routes.router)
         app.include_router(store_displays.router);app.include_router(auth_routes.router)
         @app.get("/test-login")

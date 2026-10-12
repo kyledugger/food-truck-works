@@ -20,6 +20,98 @@ from store_time import utc_now
 
 
 class KitchenTests(unittest.TestCase):
+    def service(self, action, **extra):
+        revision = self.queue()["session"]["revision"]
+        return self.client.post("/dashboard/stores/1/kitchen/service", headers={"X-Kitchen-CSRF":self.csrf},
+            json={"action":action,"revision":revision,**extra})
+
+    def test_off_default_start_without_backfill_and_optional_import(self):
+        from kitchen_models import KitchenSession
+        with self.factory() as session:
+            session.delete(session.get(KitchenSession,1));session.commit()
+        self.seed("before", at=self.now-timedelta(minutes=2))
+        data=self.queue();self.assertFalse(data["session"]["active"])
+        self.assertEqual(data["active"],[]);self.assertIsNone(data["flow"]["completion"])
+        self.assertEqual(self.service("start").status_code,200)
+        self.assertEqual(self.queue()["active"],[])
+        recent=self.service("recent").json();self.assertEqual([o["id"] for o in recent["orders"]],["before"])
+        self.assertEqual(self.service("import",order_ids=["before"]).status_code,200)
+        ticket=self.queue()["active"][0]
+        from live_dashboard_metrics import instant
+        self.assertEqual(instant(ticket["created_at"]), self.now-timedelta(minutes=2))
+        self.assertEqual(self.service("recent").json()["orders"],[])
+
+    def test_clear_archives_without_completion_and_never_reappears(self):
+        payload=self.seed();ticket=self.queue()["active"][0]
+        self.action(ticket,"done",ticket["items"][0]["key"])
+        self.assertEqual(self.service("clear").status_code,200)
+        self.assertEqual(self.queue()["active"],[])
+        self.assertEqual(self.queue()["flow"]["completion"]["completed_items"],0)
+        with self.factory() as session:
+            save_order(session,1,"business",payload);session.commit()
+            self.assertEqual(session.scalar(select(KitchenTicket)).state,"archived")
+        self.assertEqual(self.service("recent").json()["orders"],[])
+
+    def test_end_service_stops_admission_and_stale_session_requires_choice(self):
+        from kitchen_models import KitchenSession
+        self.seed()
+        with self.factory() as session:
+            session.get(KitchenSession,1).last_seen_at=self.now-timedelta(minutes=16);session.commit()
+        data=self.queue();self.assertTrue(data["session"]["needs_resume"]);self.assertEqual(data["active"],[])
+        self.assertEqual(self.service("resume").status_code,200);self.assertEqual(len(self.queue()["active"]),1)
+        self.assertEqual(self.service("end").status_code,200)
+        self.seed("off-order")
+        self.assertEqual(self.queue()["active"],[])
+        with self.factory() as session:
+            self.assertEqual(session.scalar(select(func.count(KitchenTicket.id))),1)
+
+    def test_service_scope_csrf_revision_and_invalid_import(self):
+        self.assertEqual(self.client.post("/dashboard/stores/1/kitchen/service",json={"action":"start","revision":1}).status_code,403)
+        self.assertEqual(self.service("import",order_ids=["not-present"]).status_code,409)
+        self.assertEqual(self.client.post("/dashboard/stores/1/kitchen/service",headers={"X-Kitchen-CSRF":self.csrf},json={"action":"end","revision":999}).status_code,409)
+
+    def test_session_migration_roundtrip(self):
+        from kitchen_models import KitchenSession
+        spec=importlib.util.spec_from_file_location("session_migration","alembic/versions/e8b3d95fa127_kitchen_sessions.py")
+        migration=importlib.util.module_from_spec(spec);spec.loader.exec_module(migration)
+        KitchenSession.__table__.drop(self.engine)
+        with self.engine.begin() as connection:
+            with Operations.context(MigrationContext.configure(connection)):
+                migration.upgrade()
+                self.assertIn("kitchen_sessions",inspect(connection).get_table_names())
+                migration.downgrade()
+                self.assertNotIn("kitchen_sessions",inspect(connection).get_table_names())
+
+    def test_idle_display_uses_five_minute_provider_interval(self):
+        from kitchen_models import KitchenSession
+        from live_dashboard_models import DashboardSync
+        from live_dashboard_service import acquire, release, process_organization
+        with self.factory() as session:
+            session.get(KitchenSession,1).last_seen_at=utc_now()-timedelta(minutes=4)
+            session.get(DashboardSync,1).next_reconcile_at=utc_now();session.commit()
+        business,token=acquire(1)
+        with patch("poynt.client.PoyntClient.get_recent_orders",new=AsyncMock(return_value=[])):
+            asyncio.run(process_organization(1,business,token))
+        release(1,token)
+        with self.factory() as session:
+            state=session.get(DashboardSync,1)
+            self.assertAlmostEqual((state.next_reconcile_at-state.last_reconciled_at).total_seconds(),300,delta=1)
+
+    def test_recent_recovery_across_phoenix_midnight(self):
+        from kitchen_models import KitchenSession
+        from store_time import local_day_bounds
+        from zoneinfo import ZoneInfo
+        from datetime import date
+        midnight,_=local_day_bounds(date(2026,10,12),ZoneInfo("America/Phoenix"))
+        now=midnight+timedelta(minutes=1)
+        with self.factory() as session:
+            session.delete(session.get(KitchenSession,1));session.commit()
+        with patch("routers.kitchen.utc_now",return_value=now),patch("kitchen_service.utc_now",return_value=now):
+            self.seed("previous-day",at=now-timedelta(minutes=2))
+            self.assertEqual(self.service("start").status_code,200)
+            self.assertEqual(self.service("import",order_ids=["previous-day"]).status_code,200)
+            self.assertEqual(len(self.queue()["active"]),1)
+
     def test_provider_refresh_fetches_even_when_not_due_and_returns_new_ticket(self):
         from live_dashboard_models import DashboardSync
         mock = AsyncMock(return_value=[sale(utc_now(), "fresh")])
@@ -117,6 +209,9 @@ class KitchenTests(unittest.TestCase):
     def test_customer_wait_oldest_unheld_and_performance_test_mode(self):
         # This test measures elapsed time, not admission across local midnight.
         self.now = self.now.replace(hour=19, minute=0, second=0, microsecond=0)
+        from kitchen_models import KitchenSession
+        with self.factory() as session:
+            session.get(KitchenSession,1).last_seen_at=self.now;session.commit()
         for target in ("routers.kitchen.utc_now", "kitchen_service.utc_now"):
             clock = patch(target, return_value=self.now)
             clock.start()
