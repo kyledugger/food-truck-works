@@ -1,0 +1,22 @@
+Food Truck Works memory diagnostics
+
+Copy the included files over the matching files in your project and deploy.
+This patch uses source_package_2(3).zip as its baseline.
+No new dependency, database migration, or environment variable is required.
+
+The logs use the prefix "Memory diagnostic:". Search for this in Papertrail.
+A sample records current process RSS every 60 seconds. Job start/end records
+cover background dashboard synchronization and per-organization token checks.
+Order fetch records include provider count and returned count.
+
+RSS measures the entire process, so overlapping requests can influence job
+deltas. Positive deltas do not by themselves prove a leak. Compare successive
+idle samples to see whether increases persist. On platforms without /proc,
+RSS is logged as unavailable; the application continues normally.
+
+No credentials, order payloads, customer information, or request bodies are logged.
+Normal INFO logging must be enabled for these records to appear.
+
+Validation: Python syntax checks for all five files; current RSS reading;
+job delta logging; exception propagation; unsupported-platform fallback.
+Production services and databases were not accessed.

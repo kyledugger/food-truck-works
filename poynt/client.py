@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone, time
 from zoneinfo import ZoneInfo
 
 import httpx
+from memory_diagnostics import log_memory
 
 from poynt.connection import PoyntCredentials, locked_poynt_connection
 from poynt.token import refresh_access_token, PoyntRefreshRejected, PoyntTokenError
@@ -333,6 +334,7 @@ class PoyntClient:
                 # Normal behavior: return only the most recent `limit` orders.
                 start_offset = max(0, total_count - limit)
 
+            log_memory("order_fetch_start", organization_id=self.organization_id, total_orders=total_count, fetch_all=fetch_all)
             all_orders = []
 
             while start_offset < total_count:
@@ -406,6 +408,7 @@ class PoyntClient:
                 len(all_orders),
             )
 
+            log_memory("order_fetch_end", organization_id=self.organization_id, returned_orders=len(all_orders))
             return all_orders
 
 

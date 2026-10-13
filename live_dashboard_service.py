@@ -15,6 +15,7 @@ from kitchen_models import KitchenSession
 from poynt.client import PoyntClient, PoyntReauthorizationRequired
 from poynt.connection import get_poynt_credentials
 from store_time import utc_now, utc_iso, local_day_bounds
+from memory_diagnostics import memory_span
 
 logger = logging.getLogger(__name__)
 RECONCILE_SECONDS = 30
@@ -248,7 +249,8 @@ async def dashboard_worker():
                     continue
                 business_id, token = claim
                 try:
-                    await asyncio.wait_for(process_organization(organization_id, business_id, token), timeout=150)
+                    with memory_span("dashboard_sync", organization_id=organization_id):
+                        await asyncio.wait_for(process_organization(organization_id, business_id, token), timeout=150)
                 except Exception as exc:
                     logger.warning("Dashboard sync failed: organization=%s error_type=%s", organization_id, type(exc).__name__)
                     with SessionLocal() as session:

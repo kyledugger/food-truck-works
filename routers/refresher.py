@@ -9,6 +9,7 @@ import asyncio
 import logging
 import os
 
+from memory_diagnostics import memory_span
 from poynt.client import PoyntClient, PoyntReauthorizationRequired
 from poynt.connection import get_all_poynt_connections, PoyntCredentials
 
@@ -30,7 +31,8 @@ async def refresh_all_poynt_connections_once() -> None:
 
         client = PoyntClient(credentials, organization_id=connection.organization_id)
         try:
-            await client.refresh()
+            with memory_span("poynt_token_refresh", organization_id=connection.organization_id):
+                await client.refresh()
         except PoyntReauthorizationRequired:
             logger.warning(
                 "Poynt refresher: organization_id=%s requires reauthorization.",

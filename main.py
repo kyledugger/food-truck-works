@@ -36,6 +36,7 @@ from routers.refresher import run_poynt_refresher
 from routers.claim_tips import router as claim_tips_router
 from routers.pricing import router as pricing_router
 from live_dashboard_service import dashboard_worker
+from memory_diagnostics import memory_sampler
 from store_display_access import StoreDisplayMiddleware
 
 dotenv_file = os.getenv("DOTENV_FILE", ".env")
@@ -72,6 +73,7 @@ POYNT_AUTHORIZE_URL = os.environ["POYNT_AUTHORIZE_URL"]
 @asynccontextmanager
 async def lifespan(app):
     tasks = [
+        asyncio.create_task(memory_sampler()),
         asyncio.create_task(dashboard_worker()),
         asyncio.create_task(run_poynt_refresher()),
     ]
