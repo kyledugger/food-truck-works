@@ -1390,7 +1390,8 @@ const reportTimezone = {{ store_timezone|tojson }};
                 payoutChoices[select.dataset.employeeId] = select.value;
             });
 
-            const approval = await new Promise(resolve => {
+            const approvalRequired = {{ require_split_approval|default(false)|tojson }};
+            const approval = approvalRequired ? await new Promise(resolve => {
                 const dialog=document.createElement('dialog');dialog.style.cssText='max-width:min(640px,92vw);max-height:85vh;overflow:auto';
                 const form=document.createElement('form'),title=document.createElement('h2');title.textContent='Review tip split';title.className='title is-4';form.append(title);
                 const add=text=>{const p=document.createElement('p');p.textContent=text;form.append(p);};
@@ -1400,12 +1401,12 @@ const reportTimezone = {{ store_timezone|tojson }};
                 const policy={{ tip_payout_policy|tojson }};paidLabel.hidden=policy!=='cash'&&!(policy==='choice'&&Object.values(payoutChoices).includes('cash'));
                 const email=document.createElement('input'),password=document.createElement('input');email.type='email';email.placeholder='Approver email';email.className='input';password.type='password';password.placeholder='Approver password';password.className='input';password.autocomplete='off';
                 const note=document.createElement('p');note.textContent='An owner, manager, or designated store approver must authorize when required, or to confirm cash handed out. Otherwise cash remains pending.';form.append(note,email,password);
-                const required={{ require_split_approval|default(false)|tojson }};
+                const required=approvalRequired;
                 const update=()=>{email.required=password.required=required||paid.checked;email.hidden=password.hidden=!(required||paid.checked);email.style.display=password.style.display=required||paid.checked?'':'none';};paid.onchange=update;update();
                 const submit=document.createElement('button'),cancel=document.createElement('button');submit.type='submit';submit.className='button is-primary';submit.textContent=required?'Approve and submit':'Submit split';cancel.type='button';cancel.className='button';cancel.textContent='Cancel';form.append(submit,cancel);
                 let result=null;cancel.onclick=()=>dialog.close();form.onsubmit=e=>{e.preventDefault();result={email:email.value,password:password.value,cashPaid:paid.checked};dialog.close();};
                 dialog.append(form);document.body.append(dialog);dialog.addEventListener('close',()=>{password.value='';dialog.remove();resolve(result);});dialog.showModal();
-            });
+            }) : {email: '', password: '', cashPaid: false};
             if(!approval)return;
 
             const formData = new FormData();
