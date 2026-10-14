@@ -19,6 +19,7 @@
 .kitchen-board #kitchen-recent{flex-shrink:0;background:#fff;border-radius:8px;padding:.4rem .6rem;max-height:40dvh;overflow:auto}
 .kitchen-board #kitchen-recent>p{font-size:.75rem;margin:.35rem 0}
 .kitchen-board .live-empty{padding:1rem}
+.kitchen-marker-editor{margin:auto;width:min(750px,95vw);max-height:85vh;overflow:auto;background:white;color:#25313e;border:1px solid #bac5d0;border-radius:10px;padding:1rem}.kitchen-marker-editor h2{font-size:1.25rem;font-weight:700}.kitchen-marker-editor p{margin:.5rem 0}.marker-rule{display:grid;grid-template-columns:140px minmax(120px,1fr) 110px auto;gap:.4rem;margin:.5rem 0}.marker-rule input,.marker-rule select{min-width:0;padding:.35rem;border:1px solid #89949e;border-radius:4px}@media(max-width:600px){.marker-rule{grid-template-columns:1fr 1fr}}
 .kitchen-metrics{display:flex;align-items:center;justify-content:space-around;gap:.7rem;flex-wrap:wrap;background:white;border-radius:8px;padding:.5rem .7rem;flex-shrink:0}
 .kitchen-metrics[hidden]{display:none!important}.kitchen-metrics>div{display:flex;flex-direction:column;gap:.1rem}.kitchen-metrics small{font-size:.78rem}.kitchen-metrics strong{font-size:1.2rem}.kitchen-metrics table{font-size:.85rem}.kitchen-metrics th,.kitchen-metrics td{padding:0 .4rem;text-align:center}
 @media(max-width:599px){.kitchen-board .kitchen-ticket{width:min(290px,calc(100vw - 1.3rem));flex-basis:min(290px,calc(100vw - 1.3rem))}.board-toolbar h1{font-size:1rem}.board-toolbar .button{font-size:.8rem}}

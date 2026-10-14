@@ -9,6 +9,13 @@
   let source=null,loading=false,stopped=false,available=false,live=false,fingerprint='',controller=null,refreshTask=null;
   const pending=new Map();
   let timerProfile={green_seconds:0,yellow_seconds:300,red_seconds:600};
+  let markers={rules:[],revision:0};
+  const normalizeMarkerText=text=>String(text).replaceAll('_',' ').toLowerCase();
+  function marked(text,target){
+    const matching=markers.rules.filter(rule=>rule.target===target&&normalizeMarkerText(text).includes(normalizeMarkerText(rule.text)));
+    const prefix=[...new Set(matching.map(rule=>rule.marker))].join(' ');
+    return (prefix?prefix+' ':'')+text;
+  }
   let serverTime=Date.now(),observed=performance.now(),snapshot=null;
   const el=(tag,cls,text)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=text;return n;};
   const itemIdentity=item=>JSON.stringify([item?.key,item?.name,item?.quantity,item?.modifiers||[]]);
@@ -45,6 +52,27 @@
   moreToggle.setAttribute('aria-label','More kitchen options');moreToggle.title='More kitchen options';
   const morePanel=el('div','kitchen-more-panel');moreMenu.append(moreToggle,morePanel);
   morePanel.append(soundButton);
+  if(feed.dataset.canMarkers==='true'&&!readonly){
+    const markerButton=el('button','button','Kitchen item markers');morePanel.append(markerButton);
+    markerButton.onclick=()=>{
+      const revision=markers.revision,dialog=el('dialog','kitchen-marker-editor'),form=el('form'),rows=el('div'),message=el('p');
+      form.append(el('h2','','Kitchen item markers'),el('p','','Shared across all stores in this organization. Rules match anywhere, ignoring case. Modifier underscores match spaces.'),rows);
+      function addRule(rule={target:'item',text:'',marker:''}){
+        const row=el('div','marker-rule'),target=el('select'),text=el('input'),emoji=el('input'),remove=el('button','button','Remove');
+        for(const [value,label] of [['item','Item name'],['modifier','Modifier value']]){const option=el('option','',label);option.value=value;target.append(option);}target.value=rule.target;target.setAttribute('aria-label','Rule target');
+        text.value=rule.text;text.placeholder='Name contains (e.g. banana)';text.maxLength=100;text.required=true;text.setAttribute('aria-label','Matching text');
+        emoji.value=rule.marker;emoji.placeholder='Paste emoji';emoji.maxLength=32;emoji.required=true;emoji.setAttribute('aria-label','Emoji marker');remove.type='button';remove.onclick=()=>row.remove();row.append(target,text,emoji,remove);rows.append(row);
+      }
+      markers.rules.forEach(addRule);
+      const add=el('button','button','Add rule'),save=el('button','button','Save'),cancel=el('button','button','Cancel');add.type=cancel.type='button';save.type='submit';add.onclick=()=>{if(rows.children.length<50)addRule();};cancel.onclick=()=>dialog.close();form.append(add,message,save,cancel);
+      form.onsubmit=async event=>{
+        event.preventDefault();save.disabled=true;message.textContent='Saving…';
+        const rules=[...rows.children].map(row=>({target:row.querySelector('select').value,text:row.querySelectorAll('input')[0].value.trim(),marker:row.querySelectorAll('input')[1].value.trim()}));
+        try{const response=await fetch('/dashboard/stores/'+storeId+'/kitchen-markers',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','X-Kitchen-CSRF':feed.dataset.csrf},body:JSON.stringify({rules,revision})});const data=await response.json();if(!response.ok)throw Error(typeof data.detail==='string'?data.detail:'Check the rules and try again.');markers=data;dialog.close();await refresh(true);}catch(error){message.textContent=error.message;}finally{save.disabled=false;}
+      };
+      dialog.append(form);document.body.append(dialog);dialog.addEventListener('close',()=>dialog.remove());dialog.showModal();
+    };
+  }
   const metricsPanel=document.getElementById('kitchen-metrics'),metricsToggle=el('button','button','Kitchen metrics');
   let metricsOn=false;try{metricsOn=localStorage.getItem('kitchen-metrics:'+storeId)==='true';}catch{}
   const showMetrics=()=>{if(metricsPanel)metricsPanel.hidden=!metricsOn;metricsToggle.setAttribute('aria-pressed',String(metricsOn));};
@@ -243,8 +271,8 @@
     const body=el('tbody');
     for(const item of ticket.items){
       const row=el('tr','kitchen-'+item.state),name=el('td','kitchen-item-name');
-      name.append(el('strong','kitchen-quantity',String(item.quantity)),document.createTextNode('\u00a0\u00a0'+item.name));
-      for(const group of item.modifiers||[])name.append(el('div','kitchen-modifier',group.attribute.replaceAll('_',' ')+': '+group.values.map(value=>value.replaceAll('_',' ')).join(', ')));
+      name.append(el('strong','kitchen-quantity',String(item.quantity)),document.createTextNode('\u00a0\u00a0'+marked(item.name,'item')));
+      for(const group of item.modifiers||[])name.append(el('div','kitchen-modifier',group.attribute.replaceAll('_',' ')+': '+group.values.map(value=>marked(value.replaceAll('_',' '),'modifier')).join(', ')));
       if(item.saving){row.classList.add('kitchen-saving');const spinner=el('span','kitchen-save-indicator');spinner.setAttribute('role','img');spinner.setAttribute('aria-label','Saving changes');spinner.title='Saving changes';name.append(spinner);row.setAttribute('aria-busy','true');}
       if(!finished){
         const action=item.state==='available'?'claim':item.state==='claimed'?'done':'undo';
@@ -262,6 +290,7 @@
     return root;
   }
   function render(data,local=false){
+    if(data.markers)markers=data.markers;
     document.dispatchEvent(new CustomEvent('kitchen-flow',{detail:data.flow}));
     if(!local){arrivals(data);serverTime=Date.parse(data.generated_at);observed=performance.now();snapshot=data;serviceState();}
     if(data.timer_profile){timerProfile=data.timer_profile;document.dispatchEvent(new CustomEvent('kitchen-timer-profile',{detail:timerProfile}));}
@@ -281,7 +310,7 @@
     const oldest=active.find(t=>t.state!=='held'&&t.items.some(item=>item.state!=='done'));
     document.dispatchEvent(new CustomEvent('kitchen-wait',{detail:{created_at:oldest?.created_at||null,generated_at:new Date(serverTime+performance.now()-observed).toISOString()}}));
     const visibleRecent=data.recent.filter(t=>!pending.has(t.id));
-    const next=JSON.stringify([active,visibleRecent]);
+    const next=JSON.stringify([active,visibleRecent,markers]);
     if(next!==fingerprint){
       fingerprint=next;const container=feed.closest('.store-orders'),scroll=container.scrollTop,left=container.scrollLeft;
       const focus=document.activeElement,focusTicket=focus?.dataset.ticketId,focusKey=focus?.dataset.itemKey;

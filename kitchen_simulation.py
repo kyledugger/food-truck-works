@@ -10,16 +10,16 @@ from order_preparation import modifiers
 def add_samples(session, store, business_id, count, scenario, actor):
     now = utc_now()
     names = ["Alex", "Jordan", "Sam", "Taylor", "Morgan"]
-    menu = ["Shark Bite Energy Drink", "Custom Energy Drink", "Custom Shave Ice", "Chocolate ice cream bar", "Frozen banana", "Cold brew"]
+    menu = ["Shark Bite Energy Drink", "Custom Energy Drink", "Custom Shave Ice", "Chocolate ice cream bar", "Take 5 Signature Banana", "Cold brew Coffee", "Oreo Obsession Signature Bar"]
     # Exact preparation fields from the supplied Poynt order. Use the real
     # modifier parser rather than a separately invented display representation.
     shark_bite = {"selectedVariants": [{"sku": "N-SHRKBT", "selectableVariations": [
-        {"attribute": "Options", "values": [{"name": "Caffeine_Free"}]}]}]}
+        {"attribute": "Options", "values": [{"name": "Caffeine_Free"}, {"name": "Sugar_Free"}, {"name": "Low_Sugar"}]}]}]}
     custom_drink = {"selectedVariants": [{"sku": "N-CSTM", "selectableVariations": [
         {"attribute": "Drink_Flavors", "values": [{"name": "Blue_Raspberry"}, {"name": "Coconut"}]}]}]}
     custom_shave_ice = {"selectedVariants": [{"selectableVariations": [
         {"attribute": "Flavors", "values": [{"name": "Blue_Raspberry"},
-            {"name": "Tiger_blood"}, {"name": "Wedding_Cake"}]}]}]}
+            {"name": "Tiger_blood"}, {"name": "Wedding_Cake"}, {"name": "Cherry"}, {"name": "Cotton Candy"}]}]}]}
     for index in range(count):
         token = uuid4().hex
         variant = int(token[:8], 16) if count == 1 else index

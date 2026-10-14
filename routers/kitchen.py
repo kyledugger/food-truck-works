@@ -14,7 +14,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from database import SessionLocal
 from models import OrganizationStore, PoyntConnection
 from live_dashboard_models import DashboardOrder
-from kitchen_models import KitchenTicket, KitchenAction, KitchenTimerProfile, KitchenSession
+from kitchen_models import KitchenTicket, KitchenAction, KitchenTimerProfile, KitchenSession, KitchenMarkers
 from kitchen_service import sync_ticket, transition, serialize, edit_note
 from live_dashboard_metrics import kitchen_intake, instant, order_pace
 from store_time import utc_now, utc_iso, local_day_bounds
@@ -120,6 +120,7 @@ def queue(request: Request, store_id: int):
             result = {"active": [serialize(t) for t in active], "recent": [serialize(t) for t in recent],
                       "session": session_info,
                       "timer_profile": timer_profile(session, store.id),
+                      "markers": marker_settings(session, store.organization_id),
                       "generated_at": utc_iso(now), "timezone": store.timezone_name,
                       "flow": {"window_minutes": 15,
                                "order_pace": order_pace(flow_payloads, start, end, now) if tracking_on and not needs_resume else [],
@@ -141,6 +142,53 @@ def check_csrf(request):
     origin = request.headers.get("origin")
     if origin and urlsplit(origin).netloc != request.headers.get("host"):
         raise HTTPException(403, "Invalid request origin.")
+
+
+def marker_settings(session, organization_id):
+    saved = session.get(KitchenMarkers, organization_id)
+    return {"rules": saved.rules if saved else [], "revision": saved.revision if saved else 0}
+
+
+class MarkerRule(BaseModel):
+    target: Literal["item", "modifier"]
+    text: str = Field(min_length=1, max_length=100)
+    marker: str = Field(min_length=1, max_length=32)
+
+
+class MarkerSettings(BaseModel):
+    rules: list[MarkerRule] = Field(max_length=50)
+    revision: int = Field(ge=0)
+
+
+@router.post("/dashboard/stores/{store_id}/kitchen-markers")
+def save_markers(request: Request, store_id: int, body: MarkerSettings):
+    check_csrf(request)
+    from routers.live_dashboard import sales_authorized
+    organization_id, role = sales_authorized(request, store_id)
+    if role not in {"owner", "manager"}:
+        raise HTTPException(403, "An owner or manager must change kitchen markers.")
+    rules = []
+    for rule in body.rules:
+        text, marker = rule.text.strip(), rule.marker.strip()
+        if not text or not marker or any(ord(c) < 32 for c in text + marker):
+            raise HTTPException(422, "Enter matching text and a single-line marker for every rule.")
+        rules.append({"target": rule.target, "text": text, "marker": marker})
+    with SessionLocal() as session:
+        store, _ = scope(request, session, store_id)
+        # Lock the organization even on the first save to serialize creation.
+        from models import Organization
+        session.scalar(select(Organization).where(Organization.id == organization_id).with_for_update())
+        saved = session.get(KitchenMarkers, store.organization_id)
+        if body.revision != (saved.revision if saved else 0):
+            raise HTTPException(409, "Markers changed on another screen. Close and reopen the editor.")
+        if saved is None:
+            saved = KitchenMarkers(organization_id=organization_id, rules=rules, revision=1)
+            session.add(saved)
+        else:
+            saved.rules = rules
+            saved.revision += 1
+        session.commit()
+        return marker_settings(session, organization_id)
 
 
 class ServiceAction(BaseModel):
@@ -381,7 +429,7 @@ def stamp(request, store_id):
     with SessionLocal() as session:
         store, connection = scope(request, session, store_id)
         tracking = session.get(KitchenSession, store.id)
-        return tuple(session.execute(select(func.count(KitchenTicket.id), func.coalesce(func.sum(KitchenTicket.revision), 0),
+        return (marker_settings(session, store.organization_id)["revision"],) + tuple(session.execute(select(func.count(KitchenTicket.id), func.coalesce(func.sum(KitchenTicket.revision), 0),
             func.coalesce(func.max(KitchenTicket.id), 0), func.max(KitchenTicket.updated_at).cast(String)).where(*filters(store, connection))).one()) + tuple(timer_profile(session, store.id).values()) + (tracking.revision if tracking else 0,)
 
 

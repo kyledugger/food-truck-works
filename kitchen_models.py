@@ -59,3 +59,10 @@ class KitchenTimerProfile(Base):
     green_seconds: Mapped[int] = mapped_column(default=0)
     yellow_seconds: Mapped[int] = mapped_column(default=300)
     red_seconds: Mapped[int] = mapped_column(default=600)
+
+
+class KitchenMarkers(Base):
+    __tablename__ = "kitchen_markers"
+    organization_id: Mapped[int] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), primary_key=True)
+    rules: Mapped[list] = mapped_column(JSON, default=list)
+    revision: Mapped[int] = mapped_column(default=1)
