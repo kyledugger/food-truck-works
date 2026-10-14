@@ -16,7 +16,7 @@ from models import OrganizationStore, PoyntConnection
 from live_dashboard_models import DashboardOrder
 from kitchen_models import KitchenTicket, KitchenAction, KitchenTimerProfile, KitchenSession
 from kitchen_service import sync_ticket, transition, serialize, edit_note
-from live_dashboard_metrics import kitchen_intake, instant
+from live_dashboard_metrics import kitchen_intake, instant, order_pace
 from store_time import utc_now, utc_iso, local_day_bounds
 
 router = APIRouter()
@@ -65,9 +65,11 @@ def filters(store, connection):
 
 
 @router.get("/dashboard/stores/{store_id}/kitchen")
+@router.get("/dashboard/stores/{store_id}/kitchen-watch")
 @router.get("/dashboard/stores/{store_id}/kitchen-test")
 def queue(request: Request, store_id: int):
     now = utc_now()
+    readonly = "/kitchen-watch" in request.url.path
     try:
         with SessionLocal() as session:
             store, connection = scope(request, session, store_id)
@@ -75,7 +77,7 @@ def queue(request: Request, store_id: int):
             tracking = session.get(KitchenSession, store.id)
             tracking_on = simulated or bool(tracking and tracking.active and tracking.business_id == connection.business_id)
             needs_resume = bool(not simulated and tracking_on and tracking.last_seen_at and tracking.last_seen_at < now-timedelta(minutes=15))
-            if not simulated and tracking_on and not needs_resume:
+            if not readonly and not simulated and tracking_on and not needs_resume:
                 tracking.last_seen_at = now
             session_info = {"active": tracking_on, "needs_resume": needs_resume,
                 "started_at": utc_iso(tracking.started_at) if tracking and tracking_on else None,
@@ -91,8 +93,8 @@ def queue(request: Request, store_id: int):
                 DashboardOrder.business_id == connection.business_id, DashboardOrder.store_id == store.store_id,
                 DashboardOrder.created_at >= start, DashboardOrder.created_at < end,
                 DashboardOrder.created_at >= (tracking.started_at if tracking and not simulated and tracking_on else start),
-                DashboardOrder.created_at <= now)).all() if tracking_on and not needs_resume else []
-            for order in orders:
+                DashboardOrder.created_at <= now)).all() if tracking_on and not needs_resume and not readonly else []
+            for order in ([] if readonly else orders):
                 sync_ticket(session, order, now)
             session.flush()
             active = session.scalars(select(KitchenTicket).where(*filters(store, connection), KitchenTicket.state.in_(["active", "held"] if tracking_on and not needs_resume else []))
@@ -102,7 +104,7 @@ def queue(request: Request, store_id: int):
             flow_orders = session.scalars(select(DashboardOrder).where(
                 DashboardOrder.organization_id == store.organization_id,
                 DashboardOrder.business_id == connection.business_id, DashboardOrder.store_id == store.store_id,
-                DashboardOrder.created_at >= now-timedelta(minutes=30), DashboardOrder.created_at <= now)).all()
+                DashboardOrder.created_at >= now-timedelta(minutes=30), DashboardOrder.created_at <= now)).all() if tracking_on and not needs_resume else []
             flow_payloads = [o.payload for o in flow_orders]
             if "/kitchen-test" in request.url.path:
                 samples = session.scalars(select(KitchenTicket).where(*filters(store, connection),
@@ -110,7 +112,7 @@ def queue(request: Request, store_id: int):
                     KitchenTicket.created_at <= now)).all()
                 flow_payloads = [{"createdAt": utc_iso(t.created_at), "statuses": {"status": "COMPLETED", "transactionStatusSummary": "COMPLETED"}, "items": t.items} for t in samples]
             completed_tickets = session.scalars(select(KitchenTicket).where(*filters(store, connection),
-                KitchenTicket.state.in_(["active", "held", "ready"]), KitchenTicket.updated_at >= now-timedelta(minutes=15))).all()
+                KitchenTicket.state.in_(["active", "held", "ready"]), KitchenTicket.updated_at >= now-timedelta(minutes=15))).all() if tracking_on and not needs_resume else []
             if not tracking_on or needs_resume:
                 active, recent, completed_tickets = [], [], []
             elif tracking and not simulated:
@@ -120,8 +122,9 @@ def queue(request: Request, store_id: int):
                       "timer_profile": timer_profile(session, store.id),
                       "generated_at": utc_iso(now), "timezone": store.timezone_name,
                       "flow": {"window_minutes": 15,
+                               "order_pace": order_pace(flow_payloads, start, end, now) if tracking_on and not needs_resume else [],
                                "customer_wait": customer_wait(active, now),
-                               "intake": kitchen_intake(flow_payloads, now, 15),
+                               "intake": kitchen_intake(flow_payloads, now, 15) if tracking_on and not needs_resume else None,
                                "tracking": tracking_on and not needs_resume,
                                "completion": completion_rate(completed_tickets, now, since=tracking.started_at if tracking and not simulated else None) if tracking_on and not needs_resume else None}}
             session.commit()
@@ -383,6 +386,7 @@ def stamp(request, store_id):
 
 
 @router.get("/dashboard/stores/{store_id}/kitchen/events")
+@router.get("/dashboard/stores/{store_id}/kitchen-watch/events")
 @router.get("/dashboard/stores/{store_id}/kitchen-test/events")
 async def events(request: Request, store_id: int):
     try:

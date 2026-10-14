@@ -25,13 +25,6 @@
             <a href="/poynt/tip-submissions?store_id={{ store.store_id|urlencode }}" class="store-home-action">
                 <span class="store-home-action-title">Tip History</span><span>Review today's shifts and tip splits.</span>
             </a>
-            <form method="post" action="/dashboard/stores/{{ store.id }}/show">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                <button class="store-home-action store-home-performance" type="submit">
-                    <span class="store-home-action-title">Store Performance</span>
-                    <span>Open live sales and kitchen activity.</span>
-                </button>
-            </form>
         </div>
     </section>
 </main>

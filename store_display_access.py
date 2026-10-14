@@ -58,6 +58,9 @@ class StoreDisplayMiddleware(BaseHTTPMiddleware):
         if request.method == "POST" and request.url.path == store_path + "/show":
             return await call_next(request)
         kitchen_path = store_path + "/kitchen"
+        watch_path = store_path + "/kitchen-watch"
+        if request.method == "GET" and request.url.path in {watch_path, watch_path + "/events"}:
+            return await call_next(request)
         test_path = store_path + "/kitchen-test"
         if ((request.method == "GET" and request.url.path in {test_path, test_path + "/events"})
                 or (request.method == "POST" and (request.url.path == test_path + "/orders"

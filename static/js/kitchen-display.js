@@ -3,7 +3,8 @@
   const feed=document.getElementById('store-order-feed'),grid=document.getElementById('live-stores');
   const storeId=feed?.dataset.storeId||grid?.dataset.storeId,board=!!document.querySelector('[data-kitchen-board]');
   if(feed?.dataset.kitchen!=='true'||!storeId)return;
-  const base='/dashboard/stores/'+storeId+(feed.dataset.test==='true'?'/kitchen-test':'/kitchen');
+  const readonly=feed.dataset.readonly==='true';
+  const base='/dashboard/stores/'+storeId+(readonly?'/kitchen-watch':feed.dataset.test==='true'?'/kitchen-test':'/kitchen');
   const recent=document.getElementById('kitchen-recent-feed'),status=document.getElementById('kitchen-status');
   let source=null,loading=false,stopped=false,available=false,live=false,fingerprint='',controller=null,refreshTask=null;
   const pending=new Map();
@@ -44,11 +45,25 @@
   moreToggle.setAttribute('aria-label','More kitchen options');moreToggle.title='More kitchen options';
   const morePanel=el('div','kitchen-more-panel');moreMenu.append(moreToggle,morePanel);
   morePanel.append(soundButton);
+  const metricsPanel=document.getElementById('kitchen-metrics'),metricsToggle=el('button','button','Kitchen metrics');
+  let metricsOn=false;try{metricsOn=localStorage.getItem('kitchen-metrics:'+storeId)==='true';}catch{}
+  const showMetrics=()=>{if(metricsPanel)metricsPanel.hidden=!metricsOn;metricsToggle.setAttribute('aria-pressed',String(metricsOn));};
+  metricsToggle.onclick=()=>{metricsOn=!metricsOn;try{localStorage.setItem('kitchen-metrics:'+storeId,String(metricsOn));}catch{}showMetrics();};showMetrics();morePanel.append(metricsToggle);
+  document.addEventListener('kitchen-flow',event=>{
+    if(!metricsPanel)return;const f=event.detail;metricsPanel.replaceChildren();
+    if(!f?.tracking){metricsPanel.append(el('p','','Start service to see kitchen metrics.'));return;}
+    for(const [label,value] of [['Kitchen Intake',f.intake?.items_per_minute],['Kitchen Completion',f.completion?.items_per_minute]]){const cell=el('div');cell.append(el('small','',label),el('strong','',value==null?'—':value.toFixed(1)+' items/min'),el('small','','Last 15 minutes'));metricsPanel.append(cell);}
+    const wait=el('div');wait.append(el('small','','Customer Wait'),el('strong','',f.customer_wait?Math.floor(f.customer_wait.wait_seconds/60)+'m '+f.customer_wait.wait_seconds%60+'s':'No waiting tickets'));metricsPanel.append(wait);
+    const pace=el('div'),table=el('table'),head=el('tr'),values=el('tr');pace.append(el('small','','Time between orders'));head.append(el('th','','# Items'));values.append(el('th','','Seconds'));
+    for(const size of [1,2,3]){head.append(el('th','',size));const value=f.order_pace?.find(p=>p.items===size)?.recent_seconds;values.append(el('td','',value==null?'—':value.toFixed(1)));}table.append(head,values);pace.append(table);metricsPanel.append(pace);
+  });
+  document.addEventListener('kitchen-flow-unavailable',()=>{if(metricsPanel)metricsPanel.replaceChildren(el('p','','Kitchen metrics temporarily unavailable.'));});
   if(feed.dataset.test!=='true')morePanel.append(recoveryMenu);
   const timerButton=document.getElementById('timer-settings');if(timerButton)morePanel.append(timerButton);
   const toolbar=document.querySelector('.board-toolbar nav')||document.querySelector('.kitchen-heading-row');
   const testLink=toolbar&&[...toolbar.querySelectorAll('a')].find(a=>/^(Test kitchen|Live kitchen|Test queue|Live queue)$/.test(a.textContent.trim()));
   if(testLink)morePanel.append(testLink);
+  if(readonly){serviceControls.remove();recoveryMenu.remove();endService.remove();testLink?.remove();}
   if(feed.dataset.test!=='true')morePanel.append(endService);
   if(toolbar)toolbar.append(moreMenu);else refreshButton?.after(moreMenu);
   const menuStyle=el('style','');menuStyle.textContent=`
@@ -72,7 +87,7 @@
   morePanel.addEventListener('click',event=>{if(event.target.closest('button,a'))moreMenu.open=false;});
   let serviceBusy=false;
   function serviceState(){
-    if(!snapshot?.session||feed.dataset.test==='true')return;
+    if(readonly||!snapshot?.session||feed.dataset.test==='true')return;
     const s=snapshot.session,on=s.active&&!s.needs_resume;
     startService.hidden=on;startService.textContent='Start service';
     resumeService.hidden=!s.needs_resume;endService.hidden=!s.active;clearService.hidden=!on;
@@ -242,7 +257,9 @@
       }
       row.append(name);body.append(row);
     }
-    table.append(body);root.append(table);return root;
+    table.append(body);root.append(table);
+    if(readonly){root.querySelectorAll('[data-kitchen-action]').forEach(node=>{if(node.classList.contains('kitchen-edit-note')||node.classList.contains('kitchen-action'))node.remove();else{node.removeAttribute('data-kitchen-action');node.removeAttribute('role');node.removeAttribute('tabindex');node.removeAttribute('title');if(node.tagName==='BUTTON')node.disabled=true;}});}
+    return root;
   }
   function render(data,local=false){
     document.dispatchEvent(new CustomEvent('kitchen-flow',{detail:data.flow}));
@@ -291,6 +308,7 @@
     refreshTask=load(provider);await refreshTask;
   }
   async function load(provider=false){
+    if(readonly)provider=false;
     loading=true;controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),provider?65000:10000);
     const button=document.getElementById('live-refresh');
     if(provider){if(button)button.disabled=true;status.textContent='Checking Poynt for current orders…';}
@@ -307,6 +325,7 @@
     finally{clearTimeout(timeout);controller=null;loading=false;if(provider&&button)button.disabled=stopped;}
   }
   async function act(ticket,action,key,extra={}){
+    if(readonly)return;
     if(!available||stopped)return;
     if(pending.has(ticket.id)&&!key)return;
     if(ticket.state==='held'&&action!=='resume'&&action!=='edit_note')return;

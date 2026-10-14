@@ -24,7 +24,11 @@
     const root=el('article','live-store');
     const header=el('div','live-store-header'), info=el('div');
     const name=el('h2'), date=el('p','live-store-date'), badge=el('span','tag is-light');
-    const storeLink=el('a','live-store-link');storeLink.href='/dashboard/stores/'+id;storeLink.append(name);info.append(storeLink,date);header.append(info,badge);root.append(header);
+    info.append(name,date);header.append(info,badge);root.append(header);
+    const queueLink=el('a','button is-small is-light','View kitchen queue');queueLink.href='/dashboard/stores/'+id+'/kitchen-display?readonly=true';
+    const wait=el('p','live-customer-wait'),queueRow=el('div','live-kitchen-row');
+    queueRow.style.cssText='display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap';
+    wait.style.margin='0';queueLink.style.marginLeft='auto';queueRow.append(wait,queueLink);root.append(queueRow);
     const message=el('p','live-empty');root.append(message);
     const body=el('div'),kpis=el('div','live-kpis');
     const fields={},labels={};
@@ -33,7 +37,6 @@
     }
     body.append(kpis);
     const now=el('div','live-now'), recent=el('strong'),pace=el('p','live-pace'),last=el('p','live-last');
-    now.append(el('small','','LAST 5 MINUTES'),recent,pace,last);body.append(now);
     const warning=el('p','live-warning');body.append(warning);
     const details=el('details'),summary=el('summary','','Hourly sales & category totals');details.append(summary);
     const avg=el('p','is-size-7 mt-2');details.append(avg);
@@ -53,7 +56,7 @@
       categoryPanel.append(table);panels.append(salesPanel,categoryPanel);details.append(panels);
       document.getElementById('store-sales-breakdown').append(details);
     }
-    const card={root,name,date,badge,message,body,fields,labels,now,recent,pace,last,warning,details,avg,rows,hourly,activity,activityWrap,activityTitle,charts:{}};
+    const card={root,name,date,badge,message,body,fields,labels,wait,queueLink,now,recent,pace,last,warning,details,avg,rows,hourly,activity,activityWrap,activityTitle,charts:{}};
     details.addEventListener('toggle',()=>{if(details.open && card.data)drawCharts(card,card.data);});
     cards.set(id,card);return card;
   }
@@ -81,8 +84,11 @@
       alive.add(s.id);const c=cards.get(s.id)||makeCard(s.id);c.name.textContent=s.name;
       c.message.hidden=true;c.body.hidden=false;c.badge.textContent='';
       if(storeView)c.details.hidden=!!s.setup_required||!!(s.loading??data.initializing);
-      if(s.setup_required){c.date.textContent='Setup needed';c.body.hidden=true;c.message.hidden=false;c.message.textContent=s.message;continue;}
+      if(s.setup_required){c.wait.hidden=c.queueLink.hidden=true;c.date.textContent='Setup needed';c.body.hidden=true;c.message.hidden=false;c.message.textContent=s.message;continue;}
       c.data=s;c.date.textContent=s.date+' · '+s.timezone;
+      c.wait.hidden=c.queueLink.hidden=!!s.historical;
+      const seconds=s.customer_wait?.wait_seconds;
+      c.wait.textContent='Customer Wait: '+(!s.kitchen_tracking?'Service off':seconds==null?'No waiting tickets':Math.floor(seconds/60)+'m '+seconds%60+'s');
       const when=s.historical?'on this date':'today';
       c.badge.textContent=(s.loading??data.initializing)?'Loading sales':s.historical?'Historical view':s.order_count?'Trading today':s.currency_warning?'No USD sales today':'No sales today';
       c.labels.sales.textContent='Sales';c.labels.tips.textContent=s.historical?'Tips':'Tips today';c.labels.orders.textContent=s.historical?'Orders':'Orders today';c.labels.items.textContent=s.historical?'Items':'Items today';

@@ -62,17 +62,8 @@ def sales_authorized(request, store_id=None):
 
 @router.get("/dashboard/stores/{store_id}")
 def store_dashboard(request: Request, store_id: int, test: bool = False):
-    organization_id, role = sales_authorized(request, store_id)
-    if role == "store_display" and request.session.get("store_performance_id") != store_id:
-        return RedirectResponse(f"/dashboard/stores/{store_id}/home", status_code=303)
-    with SessionLocal() as session:
-        store = session.scalar(select(OrganizationStore).where(OrganizationStore.id == store_id,
-            OrganizationStore.organization_id == organization_id, OrganizationStore.is_active.is_(True)))
-        if store is None:
-            raise HTTPException(404, "Store not found.")
-        return templates.TemplateResponse(request=request, name="store_dashboard.html",
-            context={"store": store, "is_store_display": role == "store_display", "test_mode": test,
-                     "kitchen_csrf": request.session.setdefault("kitchen_csrf", secrets.token_urlsafe(32))}, headers={"Cache-Control": "no-store"})
+    sales_authorized(request, store_id)
+    return RedirectResponse(f"/dashboard/stores/{store_id}/kitchen-display", status_code=303)
 
 
 @router.get("/dashboard/stores/{store_id}/home")
@@ -93,7 +84,7 @@ def store_display_home(request: Request, store_id: int):
 
 
 @router.get("/dashboard/stores/{store_id}/kitchen-display")
-def kitchen_display(request: Request, store_id: int, test: bool = False):
+def kitchen_display(request: Request, store_id: int, test: bool = False, readonly: bool = False):
     organization_id, role = sales_authorized(request, store_id)
     with SessionLocal() as session:
         store = session.scalar(select(OrganizationStore).where(OrganizationStore.id == store_id,
@@ -101,7 +92,7 @@ def kitchen_display(request: Request, store_id: int, test: bool = False):
         if store is None:
             raise HTTPException(404, "Store not found.")
         return templates.TemplateResponse(request=request, name="kitchen_display.html",
-            context={"store": store, "test_mode": test, "can_edit_timer": role in {"owner", "manager"}, "kitchen_csrf": request.session.setdefault("kitchen_csrf", secrets.token_urlsafe(32))},
+            context={"store": store, "test_mode": test and not readonly, "readonly": readonly, "can_edit_timer": not readonly and role in {"owner", "manager"}, "kitchen_csrf": "" if readonly else request.session.setdefault("kitchen_csrf", secrets.token_urlsafe(32))},
             headers={"Cache-Control": "no-store"})
 
 
@@ -111,8 +102,7 @@ def show_store_performance(request: Request, store_id: int, csrf_token: str = Fo
     expected = request.session.get("store_performance_csrf")
     if not expected or not secrets.compare_digest(expected, csrf_token):
         raise HTTPException(403, "Open the store home screen and try again.")
-    request.session["store_performance_id"] = store_id
-    return RedirectResponse(f"/dashboard/stores/{store_id}", status_code=303)
+    return RedirectResponse(f"/dashboard/stores/{store_id}/kitchen-display", status_code=303)
 
 
 @router.get("/dashboard/data")
@@ -199,6 +189,13 @@ def dashboard_data(request: Request, report_date: str = Query("today", alias="da
                     DashboardOrder.created_at < end)).all()
                 payloads = [row.payload for row in orders]
                 result = summarize(store, payloads, end - timedelta(microseconds=1) if historical else now, historical=historical)
+                if not historical:
+                    from kitchen_models import KitchenSession, KitchenTicket
+                    from routers.kitchen import customer_wait
+                    tracking = session.get(KitchenSession, store.id)
+                    on = bool(tracking and tracking.active and tracking.business_id == connection.business_id and tracking.last_seen_at and tracking.last_seen_at >= now - timedelta(minutes=15))
+                    tickets = session.scalars(select(KitchenTicket).where(KitchenTicket.organization_id == organization_id, KitchenTicket.business_id == connection.business_id, KitchenTicket.store_id == store.id, KitchenTicket.state == "active")).all() if on else []
+                    result.update(kitchen_tracking=on, customer_wait=customer_wait(tickets, now))
                 if store_id is not None:
                     result.update(store_details(payloads, start, end, now))
                 result.update(loading=loading, stale=stale, load_error=load_error)
