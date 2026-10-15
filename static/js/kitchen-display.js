@@ -213,13 +213,10 @@
     if(incoming)bell(); // One chime per received batch, never one per item.
   }
   function customerCallout(ticket){
-    if(ticket.kitchen_notes!==null&&ticket.kitchen_notes!==undefined)return {name:ticket.kitchen_customer_name||'',notes:ticket.kitchen_notes};
-    const notes=(ticket.notes||'').trim();
-    if(ticket.customer_name)return {name:ticket.customer_name,notes};
-    const explicit=notes.match(/^name:\s*([^|\n]+)(?:[|\n]([\s\S]*))?$/i);
-    if(explicit)return {name:explicit[1].trim(),notes:(explicit[2]||'').trim()};
-    const words=notes.match(/^(\S+)(?:\s+([\s\S]*))?$/);
-    return {name:words?words[1].replace(/[:,]$/,''):'',notes:words?(words[2]||'').trim():''};
+    return {
+      name:ticket.kitchen_customer_name??ticket.customer_name??'',
+      notes:ticket.kitchen_notes??ticket.notes??''
+    };
   }
   function editNote(ticket){
     if(!available||stopped||pending.has(ticket.id))return;
@@ -255,7 +252,7 @@
     const callout=customerCallout(ticket);
     const root=el('article','store-order kitchen-ticket'+(ticket.completing?' ticket-completing':held?' ticket-held':finished?' ticket-ready':ticket.items.some(i=>i.state==='claimed')?' ticket-in-progress':'')),head=el('div','store-order-head');
     if(ticket.completing){root.setAttribute('aria-busy','true');root.setAttribute('aria-label','Order '+ticket.number+' completing; saving changes');}
-    const title=el(finished?'strong':'button','kitchen-complete-header',(held?'Ⅱ Held · ':'')+callout.name);
+    const title=el(finished?'strong':'button','kitchen-complete-header',(held?'Ⅱ Held · ':'')+(callout.name.trim()||'#'+ticket.number));
     if(!finished){title.type='button';title.dataset.kitchenAction='done';title.dataset.ticketId=ticket.id;title.dataset.blocked=String(held);title.setAttribute('aria-label','Clear order '+ticket.number+' after pickup');title.title=held?'Resume using the timer before clearing':'Tap header after customer pickup to clear this order';title.addEventListener('click',event=>{event.stopPropagation();act(ticket,'done',null);});head.addEventListener('click',event=>{if(event.target===head)act(ticket,'done',null);});}
     const timer=el(finished?'strong':'button','kitchen-elapsed');timer.dataset.orderCreated=ticket.created_at;timer.dataset.held=String(held);timer.dataset.orderNumber=ticket.number;
     if(!finished){timer.type='button';timer.dataset.kitchenAction=held?'resume':'hold';timer.dataset.ticketId=ticket.id;timer.title=held?'Resume preparation':'Hold preparation; order age keeps counting';timer.addEventListener('click',event=>{event.stopPropagation();act(ticket,held?'resume':'hold',null);});}
