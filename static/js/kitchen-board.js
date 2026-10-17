@@ -1,4 +1,14 @@
 (() => {
+  const clock=document.getElementById('kitchen-clock');
+  if(clock){
+    let format;
+    try{format=new Intl.DateTimeFormat('en-US',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:clock.dataset.timezone||undefined});}
+    catch{format=new Intl.DateTimeFormat('en-US',{hour:'numeric',minute:'2-digit',hour12:true});}
+    const updateClock=()=>{const now=new Date();clock.textContent=format.format(now);clock.dateTime=now.toISOString();};
+    updateClock();const clockTimer=setInterval(updateClock,1000);
+    document.addEventListener('visibilitychange',()=>{if(!document.hidden)updateClock();});
+    window.addEventListener('pagehide',()=>clearInterval(clockTimer));
+  }
   const scroller=document.querySelector('.board-orders'),fullscreen=document.getElementById('store-fullscreen');
   fullscreen.hidden=!document.fullscreenEnabled;
   fullscreen.addEventListener('click',async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();}catch{fullscreen.textContent='Use browser full screen';}});
