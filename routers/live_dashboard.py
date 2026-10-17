@@ -92,7 +92,7 @@ def kitchen_display(request: Request, store_id: int, test: bool = False, readonl
         if store is None:
             raise HTTPException(404, "Store not found.")
         return templates.TemplateResponse(request=request, name="kitchen_display.html",
-            context={"store": store, "test_mode": test and not readonly, "readonly": readonly, "can_edit_timer": not readonly and role in {"owner", "manager"}, "kitchen_csrf": "" if readonly else request.session.setdefault("kitchen_csrf", secrets.token_urlsafe(32))},
+            context={"store": store, "test_mode": test and not readonly, "readonly": readonly, "can_view_dashboard": role in {"owner", "manager"}, "can_edit_timer": not readonly and role in {"owner", "manager"}, "kitchen_csrf": "" if readonly else request.session.setdefault("kitchen_csrf", secrets.token_urlsafe(32))},
             headers={"Cache-Control": "no-store"})
 
 

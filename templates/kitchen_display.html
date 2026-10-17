@@ -5,7 +5,7 @@
 <main class="kitchen-board" data-kitchen-board="true">
   <header class="board-toolbar">
     <div><h1><time id="kitchen-clock" data-timezone="{{ store.timezone_name or '' }}" aria-label="Current time">--:--</time> {{ store.display_name or store.poynt_name }} · Kitchen Queue <span id="kitchen-count"></span></h1><p id="kitchen-status" role="status" aria-live="polite">Connecting…</p></div>
-    <nav aria-label="Kitchen controls"><a class="button" href="/dashboard/stores/{{ store.id }}/home">Store home</a><a class="button" href="/dashboard/stores/{{ store.id }}/kitchen-display{% if not test_mode %}?test=true{% endif %}">{{ 'Live kitchen' if test_mode else 'Test kitchen' }}</a>{% if can_edit_timer %}<button id="timer-settings" class="button">Timer profile</button>{% endif %}<button id="store-fullscreen" class="button">Full screen</button><button id="live-refresh" class="button">Refresh</button></nav>
+    <nav aria-label="Kitchen controls"><a class="button" href="{{ '/dashboard' if can_view_dashboard else '/dashboard/stores/' ~ store.id ~ '/home' }}">{{ 'Dashboard' if can_view_dashboard else 'Store Home' }}</a><a class="button" href="/dashboard/stores/{{ store.id }}/kitchen-display{% if not test_mode %}?test=true{% endif %}">{{ 'Live kitchen' if test_mode else 'Test kitchen' }}</a>{% if can_edit_timer %}<button id="timer-settings" class="button">Timer profile</button>{% endif %}<button id="store-fullscreen" class="button">Full screen</button><button id="live-refresh" class="button">Refresh</button></nav>
   </header>
   {% if readonly %}<p>Read-only queue · <a href="/dashboard/stores/{{ store.id }}/kitchen-display">Open working queue</a></p>{% endif %}
   <section id="kitchen-metrics" class="kitchen-metrics" hidden aria-label="Kitchen metrics"></section>
