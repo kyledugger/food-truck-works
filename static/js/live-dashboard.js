@@ -90,7 +90,7 @@
       const seconds=s.customer_wait?.wait_seconds;
       c.wait.textContent='Customer Wait: '+(!s.kitchen_tracking?'Service off':seconds==null?'No waiting tickets':Math.floor(seconds/60)+'m '+seconds%60+'s');
       const when=s.historical?'on this date':'today';
-      c.badge.textContent=(s.loading??data.initializing)?'Loading sales':s.historical?'Historical view':s.order_count?'Trading today':s.currency_warning?'No USD sales today':'No sales today';
+      c.badge.textContent=(s.loading??data.initializing)?'Loading sales':s.historical?(s.load_error?'Verification failed':s.verifying?'Checking for updates…':'Historical view'):s.order_count?'Trading today':s.currency_warning?'No USD sales today':'No sales today';
       c.labels.sales.textContent='Sales';c.labels.tips.textContent=s.historical?'Tips':'Tips today';c.labels.orders.textContent=s.historical?'Orders':'Orders today';c.labels.items.textContent=s.historical?'Items':'Items today';
       c.now.hidden=!!s.historical;c.activityWrap.hidden=!!s.historical;c.activityTitle.hidden=!!s.historical;
       if(s.historical&&c.charts.activity){c.charts.activity.destroy();delete c.charts.activity;}
@@ -100,7 +100,7 @@
       c.fields.sales.textContent=money(s.sales_cents);c.fields.tips.textContent=money(s.tips_cents);c.fields.orders.textContent=s.order_count;c.fields.items.textContent=new Intl.NumberFormat('en-US').format(s.item_count||0);
       if(!s.historical){c.recent.textContent=s.recent_orders+' orders · '+money(s.recent_sales_cents);
         c.pace.textContent=s.pace+(s.pace_ratio!==null?' · '+s.pace_ratio.toFixed(1)+'× recent average':'');c.last.textContent=ago(s.last_sale_at,data.generated_at);}
-      c.avg.textContent='Average sale: '+money(s.average_sale_cents)+(s.historical?' · Full day.':' · Current hour is partial.');
+      c.avg.textContent='Average sale: '+money(s.average_sale_cents)+(s.historical?(s.verifying?' · Saved orders; verification pending.':' · Full day.'):' · Current hour is partial.');
       c.warning.hidden=!s.currency_warning;c.warning.textContent='Non-USD orders are excluded from these totals.';
       c.rows.replaceChildren();
       for(const row of s.categories){const tr=el('tr');[row.name,row.quantity,money(row.sales_cents),row.share+'%'].forEach(v=>tr.append(el('td','',v)));c.rows.append(tr);}
@@ -111,14 +111,14 @@
     let text;
     if(!data.connected)text='Connect Poynt to see store sales.';
     else if(!data.stores.length)text='Add or activate stores in Store Settings to start tracking today.';
-    else if(data.error)text=data.error+' Displayed totals may be out of date.';
+    else if(data.error)text=data.historical_view?(data.initializing?'Historical verification failed. Retrying; no verified totals are available for some stores.':'Historical verification failed. Saved totals remain visible; retrying shortly.'):data.error+' Displayed totals may be out of date.';
     else if(data.queue_delayed)text='Order updates are delayed. Displayed totals may be out of date.';
     else if(data.initializing)text='Collecting the selected day’s orders. This can take a moment on the first visit.';
-    else if(data.stale)text='Waiting for an order sync. Displayed totals may be out of date.';
+    else if(data.stale&&!data.historical_view)text='Waiting for an order sync. Displayed totals may be out of date.';
     else text='';
     status.hidden=!text;status.textContent=text;status.className='notification '+(delayed?'is-warning is-light':'is-light');
     const loaded=data.historical_view?data.last_view_loaded_at:data.generated_at;
-    refreshed.textContent=(data.historical_view?'Sales loaded ':'Updated ')+(loaded?new Date(loaded).toLocaleTimeString():'—');
+    refreshed.textContent=data.historical_view&&!loaded?(data.stores.some(s=>s.cached_history)?'Showing saved orders · not yet verified':'Waiting for historical verification'):(data.historical_view?'Sales checked ':'Updated ')+(loaded?new Date(loaded).toLocaleTimeString():'—');
     if(enable)enable.hidden=!!data.historical_view||!data.can_enable_webhook||data.webhook_registered;
     if(data.polling_needed===false)clearInterval(timer);
     if(storeView)document.dispatchEvent(new CustomEvent('store-data',{detail:data}));

@@ -188,6 +188,11 @@ def dashboard_data(request: Request, report_date: str = Query("today", alias="da
                     DashboardOrder.created_at >= start - (timedelta(0) if historical else timedelta(minutes=65)),
                     DashboardOrder.created_at < end)).all()
                 payloads = [row.payload for row in orders]
+                # A historical load marker certifies a full-day provider scan;
+                # live-cached orders are still useful before that first scan.
+                cached_history = historical and bool(orders)
+                if cached_history:
+                    loading = False
                 result = summarize(store, payloads, end - timedelta(microseconds=1) if historical else now, historical=historical)
                 if not historical:
                     from kitchen_models import KitchenSession, KitchenTicket
@@ -198,7 +203,9 @@ def dashboard_data(request: Request, report_date: str = Query("today", alias="da
                     result.update(kitchen_tracking=on, customer_wait=customer_wait(tickets, now))
                 if store_id is not None:
                     result.update(store_details(payloads, start, end, now))
-                result.update(loading=loading, stale=stale, load_error=load_error)
+                result.update(loading=loading, stale=stale, load_error=load_error,
+                    cached_history=cached_history, verifying=historical and stale,
+                    history_verified=historical and cache.loaded_at is not None)
                 results.append(result)
             if live_pending and state.next_reconcile_at > now:
                 state.next_reconcile_at = now

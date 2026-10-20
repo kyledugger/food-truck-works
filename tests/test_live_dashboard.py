@@ -544,6 +544,41 @@ class DatabaseAndRoutesTests(unittest.TestCase):
         with self.factory() as s:self.assertEqual(s.scalar(select(func.count()).select_from(DashboardDay)),1)
         live=self.client.get("/dashboard/data").json();self.assertFalse(live["historical_view"]);self.assertTrue(live["polling_needed"])
 
+    def test_historical_live_cache_visible_before_verification_and_after_failure(self):
+        self.client.get('/test-login')
+        day=utc_now().astimezone(ZoneInfo('America/Phoenix')).date()-timedelta(days=1)
+        start,end=local_day_bounds(day,ZoneInfo('America/Phoenix'))
+        with self.factory() as session:
+            save_order(session,1,'business',sale(start+timedelta(hours=12)))
+            session.commit()
+        data=self.client.get('/dashboard/data?date='+day.isoformat()).json()
+        store=data['stores'][0]
+        self.assertFalse(store['loading']);self.assertFalse(data['initializing'])
+        self.assertTrue(store['cached_history']);self.assertTrue(store['verifying'])
+        self.assertFalse(store['history_verified']);self.assertTrue(data['polling_needed'])
+        self.assertEqual(store['sales_cents'],1083)
+        with self.factory() as session:
+            cache=session.scalar(select(DashboardDay));cache.error='Historical sales could not load. Retrying shortly.'
+            session.commit()
+        failed=self.client.get('/dashboard/data?date='+day.isoformat()).json()
+        self.assertFalse(failed['stores'][0]['loading'])
+        self.assertEqual(failed['stores'][0]['sales_cents'],1083)
+        self.assertIsNotNone(failed['stores'][0]['load_error'])
+        self.assertTrue(failed['polling_needed'])
+
+    def test_historical_verified_empty_day_visible_while_rechecking(self):
+        self.client.get('/test-login')
+        day=utc_now().astimezone(ZoneInfo('America/Phoenix')).date()-timedelta(days=1)
+        with self.factory() as session:
+            session.add(DashboardDay(organization_id=1,business_id='business',report_date=day,
+                loaded_at=utc_now()-timedelta(hours=1)))
+            session.commit()
+        data=self.client.get('/dashboard/data?date='+day.isoformat()).json()
+        store=data['stores'][0]
+        self.assertFalse(store['loading']);self.assertTrue(store['history_verified'])
+        self.assertTrue(store['verifying']);self.assertEqual(store['order_count'],0)
+        self.assertTrue(data['polling_needed'])
+
     def test_history_date_validation_and_yesterday_timezone(self):
         self.client.get("/test-login")
         for value in ("bad","2026-02-30","20261004",(utc_now().date()+timedelta(days=3)).isoformat(),(utc_now().date()-timedelta(days=100)).isoformat()):
