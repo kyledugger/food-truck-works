@@ -120,7 +120,11 @@
     const loaded=data.historical_view?data.last_view_loaded_at:data.generated_at;
     refreshed.textContent=data.historical_view&&!loaded?(data.stores.some(s=>s.cached_history)?'Showing saved orders · not yet verified':'Waiting for historical verification'):(data.historical_view?'Sales checked ':'Updated ')+(loaded?new Date(loaded).toLocaleTimeString():'—');
     if(enable)enable.hidden=!!data.historical_view||!data.can_enable_webhook||data.webhook_registered;
-    if(data.polling_needed===false)clearInterval(timer);
+    if(data.polling_needed===false){
+      clearInterval(timer);
+      const next=Date.parse(data.next_history_check_at);
+      if(Number.isFinite(next))timer=setTimeout(start,Math.max(1000,next-Date.parse(data.generated_at)));
+    }
     if(storeView)document.dispatchEvent(new CustomEvent('store-data',{detail:data}));
   }
   async function refresh() {
@@ -172,7 +176,14 @@
   }
   previousButton?.addEventListener('click',()=>step(-1));
   nextButton?.addEventListener('click',()=>step(1));
-  document.getElementById('live-refresh')?.addEventListener('click',start);
+  document.getElementById('live-refresh')?.addEventListener('click',async event=>{
+    if(!lastData?.historical_view){start();return;}
+    const button=event.currentTarget,requested=selection;button.disabled=true;button.textContent='Checking…';
+    let error=null;
+    try{const response=await fetch('/dashboard/history/refresh?'+new URLSearchParams({date:requested}),{method:'POST',credentials:'same-origin',headers:{'X-Requested-With':'FoodTruckWorks'},signal:AbortSignal.timeout(65000)});const data=await response.json();if(!response.ok)throw Error(data.detail||'Historical verification failed.');}
+    catch(e){error=e.message;}
+    finally{button.disabled=false;button.textContent='Refresh';if(requested===selection){start();if(error){status.hidden=false;status.className='notification is-warning is-light';status.textContent=error+' Saved figures remain visible.';}}}
+  });
   document.addEventListener('visibilitychange',()=>{if(document.hidden)clearInterval(timer);else start();});
   window.addEventListener('pageshow',start);window.addEventListener('pagehide',()=>clearInterval(timer));start();
 })();

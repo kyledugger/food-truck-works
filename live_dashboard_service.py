@@ -15,10 +15,44 @@ from kitchen_models import KitchenSession
 from poynt.client import PoyntClient, PoyntReauthorizationRequired
 from poynt.connection import get_poynt_credentials
 from store_time import utc_now, utc_iso, local_day_bounds
-from memory_diagnostics import memory_span
 
 logger = logging.getLogger(__name__)
 RECONCILE_SECONDS = 30
+
+
+def history_interval(report_date, stores, now):
+    for store in stores:
+        try:
+            if report_date == now.astimezone(ZoneInfo(store.timezone_name or "")).date()-timedelta(days=1):
+                return timedelta(hours=1)
+        except (ValueError, KeyError):
+            pass
+    return timedelta(days=1)
+
+
+def queue_closed_days(session, organization_id, business_id, stores, now):
+    zones = []
+    for store in stores:
+        try:
+            zones.append(ZoneInfo(store.timezone_name or ""))
+        except (ValueError, KeyError):
+            pass
+    for day in {now.astimezone(zone).date()-timedelta(days=1) for zone in zones}:
+        end = max(local_day_bounds(day, zone)[1] for zone in zones)
+        if end > now:
+            continue
+        row = session.scalar(select(DashboardDay).where(DashboardDay.organization_id == organization_id,
+            DashboardDay.business_id == business_id, DashboardDay.report_date == day))
+        if row is None:
+            try:
+                with session.begin_nested():
+                    session.add(DashboardDay(organization_id=organization_id, business_id=business_id,
+                        report_date=day, requested_at=now, next_load_at=now))
+                    session.flush()
+            except IntegrityError:
+                pass  # A dashboard request queued this same day concurrently.
+        elif row.loaded_at is not None and row.loaded_at < end and not row.error:
+            row.next_load_at = row.requested_at = now
 
 
 def ensure_sync(session, organization_id, business_id):
@@ -109,10 +143,10 @@ def save_order(session, organization_id, business_id, order):
     sync_ticket(session, row)
 
 
-async def process_organization(organization_id, business_id, token, refresh_only=False):
+async def process_organization(organization_id, business_id, token, refresh_only=False, history_only=None):
     credentials = get_poynt_credentials(organization_id)
     if not credentials or credentials.business_id != business_id:
-        if refresh_only:
+        if refresh_only or history_only is not None:
             raise ValueError("Poynt connection changed")
         return
     client = PoyntClient(credentials, organization_id)
@@ -122,6 +156,9 @@ async def process_organization(organization_id, business_id, token, refresh_only
         reconcile = refresh_only or state.next_reconcile_at <= now
         stores = session.scalars(select(OrganizationStore).where(
             OrganizationStore.organization_id == organization_id, OrganizationStore.is_active.is_(True))).all()
+        if not refresh_only and history_only is None:
+            queue_closed_days(session, organization_id, business_id, stores, now)
+            session.commit()
         valid = []
         for store in stores:
             try:
@@ -135,10 +172,15 @@ async def process_organization(organization_id, business_id, token, refresh_only
             DashboardNotification.business_id == business_id,
             DashboardNotification.processed_at.is_(None), DashboardNotification.retry_at <= now
         ).order_by(DashboardNotification.id).limit(20)).all()]
-        historical_days = [(row.id, row.report_date) for row in session.scalars(select(DashboardDay).where(
+        history_query = select(DashboardDay).where(
             DashboardDay.organization_id == organization_id, DashboardDay.business_id == business_id,
             DashboardDay.next_load_at <= now, DashboardDay.requested_at >= now - timedelta(minutes=5)
-        ).order_by(DashboardDay.next_load_at).limit(1)).all()]
+        )
+        if history_only is not None:
+            history_query = history_query.where(DashboardDay.report_date == history_only)
+            reconcile = False
+            pending = []
+        historical_days = [(row.id, row.report_date) for row in session.scalars(history_query.order_by(DashboardDay.next_load_at).limit(1)).all()]
     # Notifications first; reconciliation may be a larger initial fetch.
     if refresh_only:
         pending = []
@@ -182,7 +224,7 @@ async def process_organization(organization_id, business_id, token, refresh_only
                     save_order(session, organization_id, business_id, order)
                 day = session.get(DashboardDay, day_id)
                 day.loaded_at = utc_now()
-                day.next_load_at = utc_now() + timedelta(minutes=5)
+                day.next_load_at = utc_now() + history_interval(report_date, stores, utc_now())
                 day.error = None
                 session.commit()
         except Exception:
@@ -249,8 +291,7 @@ async def dashboard_worker():
                     continue
                 business_id, token = claim
                 try:
-                    with memory_span("dashboard_sync", organization_id=organization_id):
-                        await asyncio.wait_for(process_organization(organization_id, business_id, token), timeout=150)
+                    await asyncio.wait_for(process_organization(organization_id, business_id, token), timeout=150)
                 except Exception as exc:
                     logger.warning("Dashboard sync failed: organization=%s error_type=%s", organization_id, type(exc).__name__)
                     with SessionLocal() as session:

@@ -1,4 +1,5 @@
 import base64
+import asyncio
 import hashlib
 import hmac
 import json
@@ -137,6 +138,7 @@ def dashboard_data(request: Request, report_date: str = Query("today", alias="da
             live_pending = False
             history_pending = False
             view_load_times = []
+            history_check_times = []
             local_dates = []
             has_live_store = False
             history_errors = []
@@ -169,8 +171,9 @@ def dashboard_data(request: Request, report_date: str = Query("today", alias="da
                                 DashboardDay.business_id == connection.business_id, DashboardDay.report_date == day))
                     cache.requested_at = now
                     loading = cache.loaded_at is None
-                    stale = loading or cache.loaded_at < now - timedelta(minutes=5)
+                    stale = loading or cache.next_load_at <= now
                     history_pending |= stale
+                    history_check_times.append(cache.next_load_at)
                     load_error = cache.error
                     if cache.error:
                         history_errors.append(cache.error)
@@ -220,6 +223,7 @@ def dashboard_data(request: Request, report_date: str = Query("today", alias="da
                 "earliest_date": (max(local_dates) - timedelta(days=89)).isoformat() if local_dates else None,
                 "latest_date": min(local_dates).isoformat() if local_dates else None,
                 "last_view_loaded_at": utc_iso(min(view_load_times)) if view_load_times else None,
+                "next_history_check_at": utc_iso(min(history_check_times)) if history_check_times else None,
                 "last_reconciled_at": utc_iso(state.last_reconciled_at), "last_webhook_at": utc_iso(state.last_webhook_at),
                 "initializing": any(s.get("loading") for s in results),
                 "stale": any(s.get("stale") for s in results),
@@ -231,6 +235,56 @@ def dashboard_data(request: Request, report_date: str = Query("today", alias="da
     except SQLAlchemyError:
         return JSONResponse({"detail": "Dashboard storage is unavailable. Apply the live dashboard migration and retry."}, status_code=503,
                             headers={"Cache-Control": "no-store"})
+
+
+@router.post("/dashboard/history/refresh")
+async def refresh_history(request: Request, report_date: str = Query(..., alias="date")):
+    organization_id, role = sales_authorized(request)
+    if request.headers.get("x-requested-with") != "FoodTruckWorks" or request.headers.get("sec-fetch-site") == "cross-site":
+        raise HTTPException(403, "Use the dashboard Refresh button.")
+    origin = request.headers.get("origin")
+    if origin and urlsplit(origin).netloc != request.headers.get("host"):
+        raise HTTPException(403, "Invalid request origin.")
+    # Reuse the dashboard's date, timezone, organization, and connection checks.
+    data = json.loads(dashboard_data(request, report_date, None).body)
+    stores = [s for s in data.get("stores", []) if not s.get("setup_required")]
+    if not data.get("connected") or not stores or any(not s.get("historical") for s in stores):
+        raise HTTPException(400, "Select a past date with configured stores first.")
+    dates = {calendar_date.fromisoformat(s["date"]) for s in stores}
+    with SessionLocal() as session:
+        connection = session.scalar(select(PoyntConnection).where(PoyntConnection.organization_id == organization_id))
+        if connection is None:
+            raise HTTPException(409, "Poynt connection changed. Reload the dashboard.")
+        business_id = connection.business_id
+        for day in session.scalars(select(DashboardDay).where(DashboardDay.organization_id == organization_id,
+                DashboardDay.business_id == business_id, DashboardDay.report_date.in_(dates))).all():
+            day.requested_at = day.next_load_at = utc_now()
+            day.error = None
+        session.commit()
+    claim = acquire(organization_id)
+    if claim is None:
+        return JSONResponse({"queued": True}, status_code=202)
+    claimed_business, token = claim
+    try:
+        if claimed_business != business_id:
+            raise HTTPException(409, "Poynt connection changed. Refresh the dashboard.")
+        from live_dashboard_service import process_organization
+        async def check():
+            for day in sorted(dates):
+                await process_organization(organization_id, business_id, token, history_only=day)
+        await asyncio.wait_for(check(), timeout=55)
+        with SessionLocal() as session:
+            failed = session.scalar(select(DashboardDay.id).where(DashboardDay.organization_id == organization_id,
+                DashboardDay.business_id == business_id, DashboardDay.report_date.in_(dates), DashboardDay.error.is_not(None)))
+        if failed:
+            raise HTTPException(502, "Historical verification failed. Saved figures remain available.")
+        return {"checked": True}
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(502, "Historical verification could not finish. Saved figures remain available.") from None
+    finally:
+        release(organization_id, token)
 
 
 @router.post("/dashboard/webhook/enable")

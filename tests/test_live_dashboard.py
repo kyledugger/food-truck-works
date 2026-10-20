@@ -544,6 +544,57 @@ class DatabaseAndRoutesTests(unittest.TestCase):
         with self.factory() as s:self.assertEqual(s.scalar(select(func.count()).select_from(DashboardDay)),1)
         live=self.client.get("/dashboard/data").json();self.assertFalse(live["historical_view"]);self.assertTrue(live["polling_needed"])
 
+    def test_history_schedule_and_idempotent_closed_day_queue(self):
+        from live_dashboard_service import queue_closed_days, history_interval
+        now=datetime(2026,11,2,8,tzinfo=UTC)
+        stores=[store('America/Phoenix'),store('America/New_York')]
+        self.assertEqual(history_interval(date(2026,11,1),stores,now),timedelta(hours=1))
+        self.assertEqual(history_interval(date(2026,10,31),stores,now),timedelta(days=1))
+        with self.factory() as session:
+            queue_closed_days(session,1,'business',stores,now);session.commit()
+            queue_closed_days(session,1,'business',stores,now);session.commit()
+            rows=session.scalars(select(DashboardDay)).all()
+            self.assertEqual(len(rows),1)
+            self.assertEqual(rows[0].report_date,date(2026,11,1))
+            rows[0].loaded_at=now;rows[0].next_load_at=now+timedelta(hours=1);session.commit()
+            queue_closed_days(session,1,'business',stores,now+timedelta(minutes=2));session.commit()
+            self.assertEqual(rows[0].next_load_at,now+timedelta(hours=1))
+
+    def test_manual_history_refresh_bypasses_schedule_and_checks_provider(self):
+        self.client.get('/test-login')
+        day=utc_now().astimezone(ZoneInfo('America/Phoenix')).date()-timedelta(days=2)
+        start,end=local_day_bounds(day,ZoneInfo('America/Phoenix'))
+        with self.factory() as session:
+            session.add(DashboardDay(organization_id=1,business_id='business',report_date=day,
+                loaded_at=utc_now(),next_load_at=utc_now()+timedelta(days=1)));session.commit()
+        headers={'X-Requested-With':'FoodTruckWorks'}
+        url='/dashboard/history/refresh?date='+day.isoformat()
+        self.assertEqual(self.client.post(url).status_code,403)
+        self.assertEqual(self.client.post(url,headers={**headers,'Origin':'https://other.test'}).status_code,403)
+        self.assertEqual(self.client.post('/dashboard/history/refresh?date=today',headers=headers).status_code,400)
+        mock=AsyncMock(return_value=[sale(start+timedelta(hours=12))])
+        with patch('poynt.client.PoyntClient.get_recent_orders',new=mock):
+            response=self.client.post(url,headers=headers)
+        self.assertEqual(response.status_code,200,response.text);self.assertEqual(mock.await_count,1)
+        data=self.client.get('/dashboard/data?date='+day.isoformat()).json()
+        self.assertFalse(data['polling_needed']);self.assertEqual(data['stores'][0]['sales_cents'],1083)
+        self.assertIsNotNone(data['next_history_check_at'])
+        with self.factory() as session:
+            cache=session.scalar(select(DashboardDay).where(DashboardDay.report_date==day))
+            self.assertGreater(cache.next_load_at,cache.loaded_at+timedelta(hours=23))
+
+    def test_manual_history_refresh_busy_and_failure_preserve_cache(self):
+        self.client.get('/test-login')
+        self.client.get('/dashboard/data?date=yesterday')
+        url='/dashboard/history/refresh?date=yesterday';headers={'X-Requested-With':'FoodTruckWorks'}
+        with patch('routers.live_dashboard.acquire',return_value=None):
+            self.assertEqual(self.client.post(url,headers=headers).status_code,202)
+        with patch('poynt.client.PoyntClient.get_recent_orders',new=AsyncMock(side_effect=RuntimeError('offline'))):
+            self.assertEqual(self.client.post(url,headers=headers).status_code,502)
+        with self.factory() as session:
+            cache=session.scalar(select(DashboardDay));self.assertIsNotNone(cache.error)
+            self.assertLess(cache.next_load_at,utc_now()+timedelta(seconds=65))
+
     def test_historical_live_cache_visible_before_verification_and_after_failure(self):
         self.client.get('/test-login')
         day=utc_now().astimezone(ZoneInfo('America/Phoenix')).date()-timedelta(days=1)
