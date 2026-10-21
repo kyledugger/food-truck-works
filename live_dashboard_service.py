@@ -143,7 +143,7 @@ def save_order(session, organization_id, business_id, order):
     sync_ticket(session, row)
 
 
-async def process_organization(organization_id, business_id, token, refresh_only=False, history_only=None):
+async def process_organization(organization_id, business_id, token, refresh_only=False, history_only=None, order_window=None):
     credentials = get_poynt_credentials(organization_id)
     if not credentials or credentials.business_id != business_id:
         if refresh_only or history_only is not None:
@@ -240,13 +240,25 @@ async def process_organization(organization_id, business_id, token, refresh_only
         # Include the previous comparison hour across local midnight.
         start = min(v[0] for v in valid) - timedelta(minutes=65)
         end = max(v[1] for v in valid)
+        if order_window is not None:
+            start, end, recovery_store = order_window
         orders = await client.get_recent_orders(start_at=utc_iso(start), end_at=utc_iso(end), fetch_all=True)
         with SessionLocal() as session:
             state = owned_state(session, organization_id, business_id, token)
             if not state:
                 return
             for order in orders:
+                if order_window is not None:
+                    try:
+                        if order_store(order) != recovery_store or not start <= instant(order.get("createdAt")) < end:
+                            continue
+                    except (ValueError, TypeError):
+                        continue
                 save_order(session, organization_id, business_id, order)
+            if order_window is not None:
+                # A narrow recovery search does not certify a full live-day sync.
+                session.commit()
+                return
             state.last_reconciled_at = utc_now()
             watched = session.scalar(select(KitchenSession.store_id).join(OrganizationStore,
                 OrganizationStore.id == KitchenSession.store_id).where(

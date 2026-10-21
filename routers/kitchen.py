@@ -1,12 +1,12 @@
 """Store-scoped kitchen queue and short-lived, reauthorized SSE connections."""
 import asyncio
 import secrets
-from datetime import timedelta
+from datetime import timedelta, datetime
 from typing import Literal
 from urllib.parse import urlsplit
 from zoneinfo import ZoneInfo
 from types import SimpleNamespace
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Query
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import select, func, String, delete
@@ -196,6 +196,7 @@ class ServiceAction(BaseModel):
     revision: int = Field(ge=0)
     minutes: Literal[10, 30, 60] = 10
     order_ids: list[str] = Field(default_factory=list, max_length=100)
+    recovery_at: datetime | None = None
 
 
 def archive_queue(session, store, connection, actor):
@@ -243,19 +244,24 @@ def service(request: Request, store_id: int, body: ServiceAction):
             from live_dashboard_service import ensure_sync
             ensure_sync(session, store.organization_id, connection.business_id).next_reconcile_at = now
         if body.action in {"recent", "import"}:
+            end = body.recovery_at or now
+            if end.tzinfo is None or end.utcoffset() is None or end > now or end < now-timedelta(minutes=15):
+                raise HTTPException(409, "Recent-order search expired. Search again.")
+            start = end-timedelta(minutes=body.minutes)
             exists = select(KitchenTicket.id).where(KitchenTicket.organization_id == store.organization_id,
                 KitchenTicket.business_id == connection.business_id, KitchenTicket.order_id == DashboardOrder.order_id).exists()
             candidates = session.scalars(select(DashboardOrder).where(
                 DashboardOrder.organization_id == store.organization_id, DashboardOrder.business_id == connection.business_id,
-                DashboardOrder.store_id == store.store_id, DashboardOrder.created_at >= tracking.started_at-timedelta(minutes=body.minutes),
-                DashboardOrder.created_at < tracking.started_at, ~exists).order_by(DashboardOrder.created_at).limit(100)).all()
+                DashboardOrder.store_id == store.store_id, DashboardOrder.created_at >= start,
+                DashboardOrder.created_at < end, ~exists).order_by(DashboardOrder.created_at)).all()
             from live_dashboard_metrics import completed
             from kitchen_service import lines
             candidates = [o for o in candidates if completed(o.payload) and lines(o.payload)]
             if body.action == "recent":
                 return {"orders": [{"id": o.order_id, "number": o.payload.get("orderNumber") or o.order_id,
-                    "created_at": utc_iso(o.created_at), "items": [i["name"] for i in lines(o.payload)]} for o in candidates],
-                    "revision": tracking.revision}
+                    "created_at": utc_iso(o.created_at), "items": [i["name"] for i in lines(o.payload)]} for o in candidates[:100]],
+                    "revision": tracking.revision, "recovery_at": utc_iso(end), "window_start": utc_iso(start),
+                    "timezone": store.timezone_name, "truncated": len(candidates)>100}
             requested = set(body.order_ids)
             if not requested.issubset({o.order_id for o in candidates}):
                 raise HTTPException(409, "Some orders are no longer eligible. Search again.")
@@ -268,17 +274,26 @@ def service(request: Request, store_id: int, body: ServiceAction):
 
 
 @router.post("/dashboard/stores/{store_id}/kitchen/refresh")
-async def refresh_orders(request: Request, store_id: int):
+async def refresh_orders(request: Request, store_id: int, recent_minutes: int | None = Query(None, ge=10, le=60)):
     """Wait for a provider check, sharing the worker's organization lease."""
     from live_dashboard_service import ensure_sync, acquire, release, process_organization, owned_state
     from live_dashboard_models import DashboardSync
     check_csrf(request)
     requested_at = utc_now()
+    recent_minutes = recent_minutes if isinstance(recent_minutes, int) else None
+    if recent_minutes is not None and recent_minutes not in {10,30,60}:
+        raise HTTPException(422, "Choose a 10, 30, or 60 minute search.")
+    recovery_window = None
     with SessionLocal() as session:
         store, connection = scope(request, session, store_id)
         if not store.timezone_name:
             raise HTTPException(409, "Configure the store timezone first.")
         organization_id, business_id = store.organization_id, connection.business_id
+        if recent_minutes is not None:
+            tracking = session.get(KitchenSession, store.id)
+            if not tracking or not tracking.active or tracking.business_id != business_id:
+                raise HTTPException(409, "Start kitchen service first.")
+            recovery_window = (requested_at-timedelta(minutes=recent_minutes), requested_at, store.store_id)
         state = ensure_sync(session, organization_id, business_id)
         session.commit()
     deadline = asyncio.get_running_loop().time() + 55
@@ -286,7 +301,7 @@ async def refresh_orders(request: Request, store_id: int):
         with SessionLocal() as session:
             scope(request, session, store_id)
             state = session.get(DashboardSync, organization_id)
-            if state and state.business_id == business_id and state.last_reconciled_at and state.last_reconciled_at >= requested_at:
+            if recovery_window is None and state and state.business_id == business_id and state.last_reconciled_at and state.last_reconciled_at >= requested_at:
                 return queue(request, store_id)
         claim = acquire(organization_id)
         if claim is None:
@@ -297,14 +312,19 @@ async def refresh_orders(request: Request, store_id: int):
             if claimed_business != business_id:
                 raise HTTPException(409, "Poynt connection changed. Reload the page.")
             remaining = deadline - asyncio.get_running_loop().time()
-            await asyncio.wait_for(process_organization(organization_id, business_id, token, refresh_only=True), timeout=max(.1, remaining))
-            return queue(request, store_id)
+            options = {"order_window": recovery_window} if recovery_window is not None else {}
+            await asyncio.wait_for(process_organization(organization_id, business_id, token, refresh_only=True, **options), timeout=max(.1, remaining))
+            response = queue(request, store_id)
+            if recovery_window is not None:
+                import json
+                response = JSONResponse({**json.loads(response.body), "recovery_at": utc_iso(requested_at)}, headers={"Cache-Control":"no-store"})
+            return response
         except HTTPException:
             raise
         except Exception:
             with SessionLocal() as session:
                 state = owned_state(session, organization_id, business_id, token)
-                if state:
+                if state and recovery_window is None:
                     state.error = "Order sync failed. Retrying shortly."
                     state.next_reconcile_at = utc_now() + timedelta(seconds=60)
                     session.commit()

@@ -143,27 +143,29 @@
     if(serviceBusy)return;serviceBusy=true;serviceState();
     const dialog=el('dialog','');dialog.style.maxWidth='min(600px,90vw)';dialog.style.maxHeight='85vh';dialog.style.overflowY='auto';
     const title=el('h3','','Get recent past orders'),windowSelect=el('select','');
-    for(const minutes of [10,30,60]){const option=el('option','','Last '+minutes+' minutes before service started');option.value=minutes;windowSelect.append(option);}
+    for(const minutes of [10,30,60]){const option=el('option','','Last '+minutes+' minutes');option.value=minutes;windowSelect.append(option);}
     const message=el('p',''),list=el('div',''),search=el('button','button','Search'),include=el('button','button is-success','Include selected orders'),skip=el('button','button','Skip');
     dialog.append(title,windowSelect,search,message,list,include,skip);document.body.append(dialog);dialog.showModal();
-    let ids=[];
+    let ids=[],recoveryAt=null,searchController=null,searchVersion=0;
     async function searchOrders(){
+      const version=++searchVersion;searchController?.abort();searchController=new AbortController();
+      const selectedMinutes=Number(windowSelect.value);recoveryAt=null;
       search.disabled=true;include.disabled=true;message.textContent='Checking Poynt…';list.replaceChildren();
       try{
-        // A successful provider check is required; cache emptiness is not proof of no recent orders.
-        const response=await fetch(base+'/refresh',{method:'POST',credentials:'same-origin',signal:AbortSignal.timeout(65000),headers:{'X-Kitchen-CSRF':feed.dataset.csrf}});
-        const current=await response.json();if(!response.ok)throw new Error(current.detail||'Could not check Poynt. Retry.');render(current);
-        const result=await serviceRequest('recent',{minutes:Number(windowSelect.value)});ids=result.orders.map(o=>o.id);
-        message.textContent=ids.length?result.orders.length+' eligible orders found. Select orders to include.':'No eligible recent orders found.';
-        for(const order of result.orders){const label=el('label','');label.style.display='block';const check=el('input','');check.type='checkbox';check.checked=true;check.value=order.id;label.append(check,document.createTextNode(' '+order.number+' · '+order.items.join(', ')));list.append(label);}
+        const response=await fetch(base+'/refresh?recent_minutes='+selectedMinutes,{method:'POST',credentials:'same-origin',signal:AbortSignal.any([searchController.signal,AbortSignal.timeout(65000)]),headers:{'X-Kitchen-CSRF':feed.dataset.csrf}});
+        const current=await response.json();if(version!==searchVersion)return;if(!response.ok)throw new Error(current.detail||'Could not check Poynt. Retry.');render(current);
+        const result=await serviceRequest('recent',{minutes:selectedMinutes,recovery_at:current.recovery_at});if(version!==searchVersion)return;recoveryAt=result.recovery_at;ids=result.orders.map(o=>o.id);
+        const time=at=>new Intl.DateTimeFormat('en-US',{hour:'numeric',minute:'2-digit',timeZone:result.timezone}).format(new Date(at));
+        message.textContent=(ids.length?(result.truncated?'Showing the first 100 eligible orders. Choose a shorter window if needed.':ids.length+' eligible orders found. Select orders to include.'):'No eligible recent orders found.')+' Searched '+time(result.window_start)+'–'+time(result.recovery_at)+' for this store.';
+        for(const order of result.orders){const label=el('label','');label.style.display='block';const check=el('input','');check.type='checkbox';check.checked=true;check.value=order.id;label.append(check,document.createTextNode(' '+time(order.created_at)+' · '+order.number+' · '+order.items.join(', ')));list.append(label);}
         include.disabled=!ids.length;
-      }catch(error){ids=[];message.textContent=error.message;}
-      finally{search.disabled=false;}
+      }catch(error){if(version===searchVersion){ids=[];message.textContent=error.message;}}
+      finally{if(version===searchVersion)search.disabled=false;}
     }
     search.addEventListener('click',searchOrders);windowSelect.addEventListener('change',searchOrders);
-    include.addEventListener('click',async()=>{include.disabled=true;try{await serviceRequest('import',{minutes:Number(windowSelect.value),order_ids:[...list.querySelectorAll('input:checked')].map(i=>i.value)});dialog.close();await refresh(true);}catch(error){message.textContent=error.message;include.disabled=false;}});
+    include.addEventListener('click',async()=>{include.disabled=true;try{await serviceRequest('import',{minutes:Number(windowSelect.value),recovery_at:recoveryAt,order_ids:[...list.querySelectorAll('input:checked')].map(i=>i.value)});dialog.close();await refresh(true);}catch(error){message.textContent=error.message;include.disabled=false;}});
     skip.addEventListener('click',()=>dialog.close());
-    dialog.addEventListener('close',()=>{dialog.remove();serviceBusy=false;serviceState();});await searchOrders();
+    dialog.addEventListener('close',()=>{searchVersion++;searchController?.abort();dialog.remove();serviceBusy=false;serviceState();});await searchOrders();
   }
   recoverService.addEventListener('click',recoverOrders);recoveryLater.addEventListener('click',recoverOrders);
   archiveReview.addEventListener('click',async()=>{
