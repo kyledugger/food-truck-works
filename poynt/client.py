@@ -10,6 +10,7 @@ from poynt.connection import PoyntCredentials, locked_poynt_connection
 from poynt.token import refresh_access_token, PoyntRefreshRejected, PoyntTokenError
 
 import logging
+import time as monotonic_time
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +46,46 @@ class PoyntClient:
                     "600",
                 )
             )
+        )
+
+    def _api_client(self) -> httpx.AsyncClient:
+        """Instrument Poynt HTTP requests without logging credentials or order data."""
+
+        async def on_request(request: httpx.Request) -> None:
+            request.extensions["ftw_started_at"] = monotonic_time.monotonic()
+
+        async def on_response(response: httpx.Response) -> None:
+            started = response.request.extensions.get("ftw_started_at")
+            elapsed_ms = (
+                round((monotonic_time.monotonic() - started) * 1000)
+                if started is not None else None
+            )
+            # Headers may be absent. Log only rate-limit-related fields,
+            # never Authorization, cookies, request bodies, or URL queries.
+            limits = {
+                key.lower(): value
+                for key, value in response.headers.items()
+                if key.lower() in {
+                    "retry-after", "ratelimit-limit", "ratelimit-remaining",
+                    "ratelimit-reset", "x-ratelimit-limit",
+                    "x-ratelimit-remaining", "x-ratelimit-reset",
+                }
+            }
+            log = logger.warning if response.status_code == 429 else logger.info
+            log(
+                "Poynt API request organization_id=%s method=%s path=%s "
+                "status=%s duration_ms=%s rate_limit_headers=%s",
+                self.organization_id,
+                response.request.method,
+                response.request.url.path,
+                response.status_code,
+                elapsed_ms,
+                limits,
+            )
+
+        return httpx.AsyncClient(
+            timeout=30.0,
+            event_hooks={"request": [on_request], "response": [on_response]},
         )
 
     def _headers(self) -> dict[str, str]:
@@ -238,7 +279,7 @@ class PoyntClient:
             f"/businesses/{self.business_id}/catalogs"
         )
 
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        async with self._api_client() as client:
             response = await client.get(
                 url,
                 headers=self._headers(),
@@ -295,7 +336,7 @@ class PoyntClient:
         if end_at:
             count_params["endAt"] = end_at
 
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        async with self._api_client() as client:
             count_response = await client.get(
                 url,
                 headers=self._headers(),
@@ -452,7 +493,7 @@ class PoyntClient:
         )
 
 
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        async with self._api_client() as client:
             response = await client.get(
                 url,
                 headers=self._headers(),
@@ -482,7 +523,7 @@ class PoyntClient:
         """Fetch current state, never follow URLs from a webhook payload."""
         from urllib.parse import quote
         await self._refresh_if_needed()
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        async with self._api_client() as client:
             response = await client.get(
                 f"{self.BASE_URL}/businesses/{quote(self.business_id, safe='')}/orders/{quote(order_id, safe='')}",
                 headers=self._headers())
@@ -494,7 +535,7 @@ class PoyntClient:
         import uuid
         await self._refresh_if_needed()
         headers = {**self._headers(), "Poynt-Request-Id": str(uuid.uuid4())}
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        async with self._api_client() as client:
             response = await client.post(f"{self.BASE_URL}/hooks", headers=headers, json={
                 "applicationId": os.environ["POYNT_APP_ID"], "businessId": self.business_id,
                 "deliveryUrl": delivery_url, "secret": secret,

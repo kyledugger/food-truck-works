@@ -1,6 +1,7 @@
 """Database-backed queue worker, shared across Uvicorn processes by leases."""
 import asyncio
 import logging
+import os
 import uuid
 from datetime import timedelta
 from zoneinfo import ZoneInfo
@@ -17,7 +18,7 @@ from poynt.connection import get_poynt_credentials
 from store_time import utc_now, utc_iso, local_day_bounds
 
 logger = logging.getLogger(__name__)
-RECONCILE_SECONDS = 30
+RECONCILE_SECONDS = max(1, int(os.getenv("POYNT_RECONCILE_SECONDS", "30")))
 
 
 def history_interval(report_date, stores, now):
