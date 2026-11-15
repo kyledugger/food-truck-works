@@ -11,6 +11,14 @@
 .live-store h2{font-size:1.3rem;font-weight:700}.live-store-date{font-size:.8rem;color:#687980;margin-top:.2rem}
 .live-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.7rem;margin:1.4rem 0}
 .live-kpis small{display:block;color:#687980;font-size:.8rem}.live-kpis strong{font-size:1.45rem;font-weight:700}
+/* Respond to the card width, including three-card desktop layouts. */
+#live-stores:not([data-store-id])>.live-store{container-type:inline-size;min-width:0}
+#live-stores:not([data-store-id]) .live-kpis>div{min-width:0}
+#live-stores:not([data-store-id]) .live-kpis strong{display:block;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+#live-stores:not([data-store-id]) .live-store-header{flex-wrap:wrap;gap:.5rem}
+@container(max-width:560px){
+  #live-stores:not([data-store-id]) .live-kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem 1.25rem}
+}
 .live-now{background:#edf6f5;border-radius:10px;padding:1rem;color:#183d3b}.live-now strong{font-size:1.3rem;display:block;margin:.25rem 0}
 .live-pace{font-weight:600}.live-last{font-size:.8rem;margin-top:.4rem;color:#516969}
 .live-store details{margin-top:1.2rem}.live-store summary{cursor:pointer;font-weight:600;padding:.4rem 0}

@@ -96,6 +96,11 @@
     const alive=new Set();
     for(const s of data.stores){
       alive.add(s.id);const c=cards.get(s.id)||makeCard(s.id);c.name.textContent=s.name;
+      if(!storeView){
+        const loading=s.loading??data.initializing;
+        const hasSales=!!s.order_count||!!s.sales_cents||!!s.tips_cents;
+        c.root.style.order=hasSales?'0':s.setup_required||loading?'1':'2';
+      }
       c.message.hidden=true;c.body.hidden=false;c.badge.textContent='';
       if(storeView)c.details.hidden=!!s.setup_required||!!(s.loading??data.initializing);
       if(s.setup_required){c.wait.hidden=c.queueLink.hidden=true;c.date.textContent='Setup needed';c.body.hidden=true;c.message.hidden=false;c.message.textContent=s.message;continue;}
