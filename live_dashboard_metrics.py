@@ -42,7 +42,8 @@ def money(order):
     amounts = order.get("amounts") or {}
     captured = amounts.get("capturedTotals") or {}
     refunded = amounts.get("refundedTotals") or {}
-    total = cents(amounts.get("netTotal", amounts.get("orderAmount", 0)))
+    total = cents(amounts.get("netTotal") if amounts.get("netTotal") is not None
+                  else amounts.get("orderAmount", 0))
     refund = abs(cents(refunded.get("orderAmount")))
     # netTotal includes tax, but not tips. Refund orderAmount also includes tax.
     sales = total - refund
@@ -55,6 +56,11 @@ def completed(order):
     if statuses.get("status") == "CANCELLED":
         return False
     state = statuses.get("transactionStatusSummary")
+    # Offline uploads can be finalized orders without attached payment records.
+    # This establishes a completed sale, not payment capture or tip eligibility.
+    if (statuses.get("status") == "COMPLETED" and state in {None, "NONE"}
+            and not order.get("_has_transactions", bool(order.get("transactions")))):
+        return True
     # Preserve completed sales when their summary changes following a refund.
     return state == "COMPLETED" or (state in {"REFUNDED", "PARTIALLY_REFUNDED"}
         and cents(((order.get("amounts") or {}).get("capturedTotals") or {}).get("orderAmount")) > 0)

@@ -11,6 +11,7 @@ from urllib.parse import urlencode
 from poynt.token import exchange_authorization_code
 from zoneinfo import ZoneInfo
 from store_time import as_utc, local_to_utc, local_day_bounds, utc_iso
+from live_dashboard_metrics import completed as completed_sale, order_store, money as order_money
 
 from poynt.client import (
     PoyntClient,
@@ -480,12 +481,9 @@ def get_available_store_ids(orders, store_names=None):
     store_ids = set()
 
     for order in orders:
-        for transaction in order.get("transactions") or []:
-            context = transaction.get("context") or {}
-            store_id = context.get("storeId")
-
-            if store_id:
-                store_ids.add(store_id.lower())
+        store_id = order_store(order)
+        if store_id:
+            store_ids.add(store_id.lower())
 
     return sorted(
         store_ids,
@@ -520,13 +518,9 @@ def filter_orders_by_stores(orders, stores):
     filtered_orders = []
 
     for order in orders:
-        for transaction in order.get("transactions") or []:
-            context = transaction.get("context") or {}
-            store_id = context.get("storeId")
-
-            if store_id and store_id.lower() in requested_stores:
-                filtered_orders.append(order)
-                break
+        store_id = order_store(order)
+        if store_id and store_id.lower() in requested_stores:
+            filtered_orders.append(order)
 
     logger.info(
         "store filtering reduced %s orders to %s orders",
@@ -569,17 +563,7 @@ def get_revenue_flow(orders):
 
         last_bucket = bucket_time
 
-        amounts = order.get("amounts") or {}
-
-        total = amounts.get("netTotal")
-
-        if total is None:
-            total = amounts.get("orderAmount")
-
-        try:
-            revenue = float(total) / 100
-        except (TypeError, ValueError):
-            revenue = 0
+        revenue = order_money(order)[0] / 100
 
         revenue_flow[bucket_time] = (
             revenue_flow.get(bucket_time, 0) + revenue
@@ -810,13 +794,7 @@ def filter_completed_orders(orders):
     cancelled_order_count = 0
 
     for order in orders:
-        statuses = order.get("statuses") or {}
-
-        transaction_status = statuses.get(
-            "transactionStatusSummary"
-        )
-
-        if transaction_status == "COMPLETED":
+        if completed_sale(order):
             completed_orders.append(order)
         else:
             cancelled_order_count += 1
@@ -838,31 +816,9 @@ def calculate_order_metrics(orders):
     order_times = []
 
     for order in orders:
-        amounts = order.get("amounts") or {}
-
-        # Revenue
-        total = amounts.get("netTotal")
-
-        if total is None:
-            total = amounts.get("orderAmount")
-
-        try:
-            total_revenue += float(total) / 100
-        except (TypeError, ValueError):
-            pass
-
-        # Tips
-        captured_totals = amounts.get("capturedTotals")
-
-        if captured_totals:
-            tip = captured_totals.get("tipAmount")
-        else:
-            tip = 0
-
-        try:
-            total_tips += float(tip) / 100
-        except (TypeError, ValueError):
-            pass
+        sales_cents, tips_cents = order_money(order)
+        total_revenue += sales_cents / 100
+        total_tips += tips_cents / 100
 
         # Items
         for item in order.get("items") or []:
@@ -975,14 +931,9 @@ def get_orders_data(orders):
             )
         )
 
-        transactions = order.get("transactions") or []
-
-        for transaction in transactions:
-            context = transaction.get("context") or {}
-            store_id = context.get("storeId")
-
-            if store_id:
-                store_ids.add(store_id)
+        store_id = order_store(order)
+        if store_id:
+            store_ids.add(store_id)
 
         created_at = str(
             order.get("createdAt", "")

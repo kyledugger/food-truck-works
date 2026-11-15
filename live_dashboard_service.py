@@ -132,6 +132,9 @@ def save_order(session, organization_id, business_id, order):
         session.add(row)
     # Persist reporting fields only, excluding customer/contact/payment details.
     payload = {key: order.get(key) for key in ("id", "orderNumber", "createdAt", "updatedAt", "amounts", "statuses", "notes")}
+    # Keep payment presence for the shared offline-sale predicate, without
+    # persisting payment identifiers, funding sources, or card details.
+    payload["_has_transactions"] = bool(order.get("transactions"))
     payload["customer_name"] = customer_name(order)
     payload["customerUserId"] = order.get("customerUserId")
     payload["items"] = [{key: item.get(key) for key in
