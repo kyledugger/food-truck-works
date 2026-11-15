@@ -65,6 +65,11 @@
                     <p id="live-refreshed" class="is-size-7 mt-2">Connecting…</p></div>
             </div>
             <div id="live-status" class="notification is-light mt-4" role="status" aria-live="polite">Loading sales…</div>
+            <article id="live-total-revenue" class="live-store mt-5" aria-labelledby="live-total-revenue-label" hidden>
+                <h2 id="live-total-revenue-label">Total revenue for the day</h2>
+                <p id="live-total-revenue-value" class="is-size-2 has-text-weight-bold">—</p>
+                <p id="live-total-revenue-detail" class="is-size-7 has-text-grey">Loading sales…</p>
+            </article>
             <div id="live-stores" class="live-store-grid mt-5 mb-5"></div>
             <p class="is-size-7 has-text-grey mb-5">All sales figures include tax and exclude tips. Refunds, including refunded tax, reduce the original sale.
                 Category sales allocate tax and order adjustments by item value. Pace compares the last 5 minutes with the preceding 60 minutes, including quiet periods.
@@ -154,6 +159,6 @@
 {% block scripts %}
 {% if poynt_connection and can_view_dashboard_sales %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.min.js"></script>
-<script src="/static/js/live-dashboard.js?v=20261020-history-policy-1" defer></script>
+<script src="/static/js/live-dashboard.js?v=20261115-total-revenue" defer></script>
 {% endif %}
 {% endblock %}

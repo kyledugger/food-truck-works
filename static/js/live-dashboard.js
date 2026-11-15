@@ -79,6 +79,20 @@
     if(dateInput){dateInput.min=data.earliest_date||'';dateInput.max=data.latest_date||'';dateInput.value=/^\d{4}-\d{2}-\d{2}$/.test(selection)?selection:selection==='today'?data.latest_date||'':data.stores.find(s=>s.date)?.date||'';}
     updateArrows();
     if(todayButton)todayButton.className='button is-small '+(selection==='today'?'live-today-active':'is-light');
+    const totalCard=document.getElementById('live-total-revenue');
+    if(totalCard){
+      totalCard.hidden=!data.connected||!data.stores.length;
+      const configured=data.stores.filter(s=>!s.setup_required);
+      const ready=configured.filter(s=>!(s.loading??data.initializing)&&Number.isFinite(s.sales_cents));
+      const total=ready.reduce((sum,s)=>sum+s.sales_cents,0);
+      document.getElementById('live-total-revenue-value').textContent=ready.length?money(total):'—';
+      const dates=[...new Set(configured.map(s=>s.date).filter(Boolean))];
+      let detail=(dates.length===1?dates[0]+' · ':'')+'All stores · Includes tax, excludes tips';
+      if(ready.length<data.stores.length)detail+=' · Partial total ('+ready.length+' of '+data.stores.length+' stores available)';
+      if(delayed)detail+=' · Updates delayed';
+      else if(data.historical_view&&configured.some(s=>s.verifying))detail+=' · Checking for updates…';
+      document.getElementById('live-total-revenue-detail').textContent=detail;
+    }
     const alive=new Set();
     for(const s of data.stores){
       alive.add(s.id);const c=cards.get(s.id)||makeCard(s.id);c.name.textContent=s.name;
