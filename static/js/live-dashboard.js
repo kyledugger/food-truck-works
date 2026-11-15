@@ -109,7 +109,7 @@
       const seconds=s.customer_wait?.wait_seconds;
       c.wait.textContent='Customer Wait: '+(!s.kitchen_tracking?'Service off':seconds==null?'No waiting tickets':Math.floor(seconds/60)+'m '+seconds%60+'s');
       const when=s.historical?'on this date':'today';
-      c.badge.textContent=(s.loading??data.initializing)?'Loading sales':s.historical?(s.load_error?'Verification failed':s.verifying?'Checking for updates…':'Historical view'):s.order_count?'Trading today':s.currency_warning?'No USD sales today':'No sales today';
+      c.badge.textContent=(s.loading??data.initializing)?'Loading sales':s.historical?(s.load_error?'Verification failed':s.verifying?'Checking for updates…':'Historical view'):s.order_count?'Sales today':s.currency_warning?'No USD sales today':'No sales today';
       c.labels.sales.textContent='Sales';c.labels.tips.textContent=s.historical?'Tips':'Tips today';c.labels.orders.textContent=s.historical?'Orders':'Orders today';c.labels.items.textContent=s.historical?'Items':'Items today';
       c.now.hidden=!!s.historical;c.activityWrap.hidden=!!s.historical;c.activityTitle.hidden=!!s.historical;
       if(s.historical&&c.charts.activity){c.charts.activity.destroy();delete c.charts.activity;}
