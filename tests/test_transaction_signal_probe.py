@@ -45,7 +45,7 @@ class ReadOnlySession:
 
 class TransactionProbeTests(unittest.TestCase):
     def setUp(self):
-        self.env = patch.dict(os.environ, {**ENV, 'POYNT_TRANSACTION_LOOKUP_ENABLED':'0'})
+        self.env = patch.dict(os.environ, {**ENV, 'POYNT_TRANSACTION_LOOKUP_ENABLED':'0', 'POYNT_TRANSACTION_TRIGGER_ENABLED':'0'})
         self.env.start()
         self.db = patch.object(probe, 'SessionLocal', ReadOnlySession)
         self.db.start()

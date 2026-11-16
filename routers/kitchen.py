@@ -79,6 +79,8 @@ def queue(request: Request, store_id: int):
             needs_resume = bool(not simulated and tracking_on and tracking.last_seen_at and tracking.last_seen_at < now-timedelta(minutes=15))
             if not readonly and not simulated and tracking_on and not needs_resume:
                 tracking.last_seen_at = now
+                from live_dashboard_service import kitchen_sync_deadline
+                kitchen_sync_deadline(session, store.organization_id, connection.business_id, now)
             session_info = {"active": tracking_on, "needs_resume": needs_resume,
                 "started_at": utc_iso(tracking.started_at) if tracking and tracking_on else None,
                 "revision": tracking.revision if tracking else 0}

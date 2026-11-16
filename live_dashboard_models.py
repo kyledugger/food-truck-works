@@ -1,10 +1,52 @@
 """Persistent sales cache and durable webhook inbox. Alembic owns creation."""
 from datetime import datetime, date
-from sqlalchemy import ForeignKey, String, JSON, UniqueConstraint, Index, Date
+from sqlalchemy import ForeignKey, String, JSON, UniqueConstraint, Index, Date, Integer
 from sqlalchemy.orm import Mapped, mapped_column
 from database import Base
 from instant_type import UTCInstant
 from store_time import utc_now
+
+
+class TransactionSignal(Base):
+    __tablename__ = "transaction_order_signals"
+    __table_args__ = (
+        UniqueConstraint("organization_id", "business_id", "transaction_id", name="uq_transaction_order_signal"),
+        Index("ix_transaction_signal_due", "organization_id", "state", "next_attempt_at"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    organization_id: Mapped[int] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"))
+    business_id: Mapped[str] = mapped_column(String(100))
+    store_id: Mapped[str] = mapped_column(String(100))
+    transaction_id: Mapped[str] = mapped_column(String(100))
+    order_id: Mapped[str | None] = mapped_column(String(100))
+    state: Mapped[str] = mapped_column(String(20), default="pending")
+    attempts: Mapped[int] = mapped_column(Integer, default=0)
+    generation: Mapped[int] = mapped_column(Integer, default=1)
+    created_at: Mapped[datetime] = mapped_column(UTCInstant(), default=utc_now)
+    cycle_started_at: Mapped[datetime] = mapped_column(UTCInstant(), default=utc_now)
+    last_received_at: Mapped[datetime] = mapped_column(UTCInstant(), default=utc_now)
+    last_attempt_at: Mapped[datetime | None] = mapped_column(UTCInstant())
+    next_attempt_at: Mapped[datetime] = mapped_column(UTCInstant(), default=utc_now)
+    last_error: Mapped[str | None] = mapped_column(String(100))
+
+
+class TransactionSignalReceipt(Base):
+    __tablename__ = "transaction_signal_receipts"
+    __table_args__ = (UniqueConstraint("organization_id", "business_id", "notification_id", name="uq_transaction_signal_receipt"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    organization_id: Mapped[int] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"))
+    business_id: Mapped[str] = mapped_column(String(100))
+    notification_id: Mapped[str] = mapped_column(String(100))
+    received_at: Mapped[datetime] = mapped_column(UTCInstant(), default=utc_now)
+
+
+class TransactionSignalBudget(Base):
+    __tablename__ = "transaction_signal_budgets"
+    organization_id: Mapped[int] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), primary_key=True)
+    business_id: Mapped[str] = mapped_column(String(100))
+    window_started_at: Mapped[datetime] = mapped_column(UTCInstant(), default=utc_now)
+    request_count: Mapped[int] = mapped_column(Integer, default=0)
+    backoff_until: Mapped[datetime | None] = mapped_column(UTCInstant())
 
 
 class DashboardSync(Base):

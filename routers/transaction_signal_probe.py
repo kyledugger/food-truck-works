@@ -94,7 +94,20 @@ async def transaction_probe(request: Request, organization_id: int, background_t
             raise HTTPException(403, 'Notification does not match the active Poynt connection.')
     # Log only allowlisted correlation metadata. Never trust or follow payload URLs.
     logger.info('TRANSACTION_PROBE %s', json.dumps(evidence(data, organization_id, received), separators=(',', ':')))
-    if os.getenv('POYNT_TRANSACTION_LOOKUP_ENABLED') == '1':
+    if os.getenv('POYNT_TRANSACTION_TRIGGER_ENABLED') == '1':
+        from transaction_trigger import enqueue
+        from sqlalchemy.exc import SQLAlchemyError
+        try:
+            with SessionLocal() as session:
+                result=enqueue(session,organization_id,data,received)
+                session.commit()
+        except SQLAlchemyError:
+            logger.warning('TRANSACTION_TRIGGER inbox_unavailable organization=%s',organization_id)
+            raise HTTPException(503,'Transaction inbox unavailable; delivery should retry.') from None
+        logger.info('TRANSACTION_TRIGGER received organization=%s transaction=%s outcome=%s',
+            organization_id,data['resourceId'],result)
+        return {'accepted':True,'mode':'transaction_trigger','outcome':result}
+    elif os.getenv('POYNT_TRANSACTION_LOOKUP_ENABLED') == '1':
         from transaction_order_probe import run_probe
         background_tasks.add_task(run_probe, data, organization_id, received)
     return {'accepted': True, 'mode': 'observe_only'}

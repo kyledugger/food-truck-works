@@ -23,6 +23,13 @@ class PoyntReauthorizationRequired(PoyntAPIError):
     """Raised when Poynt must be connected or explicitly reauthorized."""
 
 
+class PoyntSignalAPIError(PoyntAPIError):
+    def __init__(self, status_code, retry_after=60):
+        self.status_code = status_code
+        self.retry_after = retry_after
+        super().__init__(f"Poynt signal lookup returned HTTP {status_code}")
+
+
 class PoyntClient:
     BASE_URL = "https://services.poynt.net"
     API_VERSION = "1.2"
@@ -530,6 +537,34 @@ class PoyntClient:
         if not response.is_success:
             raise PoyntAPIError(f"Poynt API returned HTTP {response.status_code}")
         return response.json()
+
+    async def signal_get(self, resource, resource_id=None, params=None):
+        """One budgeted-by-caller GET. Never follows provider payload URLs."""
+        from urllib.parse import quote
+        from email.utils import parsedate_to_datetime
+        if resource not in {"transactions", "orders"}:
+            raise ValueError("Unexpected signal resource")
+        await self._refresh_if_needed()
+        path = f"/businesses/{quote(self.business_id, safe='')}/{resource}"
+        if resource_id is not None:
+            path += "/" + quote(resource_id, safe="")
+        async with self._api_client() as client:
+            response = await client.get(self.BASE_URL + path, headers=self._headers(), params=params, timeout=5)
+        if not response.is_success:
+            delay = 60
+            header = response.headers.get("retry-after", "")
+            try:
+                delay = max(1, int(header))
+            except ValueError:
+                try:
+                    delay = max(1, int((parsedate_to_datetime(header)-datetime.now(timezone.utc)).total_seconds())+1)
+                except (ValueError, TypeError, OverflowError):
+                    pass
+            raise PoyntSignalAPIError(response.status_code, delay)
+        data = response.json()
+        if not isinstance(data, dict):
+            raise PoyntAPIError("Unexpected signal response shape")
+        return data
 
     async def register_order_webhook(self, delivery_url: str, secret: str) -> dict:
         import uuid

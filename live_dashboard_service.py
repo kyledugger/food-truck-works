@@ -5,8 +5,8 @@ import os
 import uuid
 from datetime import timedelta
 from zoneinfo import ZoneInfo
-from sqlalchemy import select, or_, delete
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy import select, or_, delete, update
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from database import SessionLocal
 from models import OrganizationStore, PoyntConnection
 from live_dashboard_models import DashboardOrder, DashboardSync, DashboardNotification, DashboardDay
@@ -19,6 +19,18 @@ from store_time import utc_now, utc_iso, local_day_bounds
 
 logger = logging.getLogger(__name__)
 RECONCILE_SECONDS = max(1, int(os.getenv("POYNT_RECONCILE_SECONDS", "30")))
+
+
+def kitchen_sync_deadline(session, organization_id, business_id, now):
+    """A fresh kitchen heartbeat must not inherit an idle five-minute deadline."""
+    state = ensure_sync(session, organization_id, business_id)
+    target = max(now, state.last_reconciled_at+timedelta(seconds=RECONCILE_SECONDS)) if state.last_reconciled_at else now
+    # Do not shorten failure/rate-limit backoff or push an earlier deadline out.
+    changed = session.execute(update(DashboardSync).where(DashboardSync.organization_id==organization_id,
+        DashboardSync.business_id==business_id, DashboardSync.error.is_(None),
+        DashboardSync.next_reconcile_at>target).values(next_reconcile_at=target))
+    if changed.rowcount:
+        logger.info('KITCHEN_SYNC_WAKE organization=%s next_reconcile_at=%s',organization_id,utc_iso(target))
 
 
 def history_interval(report_date, stores, now):
@@ -154,6 +166,23 @@ async def process_organization(organization_id, business_id, token, refresh_only
             raise ValueError("Poynt connection changed")
         return
     client = PoyntClient(credentials, organization_id)
+    import transaction_trigger
+    if transaction_trigger.enabled():
+        try:
+            with SessionLocal() as session:
+                until=transaction_trigger.get_backoff(session,organization_id,business_id,utc_now())
+                if until:
+                    state=owned_state(session,organization_id,business_id,token)
+                    if state:
+                        state.next_reconcile_at=max(state.next_reconcile_at,until)
+                        from live_dashboard_models import TransactionSignal
+                        session.execute(update(TransactionSignal).where(TransactionSignal.organization_id==organization_id,
+                            TransactionSignal.business_id==business_id,TransactionSignal.state=='pending',
+                            TransactionSignal.next_attempt_at<until).values(next_attempt_at=until))
+                        session.commit()
+                    return
+        except SQLAlchemyError as exc:
+            logger.warning('Transaction trigger unavailable; normal polling continues: %s',type(exc).__name__)
     now = utc_now()
     with SessionLocal() as session:
         state = session.get(DashboardSync, organization_id)
@@ -209,6 +238,14 @@ async def process_organization(organization_id, business_id, token, refresh_only
                 notification = session.get(DashboardNotification, notification_id)
                 notification.retry_at = utc_now() + timedelta(seconds=60)
                 session.commit()
+    # Preserve the proven order-webhook path's priority over sideband work.
+    if transaction_trigger.enabled() and not refresh_only and history_only is None:
+        try:
+            if await transaction_trigger.process_signals(SessionLocal,organization_id,business_id,token,
+                    client,owned_state,save_order):
+                return
+        except SQLAlchemyError as exc:
+            logger.warning('Transaction inbox unavailable; normal polling continues: %s',type(exc).__name__)
     for day_id, report_date in historical_days:
         try:
             bounds = []
@@ -301,6 +338,21 @@ async def dashboard_worker():
                     or_(DashboardSync.next_reconcile_at <= now, DashboardSync.organization_id.in_(pending_orgs),
                         DashboardSync.organization_id.in_(historical_orgs))
                 ).order_by(DashboardSync.next_reconcile_at).limit(50)).all()
+            import transaction_trigger
+            if transaction_trigger.enabled():
+                try:
+                    from live_dashboard_models import TransactionSignal
+                    with SessionLocal() as session:
+                        signal_orgs=session.scalars(select(TransactionSignal.organization_id).join(DashboardSync,
+                            DashboardSync.organization_id==TransactionSignal.organization_id).join(PoyntConnection,
+                            PoyntConnection.organization_id==TransactionSignal.organization_id).where(
+                            TransactionSignal.business_id==DashboardSync.business_id,
+                            TransactionSignal.business_id==PoyntConnection.business_id,
+                            TransactionSignal.state=='pending',TransactionSignal.next_attempt_at<=utc_now())
+                            .distinct().limit(50)).all()
+                    ids=list(dict.fromkeys(ids+signal_orgs))
+                except SQLAlchemyError as exc:
+                    logger.warning('Transaction inbox unavailable; normal polling continues: %s',type(exc).__name__)
             for organization_id in ids:
                 claim = acquire(organization_id)
                 if claim is None:

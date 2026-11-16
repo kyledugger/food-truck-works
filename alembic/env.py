@@ -27,6 +27,7 @@ if config.config_file_name is not None:
 from database import Base
 import models
 import kitchen_models
+import live_dashboard_models
 
 target_metadata = Base.metadata
 
