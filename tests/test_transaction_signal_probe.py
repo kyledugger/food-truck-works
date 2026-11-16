@@ -45,7 +45,7 @@ class ReadOnlySession:
 
 class TransactionProbeTests(unittest.TestCase):
     def setUp(self):
-        self.env = patch.dict(os.environ, ENV)
+        self.env = patch.dict(os.environ, {**ENV, 'POYNT_TRANSACTION_LOOKUP_ENABLED':'0'})
         self.env.start()
         self.db = patch.object(probe, 'SessionLocal', ReadOnlySession)
         self.db.start()
@@ -75,6 +75,31 @@ class TransactionProbeTests(unittest.TestCase):
     def test_disabled(self):
         with patch.dict(os.environ, {'POYNT_TRANSACTION_PROBE_ENABLED': '0'}):
             self.assertEqual(self.send().status_code, 404)
+
+    def test_active_mode_schedules_probe_after_response_body(self):
+        import asyncio
+        import transaction_order_probe
+        response_finished = []
+        called = []
+        app = FastAPI()
+        app.include_router(probe.router)
+        async def lookup(*args):
+            self.assertTrue(response_finished)
+            called.append(args)
+        async def observed_app(scope, receive, send):
+            async def observed_send(message):
+                await send(message)
+                if message['type']=='http.response.body' and not message.get('more_body'):
+                    response_finished.append(True)
+            await app(scope, receive, observed_send)
+        body=json.dumps(notification()).encode()
+        with patch.dict(os.environ, {'POYNT_TRANSACTION_LOOKUP_ENABLED':'1'}), \
+             patch.object(transaction_order_probe, 'run_probe', lookup):
+            with TestClient(observed_app) as client:
+                response=client.post('/webhooks/poynt/transaction-probe/1', content=body,
+                    headers={'Poynt-Webhook-Signature':sign(body)})
+        self.assertEqual(response.status_code,200)
+        self.assertEqual(len(called),1)
 
     def test_bad_signature(self):
         self.assertEqual(self.send(signature='wrong').status_code, 401)

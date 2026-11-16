@@ -1,4 +1,4 @@
-"""Passive transaction webhook experiment; no Poynt requests or database writes."""
+"""Transaction webhook observer with an optional bounded read-only API probe."""
 import base64
 from collections import OrderedDict
 from datetime import datetime, timezone
@@ -8,7 +8,7 @@ import json
 import logging
 import os
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Request
 from sqlalchemy import select
 from database import SessionLocal
 from models import PoyntConnection
@@ -68,7 +68,7 @@ def evidence(data, organization_id, now):
 
 
 @router.post('/webhooks/poynt/transaction-probe/{organization_id:int}', include_in_schema=False)
-async def transaction_probe(request: Request, organization_id: int):
+async def transaction_probe(request: Request, organization_id: int, background_tasks: BackgroundTasks):
     if os.getenv('POYNT_TRANSACTION_PROBE_ENABLED') != '1':
         raise HTTPException(404, 'Transaction probe is disabled.')
     try:
@@ -94,4 +94,7 @@ async def transaction_probe(request: Request, organization_id: int):
             raise HTTPException(403, 'Notification does not match the active Poynt connection.')
     # Log only allowlisted correlation metadata. Never trust or follow payload URLs.
     logger.info('TRANSACTION_PROBE %s', json.dumps(evidence(data, organization_id, received), separators=(',', ':')))
+    if os.getenv('POYNT_TRANSACTION_LOOKUP_ENABLED') == '1':
+        from transaction_order_probe import run_probe
+        background_tasks.add_task(run_probe, data, organization_id, received)
     return {'accepted': True, 'mode': 'observe_only'}
