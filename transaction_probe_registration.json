@@ -1,0 +1,7 @@
+{
+  "hook_id": "b269042a-e6f1-4031-9e7a-53e6eafe42e6",
+  "business_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+  "application_id": "urn:aid:9f26d55d-243e-411a-9619-3d85116a90a1",
+  "organization_id": 1,
+  "delivery_url": "https://foodtruckworks.com/webhooks/poynt/transaction-probe/1"
+}

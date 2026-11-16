@@ -102,6 +102,8 @@ app.include_router(account_settings_router)
 app.include_router(stores_router)
 app.include_router(integrations_router)
 app.include_router(live_dashboard_router)
+from routers.transaction_signal_probe import router as transaction_signal_probe_router
+app.include_router(transaction_signal_probe_router)
 app.include_router(claim_tips_router)
 app.include_router(pricing_router)
 

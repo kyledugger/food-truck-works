@@ -1,0 +1,223 @@
+{
+  "organization_id": 1,
+  "stores": [
+    {
+      "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+      "display_name": "Ice Cream Crush Truck",
+      "poynt_name": "Ice Cream Crush",
+      "timezone_name": "America/Phoenix"
+    },
+    {
+      "store_id": "6440e3cd-757f-4e2d-8076-d4895722f044",
+      "display_name": "Ice Cream Crush Popup",
+      "poynt_name": "Ice Cream Crush popup",
+      "timezone_name": "America/Phoenix"
+    },
+    {
+      "store_id": "8ed02483-791e-4aa1-8686-00a0afba348f",
+      "display_name": "Ice Cream Crush Trailer",
+      "poynt_name": "Ice Cream Crush Trailer",
+      "timezone_name": "America/Phoenix"
+    },
+    {
+      "store_id": "17e4a4ac-4d7b-458f-aa25-ae2699f1ecfa",
+      "display_name": "Ice Cream Crush Store",
+      "poynt_name": "Ice Cream Crush Store",
+      "timezone_name": "America/Phoenix"
+    }
+  ],
+  "examples": [
+    {
+      "type": "paylink",
+      "date": "2026-11-02",
+      "expected_amount_cents": 36754,
+      "displayed_document_number": "25665",
+      "expected_store": "Ice Cream Crush Truck",
+      "query": {
+        "timeType": "createdAt",
+        "startAt": "2026-11-02T07:00:00+00:00",
+        "endAt": "2026-11-03T07:00:00+00:00"
+      },
+      "orders": {
+        "http_status": 200,
+        "complete": false,
+        "error": "Unexpected collection shape",
+        "topLevelFields": [
+          "count"
+        ],
+        "pages": [],
+        "records": []
+      },
+      "transactions": {
+        "http_status": 200,
+        "complete": true,
+        "expected_count": 1,
+        "returned": 1,
+        "duplicate_ids": [],
+        "pages": [
+          {
+            "offset": 0,
+            "returned": 1,
+            "count": 1
+          }
+        ],
+        "records": [
+          {
+            "id": "0b88fd6b-f965-45f0-bcb9-d14f3de0c7a8",
+            "parentId": null,
+            "createdAt": "2026-11-02T13:56:54Z",
+            "updatedAt": "2026-11-03T01:54:30Z",
+            "action": "SALE",
+            "status": "CAPTURED",
+            "settled": true,
+            "voided": false,
+            "storeId": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "topLevelFields": [
+              "action",
+              "actionVoid",
+              "adjusted",
+              "amounts",
+              "amountsAdjusted",
+              "authOnly",
+              "context",
+              "createdAt",
+              "customerUserId",
+              "fundingSource",
+              "id",
+              "notes",
+              "partiallyApproved",
+              "paymentTokenUsed",
+              "pinCaptured",
+              "processorOptions",
+              "processorResponse",
+              "receiptEmailAddress",
+              "references",
+              "reversalVoid",
+              "settled",
+              "settlementStatus",
+              "signatureCaptured",
+              "signatureRequired",
+              "status",
+              "transactionNumber",
+              "updatedAt",
+              "voided"
+            ],
+            "references": [
+              {
+                "type": "CUSTOM",
+                "customType": "checkoutUrlId",
+                "id": "3abe36d4-a079-435e-a6e3-4e2456825665"
+              },
+              {
+                "type": "CUSTOM",
+                "customType": "POYNT_COLLECT",
+                "id": "37b7e0a3-36e7-433c-aa38-582865558620"
+              }
+            ],
+            "amounts": {
+              "currency": "USD",
+              "orderAmount": 36754,
+              "transactionAmount": 36754,
+              "tipAmount": 0,
+              "taxAmount": null
+            },
+            "attached_to_order_in_this_window": false
+          }
+        ]
+      },
+      "candidate_transaction_ids": [
+        "0b88fd6b-f965-45f0-bcb9-d14f3de0c7a8"
+      ]
+    },
+    {
+      "type": "invoice",
+      "date": "2026-09-12",
+      "expected_amount_cents": 24311,
+      "displayed_document_number": "000060",
+      "expected_store": "Ice Cream Crush Truck",
+      "query": {
+        "timeType": "createdAt",
+        "startAt": "2026-09-12T07:00:00+00:00",
+        "endAt": "2026-09-13T07:00:00+00:00"
+      },
+      "orders": {
+        "http_status": 200,
+        "complete": false,
+        "error": "Unexpected collection shape",
+        "topLevelFields": [
+          "count"
+        ],
+        "pages": [],
+        "records": []
+      },
+      "transactions": {
+        "http_status": 200,
+        "complete": true,
+        "expected_count": 1,
+        "returned": 1,
+        "duplicate_ids": [],
+        "pages": [
+          {
+            "offset": 0,
+            "returned": 1,
+            "count": 1
+          }
+        ],
+        "records": [
+          {
+            "id": "3004f80d-5df4-4b02-8e3c-da88add769ff",
+            "parentId": null,
+            "createdAt": "2026-09-12T19:15:59Z",
+            "updatedAt": "2026-09-13T01:57:31Z",
+            "action": "SALE",
+            "status": "CAPTURED",
+            "settled": true,
+            "voided": false,
+            "storeId": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "topLevelFields": [
+              "action",
+              "actionVoid",
+              "adjusted",
+              "amounts",
+              "amountsAdjusted",
+              "authOnly",
+              "context",
+              "createdAt",
+              "customerUserId",
+              "fundingSource",
+              "id",
+              "partiallyApproved",
+              "paymentTokenUsed",
+              "pinCaptured",
+              "processorOptions",
+              "processorResponse",
+              "receiptEmailAddress",
+              "references",
+              "reversalVoid",
+              "settled",
+              "settlementStatus",
+              "signatureCaptured",
+              "signatureRequired",
+              "status",
+              "transactionNumber",
+              "updatedAt",
+              "voided"
+            ],
+            "references": [],
+            "amounts": {
+              "currency": "USD",
+              "orderAmount": 24311,
+              "transactionAmount": 24311,
+              "tipAmount": 0,
+              "taxAmount": null
+            },
+            "attached_to_order_in_this_window": false
+          }
+        ]
+      },
+      "candidate_transaction_ids": [
+        "3004f80d-5df4-4b02-8e3c-da88add769ff"
+      ]
+    }
+  ]
+}
