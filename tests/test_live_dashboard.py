@@ -23,7 +23,7 @@ from alembic.migration import MigrationContext
 from alembic.operations import Operations
 from database import Base
 from models import User, Organization, OrganizationMember, OrganizationStore, PoyntConnection, StoreAssignment
-from live_dashboard_models import DashboardOrder, DashboardNotification, DashboardSync, DashboardDay
+from live_dashboard_models import DashboardOrder, DashboardNotification, DashboardSync, DashboardDay, AdditionalPaymentDay
 from live_dashboard_metrics import summarize, money, instant, order_store, categories, store_details
 from live_dashboard_service import save_order, acquire, release, process_organization
 from kitchen_models import KitchenSession
@@ -203,6 +203,7 @@ class DatabaseAndRoutesTests(unittest.TestCase):
         self.patches=[patch(name,self.factory) for name in ["routers.live_dashboard.SessionLocal","live_dashboard_service.SessionLocal",
             "poynt.connection.SessionLocal","organization_context.SessionLocal","permissions.SessionLocal",
             "routers.store_displays.SessionLocal", "routers.auth_routes.SessionLocal", "store_display_access.SessionLocal"]]
+        self.patches.append(patch('poynt.client.PoyntClient.signal_get',new=AsyncMock(return_value={'count':0})))
         for p in self.patches:p.start()
         self.env=patch.dict(os.environ,{"POYNT_APP_ID":"app","POYNT_WEBHOOK_SECRET":"s"*40,"POYNT_WEBHOOK_URL":"https://example.test/webhooks/poynt/orders"});self.env.start()
         now=utc_now()
@@ -537,7 +538,13 @@ class DatabaseAndRoutesTests(unittest.TestCase):
         release(1,token)
         self.assertEqual(mock.call_args.kwargs["start_at"],start.isoformat().replace("+00:00","Z"))
         self.assertEqual(mock.call_args.kwargs["end_at"],end.isoformat().replace("+00:00","Z"))
-        result=self.client.get(url).json();self.assertFalse(result["polling_needed"]);self.assertFalse(result["initializing"])
+        result=self.client.get(url).json();self.assertTrue(result["polling_needed"]);self.assertFalse(result["initializing"])
+        self.assertTrue(result['stores'][0]['additional_payments']['loading'])
+        with self.factory() as session:
+            payment_day=session.scalar(select(AdditionalPaymentDay))
+            payment_day.loaded_at=utc_now();payment_day.next_sync_at=utc_now()+timedelta(days=1)
+            session.commit()
+        self.assertFalse(self.client.get(url).json()['polling_needed'])
         self.assertEqual(result["stores"][0]["sales_cents"],1083);self.assertIsNone(result["stores"][0]["pace"])
         self.assertEqual(result["stores"][0]["order_count"],1)
         self.client.get(url)
@@ -577,7 +584,8 @@ class DatabaseAndRoutesTests(unittest.TestCase):
             response=self.client.post(url,headers=headers)
         self.assertEqual(response.status_code,200,response.text);self.assertEqual(mock.await_count,1)
         data=self.client.get('/dashboard/data?date='+day.isoformat()).json()
-        self.assertFalse(data['polling_needed']);self.assertEqual(data['stores'][0]['sales_cents'],1083)
+        self.assertTrue(data['polling_needed']);self.assertEqual(data['stores'][0]['sales_cents'],1083)
+        self.assertTrue(data['stores'][0]['additional_payments']['loading'])
         self.assertIsNotNone(data['next_history_check_at'])
         with self.factory() as session:
             cache=session.scalar(select(DashboardDay).where(DashboardDay.report_date==day))

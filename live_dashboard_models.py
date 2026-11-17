@@ -7,6 +7,45 @@ from instant_type import UTCInstant
 from store_time import utc_now
 
 
+class AdditionalPaymentDay(Base):
+    __tablename__ = "additional_payment_days"
+    __table_args__ = (UniqueConstraint("organization_id", "business_id", "report_date", name="uq_additional_payment_day"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    organization_id: Mapped[int] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"))
+    business_id: Mapped[str] = mapped_column(String(100))
+    report_date: Mapped[date] = mapped_column(Date)
+    start_at: Mapped[datetime] = mapped_column(UTCInstant())
+    end_at: Mapped[datetime] = mapped_column(UTCInstant())
+    requested_at: Mapped[datetime] = mapped_column(UTCInstant(), default=utc_now)
+    next_sync_at: Mapped[datetime] = mapped_column(UTCInstant(), default=utc_now)
+    loaded_at: Mapped[datetime | None] = mapped_column(UTCInstant())
+    scan_started_at: Mapped[datetime | None] = mapped_column(UTCInstant())
+    cursor: Mapped[int] = mapped_column(Integer, default=0)
+    phase: Mapped[str] = mapped_column(String(20), default="orders")
+    seen_order_ids: Mapped[list] = mapped_column(JSON, default=list)
+    staged: Mapped[list] = mapped_column(JSON, default=list)
+    snapshot: Mapped[list] = mapped_column(JSON, default=list)
+    error: Mapped[str | None] = mapped_column(String(200))
+
+
+class AdditionalPaymentControl(Base):
+    __tablename__ = "additional_payment_controls"
+    organization_id: Mapped[int] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), primary_key=True)
+    business_id: Mapped[str] = mapped_column(String(100))
+    next_request_at: Mapped[datetime] = mapped_column(UTCInstant(), default=utc_now)
+
+
+class DashboardPaymentLink(Base):
+    __tablename__ = "dashboard_payment_links"
+    __table_args__ = (UniqueConstraint("organization_id", "business_id", "order_id", "transaction_id", name="uq_dashboard_payment_link"),
+        Index("ix_dashboard_payment_transaction", "organization_id", "business_id", "transaction_id"))
+    id: Mapped[int] = mapped_column(primary_key=True)
+    organization_id: Mapped[int] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"))
+    business_id: Mapped[str] = mapped_column(String(100))
+    order_id: Mapped[str] = mapped_column(String(100))
+    transaction_id: Mapped[str] = mapped_column(String(100))
+
+
 class TransactionWebhook(Base):
     __tablename__ = "poynt_transaction_webhooks"
     __table_args__ = (UniqueConstraint("organization_id", "business_id", name="uq_transaction_webhook_business"),)

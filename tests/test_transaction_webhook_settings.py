@@ -207,9 +207,21 @@ class MigrationTests(unittest.TestCase):
             env=Path(directory)/'migration.env'
             env.write_text('DATABASE_URL='+url+'\n')
             with patch.dict(os.environ,{'DATABASE_URL':url}):
-                run(SimpleNamespace(dotenv=str(env),apply=False))
-                self.assertNotIn('poynt_transaction_webhooks',inspect(engine).get_table_names())
-                run(SimpleNamespace(dotenv=str(env),apply=True))
+                from alembic.config import Config
+                from alembic.script import ScriptDirectory
+                from alembic import command
+                config=Config('alembic.ini')
+                scripts=ScriptDirectory.from_config(config)
+                if scripts.get_heads()!=['b13d82e69a04']:
+                    # An old guarded helper must refuse a newer source package.
+                    with self.assertRaisesRegex(ValueError,'Source migration heads'):
+                        run(SimpleNamespace(dotenv=str(env),apply=False))
+                    self.assertNotIn('poynt_transaction_webhooks',inspect(engine).get_table_names())
+                    command.upgrade(config,'b13d82e69a04')
+                else:
+                    run(SimpleNamespace(dotenv=str(env),apply=False))
+                    self.assertNotIn('poynt_transaction_webhooks',inspect(engine).get_table_names())
+                    run(SimpleNamespace(dotenv=str(env),apply=True))
             self.assertIn('poynt_transaction_webhooks',inspect(engine).get_table_names())
             with engine.connect() as connection:
                 self.assertEqual(connection.scalar(text('SELECT version_num FROM alembic_version')),'b13d82e69a04')

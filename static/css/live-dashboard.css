@@ -32,3 +32,8 @@
 #live-today.live-today-active{background-color:#16835f;border-color:#16835f;color:#fff}
 #live-today.live-today-active:hover{background-color:#116b4d;border-color:#116b4d}
 #live-today:focus-visible{outline:3px solid #16835f;outline-offset:3px}
+.live-additional-payments { margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid #dbe4e8; }
+.live-combined-total { font-weight: 700; font-size: 1.1rem; margin-bottom: .75rem; overflow-wrap: anywhere; }
+.live-additional-payments table { width: 100%; table-layout: fixed; }
+.live-additional-payments th:first-child { width: 46%; }
+.live-additional-payments td { overflow-wrap: anywhere; vertical-align: top; }

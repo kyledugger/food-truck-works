@@ -56,7 +56,12 @@
       categoryPanel.append(table);panels.append(salesPanel,categoryPanel);details.append(panels);
       document.getElementById('store-sales-breakdown').append(details);
     }
-    const card={root,name,date,badge,message,body,fields,labels,wait,queueLink,now,recent,pace,last,warning,details,avg,rows,hourly,activity,activityWrap,activityTitle,charts:{}};
+    const paymentsPanel=el('section','live-additional-payments'),combined=el('p','live-combined-total'),paymentSummary=el('p'),paymentStatus=el('p','is-size-7'),paymentRows=el('tbody');
+    const paymentDetails=el('details'),paymentTable=el('table','live-category'),paymentHead=el('thead'),paymentTr=el('tr');
+    paymentDetails.append(el('summary','','Payment breakdown'));
+    ['Payment','Sales','Tip'].forEach(label=>paymentTr.append(el('th','',label)));paymentHead.append(paymentTr);paymentTable.append(paymentHead,paymentRows);paymentDetails.append(paymentTable);
+    paymentsPanel.append(combined,el('h3','live-chart-title','Additional payments'),paymentSummary,paymentStatus,paymentDetails);root.append(paymentsPanel);
+    const card={root,name,date,badge,message,body,fields,labels,wait,queueLink,now,recent,pace,last,warning,details,avg,rows,hourly,activity,activityWrap,activityTitle,paymentsPanel,combined,paymentSummary,paymentStatus,paymentRows,paymentDetails,charts:{}};
     details.addEventListener('toggle',()=>{if(details.open && card.data)drawCharts(card,card.data);});
     cards.set(id,card);return card;
   }
@@ -84,10 +89,13 @@
       totalCard.hidden=!data.connected||!data.stores.length;
       const configured=data.stores.filter(s=>!s.setup_required);
       const ready=configured.filter(s=>!(s.loading??data.initializing)&&Number.isFinite(s.sales_cents));
-      const total=ready.reduce((sum,s)=>sum+s.sales_cents,0);
+      const total=ready.reduce((sum,s)=>sum+(Number.isFinite(s.combined_sales_cents)?s.combined_sales_cents:s.sales_cents),0);
       document.getElementById('live-total-revenue-value').textContent=ready.length?money(total):'—';
       const dates=[...new Set(configured.map(s=>s.date).filter(Boolean))];
-      let detail=(dates.length===1?dates[0]+' · ':'')+'All stores · Includes tax, excludes tips';
+      let detail=(dates.length===1?dates[0]+' · ':'')+'All stores · Order sales + additional payments · Includes tax, excludes tips';
+      if(ready.some(s=>s.additional_payments&&!Number.isFinite(s.combined_sales_cents)))detail+=' · Partial: additional payments pending';
+      if(ready.some(s=>s.additional_payments?.error||s.additional_payments?.stale))detail+=' · Payment verification pending';
+      if(ready.some(s=>s.additional_payments?.review_count))detail+=' · Some payments excluded pending verification';
       if(ready.length<data.stores.length)detail+=' · Partial total ('+ready.length+' of '+data.stores.length+' stores available)';
       if(delayed)detail+=' · Updates delayed';
       else if(data.historical_view&&configured.some(s=>s.verifying))detail+=' · Checking for updates…';
@@ -98,10 +106,21 @@
       alive.add(s.id);const c=cards.get(s.id)||makeCard(s.id);c.name.textContent=s.name;
       if(!storeView){
         const loading=s.loading??data.initializing;
-        const hasSales=!!s.order_count||!!s.sales_cents||!!s.tips_cents;
+        const hasSales=!!s.order_count||!!s.sales_cents||!!s.tips_cents||!!s.additional_payments?.payments?.length;
         c.root.style.order=hasSales?'0':s.setup_required||loading?'1':'2';
       }
       c.message.hidden=true;c.body.hidden=false;c.badge.textContent='';
+      const payment=s.additional_payments;
+      c.paymentsPanel.hidden=storeView||!payment||!!s.setup_required;
+      if(payment&&!storeView&&!s.setup_required){
+        c.combined.textContent='Day total (excluding tips): '+(Number.isFinite(s.combined_sales_cents)?money(s.combined_sales_cents):'Pending');
+        c.paymentSummary.textContent=payment.loading?'Loading additional payments…':money(payment.sales_cents)+' · '+payment.payments.length+' payment'+(payment.payments.length===1?'':'s');
+        c.paymentStatus.textContent=payment.error||(payment.loading?'Collected separately from orders.':payment.stale?'Showing saved payments; checking for updates.':'Checked '+new Date(payment.checked_at).toLocaleString(undefined,{timeZone:s.timezone})+' · '+s.timezone);
+        if(payment.currency_warning)c.paymentStatus.textContent+=' · Non-USD payments excluded.';
+        if(payment.review_count)c.paymentStatus.textContent+=' · '+payment.review_count+' payment(s) need verification and are excluded.';
+        c.paymentRows.replaceChildren();c.paymentDetails.hidden=payment.loading||!payment.payments.length;
+        for(const p of payment.payments){const tr=el('tr'),label=el('td');label.append(el('span','',p.label),el('small','is-block',new Date(p.at).toLocaleTimeString(undefined,{timeZone:s.timezone})+' · '+p.id.slice(0,8)));tr.append(label,el('td','',money(p.sales_cents)),el('td','',money(p.tip_cents)));c.paymentRows.append(tr);}
+      }
       if(storeView)c.details.hidden=!!s.setup_required||!!(s.loading??data.initializing);
       if(s.setup_required){c.wait.hidden=c.queueLink.hidden=true;c.date.textContent='Setup needed';c.body.hidden=true;c.message.hidden=false;c.message.textContent=s.message;continue;}
       c.data=s;c.date.textContent=s.date+' · '+s.timezone;
@@ -110,12 +129,13 @@
       c.wait.textContent='Customer Wait: '+(!s.kitchen_tracking?'Service off':seconds==null?'No waiting tickets':Math.floor(seconds/60)+'m '+seconds%60+'s');
       const when=s.historical?'on this date':'today';
       c.badge.textContent=(s.loading??data.initializing)?'Loading sales':s.historical?(s.load_error?'Verification failed':s.verifying?'Checking for updates…':'Historical view'):s.order_count?'Sales today':s.currency_warning?'No USD sales today':'No sales today';
+      if(!s.historical&&!s.order_count&&payment?.payments?.length)c.badge.textContent='Payments today';
       c.labels.sales.textContent='Sales';c.labels.tips.textContent=s.historical?'Tips':'Tips today';c.labels.orders.textContent=s.historical?'Orders':'Orders today';c.labels.items.textContent=s.historical?'Items':'Items today';
       c.now.hidden=!!s.historical;c.activityWrap.hidden=!!s.historical;c.activityTitle.hidden=!!s.historical;
       if(s.historical&&c.charts.activity){c.charts.activity.destroy();delete c.charts.activity;}
       if(s.loading??data.initializing){c.body.hidden=true;c.message.hidden=false;c.message.textContent='Collecting orders for '+s.date+'…';continue;}
       if(!c.initialized){c.details.open=!!s.order_count||!!storeView;c.initialized=true;}
-      if(!s.order_count){c.message.hidden=false;c.message.textContent=s.currency_warning?'No USD sales '+when+'. Other currencies are excluded.':'No sales '+when+'.';c.body.hidden=!storeView&&!s.recent_orders&&!s.currency_warning;}
+      if(!s.order_count){c.message.hidden=false;c.message.textContent=s.currency_warning?'No USD sales '+when+'. Other currencies are excluded.':(payment?.payments?.length?'No order sales ':'No sales ')+when+'.';c.body.hidden=!storeView&&!s.recent_orders&&!s.currency_warning;}
       c.fields.sales.textContent=money(s.sales_cents);c.fields.tips.textContent=money(s.tips_cents);c.fields.orders.textContent=s.order_count;c.fields.items.textContent=new Intl.NumberFormat('en-US').format(s.item_count||0);
       if(!s.historical){c.recent.textContent=s.recent_orders+' orders · '+money(s.recent_sales_cents);
         c.pace.textContent=s.pace+(s.pace_ratio!==null?' · '+s.pace_ratio.toFixed(1)+'× recent average':'');c.last.textContent=ago(s.last_sale_at,data.generated_at);}

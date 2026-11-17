@@ -141,6 +141,7 @@ def dashboard_data(request: Request, report_date: str = Query("today", alias="da
             history_check_times = []
             local_dates = []
             has_live_store = False
+            payment_pending = False
             history_errors = []
             for store in stores:
                 try:
@@ -209,6 +210,16 @@ def dashboard_data(request: Request, report_date: str = Query("today", alias="da
                 result.update(loading=loading, stale=stale, load_error=load_error,
                     cached_history=cached_history, verifying=historical and stale,
                     history_verified=historical and cache.loaded_at is not None)
+                if role != 'store_display':
+                    from additional_payments import request_day, summarize as summarize_payments
+                    payment_day=request_day(session,organization_id,connection.business_id,day,stores,now)
+                    payment=summarize_payments(session,organization_id,connection.business_id,store,start,end,
+                        payment_day,result['sales_cents'],now)
+                    result['additional_payments']=payment
+                    result['combined_sales_cents']=payment['combined_sales_cents'] if not loading else None
+                    if payment_day:
+                        payment_pending |= payment_day.next_sync_at<=now or payment_day.loaded_at is None
+                        history_check_times.append(payment_day.next_sync_at)
                 results.append(result)
             if live_pending and state.next_reconcile_at > now:
                 state.next_reconcile_at = now
@@ -219,7 +230,7 @@ def dashboard_data(request: Request, report_date: str = Query("today", alias="da
                 DashboardNotification.processed_at.is_(None)).order_by(DashboardNotification.received_at).limit(1))
             data = {"connected": True, "generated_at": utc_iso(now), "stores": results,
                 "selection": report_date, "historical_view": not has_live_store and bool(local_dates),
-                "polling_needed": has_live_store or history_pending,
+                "polling_needed": has_live_store or history_pending or payment_pending,
                 "earliest_date": (max(local_dates) - timedelta(days=89)).isoformat() if local_dates else None,
                 "latest_date": min(local_dates).isoformat() if local_dates else None,
                 "last_view_loaded_at": utc_iso(min(view_load_times)) if view_load_times else None,
@@ -260,6 +271,12 @@ async def refresh_history(request: Request, report_date: str = Query(..., alias=
                 DashboardDay.business_id == business_id, DashboardDay.report_date.in_(dates))).all():
             day.requested_at = day.next_load_at = utc_now()
             day.error = None
+        from live_dashboard_models import AdditionalPaymentDay
+        for payment_day in session.scalars(select(AdditionalPaymentDay).where(
+                AdditionalPaymentDay.organization_id==organization_id,
+                AdditionalPaymentDay.business_id==business_id,AdditionalPaymentDay.report_date.in_(dates))):
+            payment_day.requested_at=payment_day.next_sync_at=utc_now()
+            payment_day.error=None
         session.commit()
     claim = acquire(organization_id)
     if claim is None:

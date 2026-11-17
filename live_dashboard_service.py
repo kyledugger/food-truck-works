@@ -145,13 +145,23 @@ def save_order(session, organization_id, business_id, order):
     # Persist reporting fields only, excluding customer/contact/payment details.
     payload = {key: order.get(key) for key in ("id", "orderNumber", "createdAt", "updatedAt", "amounts", "statuses", "notes")}
     # Keep payment presence for the shared offline-sale predicate, without
-    # persisting payment identifiers, funding sources, or card details.
+    # retaining funding sources or card details. Identity-only links below are
+    # separate from the reporting payload and support payment deduplication.
     payload["_has_transactions"] = bool(order.get("transactions"))
     payload["customer_name"] = customer_name(order)
     payload["customerUserId"] = order.get("customerUserId")
     payload["items"] = [{key: item.get(key) for key in
         ("id", "name", "sku", "quantity", "unitPrice", "discount", "status", "selectedVariants")} for item in order.get("items") or []]
     row.payload = payload
+    from live_dashboard_models import DashboardPaymentLink
+    if 'transactions' in order:
+        session.execute(delete(DashboardPaymentLink).where(DashboardPaymentLink.organization_id==organization_id,
+            DashboardPaymentLink.business_id==business_id,DashboardPaymentLink.order_id==order_id))
+        transaction_ids={t.get('id') for t in order.get('transactions') or [] if isinstance(t,dict)
+            and isinstance(t.get('id'),str) and 1<=len(t['id'])<=100}
+        for transaction_id in transaction_ids:
+            session.add(DashboardPaymentLink(organization_id=organization_id,business_id=business_id,
+                order_id=order_id,transaction_id=transaction_id))
     row.store_id = order_store(order)
     row.created_at = at
     row.provider_updated_at = updated
@@ -167,22 +177,22 @@ async def process_organization(organization_id, business_id, token, refresh_only
         return
     client = PoyntClient(credentials, organization_id)
     import transaction_trigger
-    if transaction_trigger.enabled():
-        try:
-            with SessionLocal() as session:
-                until=transaction_trigger.get_backoff(session,organization_id,business_id,utc_now())
-                if until:
-                    state=owned_state(session,organization_id,business_id,token)
-                    if state:
-                        state.next_reconcile_at=max(state.next_reconcile_at,until)
-                        from live_dashboard_models import TransactionSignal
-                        session.execute(update(TransactionSignal).where(TransactionSignal.organization_id==organization_id,
-                            TransactionSignal.business_id==business_id,TransactionSignal.state=='pending',
-                            TransactionSignal.next_attempt_at<until).values(next_attempt_at=until))
-                        session.commit()
-                    return
-        except SQLAlchemyError as exc:
-            logger.warning('Transaction trigger unavailable; normal polling continues: %s',type(exc).__name__)
+    # Transactions used for accounting and kitchen triggers share provider backoff.
+    try:
+        with SessionLocal() as session:
+            until=transaction_trigger.get_backoff(session,organization_id,business_id,utc_now())
+            if until:
+                state=owned_state(session,organization_id,business_id,token)
+                if state:
+                    state.next_reconcile_at=max(state.next_reconcile_at,until)
+                    from live_dashboard_models import TransactionSignal
+                    session.execute(update(TransactionSignal).where(TransactionSignal.organization_id==organization_id,
+                        TransactionSignal.business_id==business_id,TransactionSignal.state=='pending',
+                        TransactionSignal.next_attempt_at<until).values(next_attempt_at=until))
+                    session.commit()
+                return
+    except SQLAlchemyError as exc:
+        logger.warning('Transaction backoff unavailable; normal polling continues: %s',type(exc).__name__)
     now = utc_now()
     with SessionLocal() as session:
         state = session.get(DashboardSync, organization_id)
@@ -329,6 +339,14 @@ async def process_organization(organization_id, business_id, token, refresh_only
                 session.commit()
 
 
+    if not refresh_only and history_only is None and order_window is None:
+        try:
+            from additional_payments import process as process_additional_payments
+            await process_additional_payments(SessionLocal,organization_id,business_id,token,client,owned_state)
+        except SQLAlchemyError:
+            logger.warning('Additional payments storage unavailable; order collection continues')
+
+
 async def dashboard_worker():
     while True:
         try:
@@ -359,6 +377,21 @@ async def dashboard_worker():
                     ids=list(dict.fromkeys(ids+signal_orgs))
                 except SQLAlchemyError as exc:
                     logger.warning('Transaction inbox unavailable; normal polling continues: %s',type(exc).__name__)
+            try:
+                from live_dashboard_models import AdditionalPaymentDay, AdditionalPaymentControl
+                with SessionLocal() as session:
+                    payment_orgs=session.scalars(select(AdditionalPaymentDay.organization_id).join(PoyntConnection,
+                        PoyntConnection.organization_id==AdditionalPaymentDay.organization_id).outerjoin(AdditionalPaymentControl,
+                        AdditionalPaymentControl.organization_id==AdditionalPaymentDay.organization_id).where(
+                        AdditionalPaymentDay.business_id==PoyntConnection.business_id,
+                        AdditionalPaymentDay.next_sync_at<=now,
+                        AdditionalPaymentDay.requested_at>=now-timedelta(minutes=30),
+                        or_(AdditionalPaymentControl.organization_id.is_(None),
+                            AdditionalPaymentControl.business_id!=AdditionalPaymentDay.business_id,
+                            AdditionalPaymentControl.next_request_at<=now)).distinct().limit(50)).all()
+                ids=list(dict.fromkeys(ids+payment_orgs))
+            except SQLAlchemyError:
+                logger.warning('Additional payments discovery unavailable')
             for organization_id in ids:
                 claim = acquire(organization_id)
                 if claim is None:
