@@ -56,12 +56,12 @@
       categoryPanel.append(table);panels.append(salesPanel,categoryPanel);details.append(panels);
       document.getElementById('store-sales-breakdown').append(details);
     }
-    const paymentsPanel=el('section','live-additional-payments'),combined=el('p','live-combined-total'),paymentSummary=el('p'),paymentStatus=el('p','is-size-7'),paymentRows=el('tbody');
+    const paymentsPanel=el('section','live-additional-payments'),combined=el('p','live-combined-total'),combinedNote=el('p','live-combined-note','excluding tips'),paymentHeading=el('h3','live-chart-title','Additional payments'),paymentSummary=el('p'),paymentStatus=el('p','is-size-7'),paymentRows=el('tbody');
     const paymentDetails=el('details'),paymentTable=el('table','live-category'),paymentHead=el('thead'),paymentTr=el('tr');
     paymentDetails.append(el('summary','','Payment breakdown'));
     ['Payment','Sales','Tip'].forEach(label=>paymentTr.append(el('th','',label)));paymentHead.append(paymentTr);paymentTable.append(paymentHead,paymentRows);paymentDetails.append(paymentTable);
-    paymentsPanel.append(combined,el('h3','live-chart-title','Additional payments'),paymentSummary,paymentStatus,paymentDetails);root.append(paymentsPanel);
-    const card={root,name,date,badge,message,body,fields,labels,wait,queueLink,now,recent,pace,last,warning,details,avg,rows,hourly,activity,activityWrap,activityTitle,paymentsPanel,combined,paymentSummary,paymentStatus,paymentRows,paymentDetails,charts:{}};
+    paymentsPanel.append(combined,combinedNote,paymentHeading,paymentSummary,paymentStatus,paymentDetails);root.append(paymentsPanel);
+    const card={root,name,date,badge,message,body,fields,labels,wait,queueLink,now,recent,pace,last,warning,details,avg,rows,hourly,activity,activityWrap,activityTitle,paymentsPanel,combined,combinedNote,paymentHeading,paymentSummary,paymentStatus,paymentRows,paymentDetails,charts:{}};
     details.addEventListener('toggle',()=>{if(details.open && card.data)drawCharts(card,card.data);});
     cards.set(id,card);return card;
   }
@@ -113,8 +113,12 @@
       const payment=s.additional_payments;
       c.paymentsPanel.hidden=storeView||!payment||!!s.setup_required;
       if(payment&&!storeView&&!s.setup_required){
-        c.combined.textContent='Day total (excluding tips): '+(Number.isFinite(s.combined_sales_cents)?money(s.combined_sales_cents):'Pending');
-        c.paymentSummary.textContent=payment.loading?'Loading additional payments…':money(payment.sales_cents)+' · '+payment.payments.length+' payment'+(payment.payments.length===1?'':'s');
+        const hasPayments=!payment.loading&&payment.payments.length>0;
+        c.combined.hidden=c.combinedNote.hidden=c.paymentHeading.hidden=!hasPayments;
+        c.paymentStatus.hidden=!!payment.loading;
+        c.combined.textContent='Day total: '+(Number.isFinite(s.combined_sales_cents)?money(s.combined_sales_cents):'Pending');
+        c.paymentSummary.className=hasPayments?'':'live-empty';
+        c.paymentSummary.textContent=payment.loading?'Loading additional payments…':hasPayments?money(payment.sales_cents)+' · '+payment.payments.length+' payment'+(payment.payments.length===1?'':'s'):'No Additional sales on this date.';
         c.paymentStatus.textContent=payment.error||(payment.loading?'Collected separately from orders.':payment.stale?'Showing saved payments; checking for updates.':'Checked '+new Date(payment.checked_at).toLocaleString(undefined,{timeZone:s.timezone})+' · '+s.timezone);
         if(payment.currency_warning)c.paymentStatus.textContent+=' · Non-USD payments excluded.';
         if(payment.review_count)c.paymentStatus.textContent+=' · '+payment.review_count+' payment(s) need verification and are excluded.';
