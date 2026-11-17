@@ -300,7 +300,9 @@
     const body=el('tbody');
     for(const item of ticket.items){
       const row=el('tr','kitchen-'+item.state),name=el('td','kitchen-item-name');
-      name.append(el('strong','kitchen-quantity',String(item.quantity)),document.createTextNode('\u00a0\u00a0'),marked(item.name,'item'));
+      const quantity=el('strong','kitchen-quantity',String(item.quantity));
+      if(Number(item.quantity)>1){quantity.classList.add('kitchen-quantity-multiple');quantity.style.setProperty('--quantity-digits',String(String(item.quantity).length));}
+      name.append(quantity,document.createTextNode('\u00a0\u00a0'),marked(item.name,'item'));
       for(const group of item.modifiers||[]){
         const modifier=el('div','kitchen-modifier',group.attribute.replaceAll('_',' ')+': ');
         group.values.forEach((value,index)=>{if(index)modifier.append(document.createTextNode(', '));modifier.append(marked(value.replaceAll('_',' '),'modifier'));});name.append(modifier);

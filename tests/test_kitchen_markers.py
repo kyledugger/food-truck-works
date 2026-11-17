@@ -68,3 +68,23 @@ class MarkerTests(test_kitchen.KitchenTests):
             self.assertEqual(self.save_rules([{**rule,'icon':icon}],1).status_code,422)
         self.assertEqual(self.save_rules([{**rule,'marker':'🍦'}],1).status_code,422)
         self.assertEqual(self.save_rules([{'target':'item','text':'bar','marker':''}],1).status_code,422)
+
+    def test_frozen_banana_is_available_and_can_be_saved(self):
+        from pathlib import Path
+        catalog={icon['id']:icon for icon in self.queue()['markers']['icons']}
+        self.assertIn('ice-cream-bar',catalog)
+        self.assertIn('frozen-banana',catalog)
+        self.assertTrue(Path(catalog['frozen-banana']['url'].lstrip('/')).is_file())
+        rules=[{'target':'item','text':'banana','marker':'','icon':'frozen-banana'}]
+        response=self.save_rules(rules)
+        self.assertEqual(response.status_code,200,response.text)
+        self.assertEqual(self.queue()['markers']['rules'],rules)
+
+    def test_shave_ice_is_available_and_can_be_saved(self):
+        from pathlib import Path
+        catalog={icon['id']:icon for icon in self.queue()['markers']['icons']}
+        self.assertIn('shave-ice',catalog)
+        self.assertTrue(Path(catalog['shave-ice']['url'].lstrip('/')).is_file())
+        rules=[{'target':'item','text':'shave ice','marker':'','icon':'shave-ice'}]
+        self.assertEqual(self.save_rules(rules).status_code,200)
+        self.assertEqual(self.queue()['markers']['rules'],rules)

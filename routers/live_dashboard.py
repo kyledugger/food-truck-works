@@ -87,13 +87,19 @@ def store_display_home(request: Request, store_id: int):
 @router.get("/dashboard/stores/{store_id}/kitchen-display")
 def kitchen_display(request: Request, store_id: int, test: bool = False, readonly: bool = False):
     organization_id, role = sales_authorized(request, store_id)
+    from kitchen_development import can_test_kitchen, require_kitchen_admin
+    can_test = can_test_kitchen(request) and role in {"owner", "manager"}
+    if test:
+        require_kitchen_admin(request)
+        if not can_test:
+            raise HTTPException(403, "Kitchen test mode requires an administrator with dashboard access.")
     with SessionLocal() as session:
         store = session.scalar(select(OrganizationStore).where(OrganizationStore.id == store_id,
             OrganizationStore.organization_id == organization_id, OrganizationStore.is_active.is_(True)))
         if store is None:
             raise HTTPException(404, "Store not found.")
         return templates.TemplateResponse(request=request, name="kitchen_display.html",
-            context={"store": store, "test_mode": test and not readonly, "readonly": readonly, "can_view_dashboard": role in {"owner", "manager"}, "can_edit_timer": not readonly and role in {"owner", "manager"}, "kitchen_csrf": "" if readonly else request.session.setdefault("kitchen_csrf", secrets.token_urlsafe(32))},
+            context={"store": store, "can_test_kitchen": can_test, "test_mode": test and not readonly, "readonly": readonly, "can_view_dashboard": role in {"owner", "manager"}, "can_edit_timer": not readonly and role in {"owner", "manager"}, "kitchen_csrf": "" if readonly else request.session.setdefault("kitchen_csrf", secrets.token_urlsafe(32))},
             headers={"Cache-Control": "no-store"})
 
 

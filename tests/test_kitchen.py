@@ -195,6 +195,8 @@ class KitchenTests(unittest.TestCase):
 
     def setUp(self):
         DatabaseAndRoutesTests.setUp(self)
+        self.admin_patch = patch.dict("os.environ", {"LAUNCH_ADMIN_USER_IDS": "1"})
+        self.admin_patch.start()
         self.kitchen_patch=patch("routers.kitchen.SessionLocal",self.factory)
         self.kitchen_patch.start()
         self.client.get("/test-login")
@@ -203,6 +205,7 @@ class KitchenTests(unittest.TestCase):
         self.now=utc_now()
 
     def tearDown(self):
+        self.admin_patch.stop()
         self.kitchen_patch.stop()
         DatabaseAndRoutesTests.tearDown(self)
 
@@ -358,17 +361,50 @@ class KitchenTests(unittest.TestCase):
         self.client.post("/logout")
         self.client.post("/login/store-display",data={"organization_code":"ftw-1","username":"truck-screen","password":"screen-password-123"})
         page=self.client.get("/dashboard/stores/1/kitchen-display?test=true")
+        self.assertEqual(page.status_code,403)
+        page=self.client.get("/dashboard/stores/1/kitchen-display")
+        self.assertNotIn('>Test kitchen</a>',page.text)
         token=re.search(r'data-csrf="([^"]+)"',page.text).group(1)
         headers={"X-Kitchen-CSRF":token}
         path="/dashboard/stores/1/kitchen-test"
-        self.assertEqual(self.client.post(path+"/orders",headers=headers,json={"action":"add"}).status_code,200)
-        self.assertEqual(self.client.get(path).status_code,200)
+        self.assertEqual(self.client.post(path+"/orders",headers=headers,json={"action":"add"}).status_code,403)
+        self.assertEqual(self.client.get(path).status_code,403)
         self.assertEqual(self.client.post("/dashboard/stores/2/kitchen-test/orders",headers=headers,json={"action":"clear"}).status_code,403)
         self.assertEqual(self.client.get("/dashboard/stores/2/kitchen-test").status_code,403)
+        self.client.post("/logout")
+        self.client.get("/test-login")
+        page=self.client.get("/dashboard/stores/1/kitchen-display?test=true")
+        headers={"X-Kitchen-CSRF":re.search(r'data-csrf="([^"]+)"',page.text).group(1)}
         request=SimpleNamespace(session={"user_id":1,"organization_id":1},url=SimpleNamespace(path=path))
         before=kitchen.stamp(request,1)
         self.client.post(path+"/orders",headers=headers,json={"action":"add"})
         self.assertNotEqual(kitchen.stamp(request,1),before)
+
+    def test_non_admin_cannot_use_simulation_even_as_owner(self):
+        with patch.dict("os.environ", {"LAUNCH_ADMIN_USER_IDS": ""}):
+            page=self.client.get("/dashboard/stores/1/kitchen-display")
+            self.assertEqual(page.status_code,200)
+            self.assertNotIn('>Test kitchen</a>',page.text)
+            self.assertEqual(self.client.get("/dashboard/stores/1/kitchen-display?test=true").status_code,403)
+            path="/dashboard/stores/1/kitchen-test"
+            self.assertEqual(self.client.get(path).status_code,403)
+            self.assertEqual(self.client.get(path+"/events").status_code,403)
+            self.assertEqual(self.client.post(path+"/orders",headers={"X-Kitchen-CSRF":self.csrf},json={"action":"add"}).status_code,403)
+            self.assertEqual(self.client.post(path+"/1",headers={"X-Kitchen-CSRF":self.csrf},json={"action":"done","revision":1}).status_code,403)
+
+    def test_simulation_uses_supplied_products_and_all_icons_exist(self):
+        from kitchen_test_menu import PRODUCTS
+        from kitchen_icons import FOOD_ICONS
+        from pathlib import Path
+        path="/dashboard/stores/1/kitchen-test"
+        self.client.post(path+"/orders",headers={"X-Kitchen-CSRF":self.csrf},json={"action":"add","count":25,"scenario":"large"})
+        items=[i for t in self.client.get(path).json()["active"] for i in t["items"]]
+        self.assertTrue(all((i["sku"],i["name"]) in PRODUCTS for i in items))
+        self.assertTrue(any(i["quantity"]>1 for i in items))
+        self.assertTrue(any(i["modifiers"] for i in items))
+        self.assertEqual(len(FOOD_ICONS),6)
+        for icon in FOOD_ICONS:
+            self.assertTrue(Path(icon["url"].lstrip("/")).is_file())
 
     def seed(self, oid="one", at=None, items=None, **extra):
         payload=sale(at or self.now,order_id=oid,items=items or [

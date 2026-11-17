@@ -53,6 +53,10 @@ def scope(request, session, store_id):
     if store is None:
         raise HTTPException(404, "Store not found.")
     if "/kitchen-test" in getattr(getattr(request, "url", None), "path", ""):
+        from kitchen_development import require_kitchen_admin
+        require_kitchen_admin(request)
+        if role not in {"owner", "manager"}:
+            raise HTTPException(403, "Kitchen test mode requires dashboard access.")
         return store, SimpleNamespace(business_id=f"kitchen-test:{store.id}")
     connection = session.scalar(select(PoyntConnection).where(PoyntConnection.organization_id == organization_id))
     if connection is None:
