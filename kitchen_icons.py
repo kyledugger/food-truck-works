@@ -1,5 +1,9 @@
 """Shared, deployment-owned artwork. Rules persist IDs, never image URLs."""
 FOOD_ICONS = [
+    {"id": "water-bottle", "label": "Water bottle",
+     "url": "/static/food-icons/water-bottle-v1.png"},
+    {"id": "soft-serve-cone", "label": "Soft serve cone",
+     "url": "/static/food-icons/soft-serve-cone-v1.png"},
     {"id": "ice-cream-taco", "label": "Ice cream taco",
      "url": "/static/food-icons/ice-cream-taco-v1.png"},
     {"id": "iced-coffee", "label": "Iced coffee",

@@ -402,7 +402,7 @@ class KitchenTests(unittest.TestCase):
         self.assertTrue(all((i["sku"],i["name"]) in PRODUCTS for i in items))
         self.assertTrue(any(i["quantity"]>1 for i in items))
         self.assertTrue(any(i["modifiers"] for i in items))
-        self.assertEqual(len(FOOD_ICONS),6)
+        self.assertEqual(len(FOOD_ICONS),8)
         for icon in FOOD_ICONS:
             self.assertTrue(Path(icon["url"].lstrip("/")).is_file())
 
