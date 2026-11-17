@@ -13,29 +13,33 @@
             </div>
 
             <div class="ftw-dashboard-actions">
-                <div class="buttons">
-                    {% if organization_options|length > 1 %}
-                        <a href="/organizations/select" class="button is-light">
-                            {{ active_organization.name if active_organization else "Choose business" }}
-                            <span class="ml-2">▾</span>
-                        </a>
-                    {% elif active_organization %}
-                        <span class="button is-static">
-                            {{ active_organization.name }}
-                        </span>
-                    {% endif %}
-
-                    <a href="/account" class="button is-light">
-                        Account Settings
-                    </a>
-                    {% if can_manage_poynt %}
-                    <a href="/integrations" class="button is-light">Integrations</a>
-                    <a href="/pricing/products" class="button is-light">Pricing</a>
-                    {% endif %}
-
-                    <form method="post" action="/logout">
-                        <button type="submit" class="button is-light">Log Out</button>
-                    </form>
+                <div class="dashboard-menu-bar">
+                    {% if organization_options|length > 1 %}<a href="/organizations/select" class="dashboard-business">{{ active_organization.name if active_organization else "Choose business" }} ▾</a>
+                    {% elif active_organization %}<span class="dashboard-business">{{ active_organization.name }}</span>{% endif %}
+                    <details class="dashboard-menu" id="dashboard-menu">
+                        <summary aria-label="Open dashboard menu"><span aria-hidden="true">☰</span><span>Menu</span></summary>
+                        <nav aria-label="Dashboard navigation">
+                            <a href="/account">Account Settings</a>
+                            <form method="post" action="/logout"><button type="submit">Logout</button></form>
+                            <hr>
+                            {% if poynt_connection and can_manage_poynt %}<a href="/poynt/orders">Orders Report</a>{% endif %}
+                            {% if poynt_connection and organization_role in ["owner", "manager", "payroll"] %}<a href="/poynt/claim-tips">Claim Tips</a>{% endif %}
+                            {% if poynt_connection %}<a href="/poynt/tip-submissions">Tip History</a>{% endif %}
+                            {% if poynt_connection and can_manage_employees %}<a href="/employees">Employee Management</a>{% endif %}
+                            {% if can_manage_poynt %}
+                            <hr>
+                            <details class="dashboard-submenu"><summary>Settings</summary>
+                                <a href="/integrations">Integrations</a>
+                                <a href="/settings/stores">Store Settings</a>
+                                <a href="/settings/integrations/poynt">Poynt Settings</a>
+                            </details>
+                            <details class="dashboard-submenu"><summary>Experimental</summary>
+                                <a href="/pricing/products">Pricing</a>
+                                {% if poynt_connection %}<a href="/events">Event Reservations</a>{% endif %}
+                            </details>
+                            {% endif %}
+                        </nav>
+                    </details>
                 </div>
 
                 <p class="subtitle is-6 ftw-dashboard-welcome">
@@ -77,59 +81,6 @@
                 Past dates show full-day totals with live activity turned off.</p>
 
             {% endif %}
-            <div class="columns">
-                {% if organization_role in ["owner", "manager", "payroll"] %}
-                <div class="column"><a href="/poynt/claim-tips" class="button is-primary is-fullwidth">Claim Tips</a></div>
-                {% endif %}
-
-                {% if can_manage_poynt %}
-                <div class="column">
-                    <a
-                        href="/poynt/orders"
-                        class="button is-primary is-fullwidth"
-                    >
-                        Orders Report
-                    </a>
-                </div>
-                {% endif %}
-
-                <div class="column">
-                    <a
-                        href="/poynt/tip-submissions"
-                        class="button is-primary is-fullwidth"
-                    >
-                        Tip History
-                    </a>
-                </div>                
-
-                {% if can_manage_poynt %}
-                    <div class="column">
-                        <a href="/events" class="button is-light is-fullwidth">Event Reservations</a>
-                    </div>
-                    <div class="column">
-                        <a href="/settings/stores" class="button is-light is-fullwidth">Store Settings</a>
-                    </div>
-                    <div class="column">
-                        <a
-                            href="/settings/integrations/poynt"
-                            class="button is-light is-fullwidth"
-                        >
-                            Poynt Settings
-                        </a>
-                    </div>
-                {% endif %}
-                {% if can_manage_employees %}
-                    <div class="column">
-                        <a
-                            href="/employees"
-                            class="button is-light is-fullwidth"
-                        >
-                            Employee Management
-                        </a>
-                    </div>
-                {% endif %}
-
-            </div>
 
         {% else %}
 
@@ -154,11 +105,12 @@
 {% endblock %}
 
 {% block head %}
-<link rel="stylesheet" href="/static/css/live-dashboard.css?v=20261116-payment-states">
+<link rel="stylesheet" href="/static/css/live-dashboard.css?v=20261117-dashboard-menu-1">
 {% endblock %}
 {% block scripts %}
+<script src="/static/js/dashboard-menu.js?v=20261117-dashboard-menu-1" defer></script>
 {% if poynt_connection and can_view_dashboard_sales %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.min.js"></script>
-<script src="/static/js/live-dashboard.js?v=20261116-payment-states" defer></script>
+<script src="/static/js/live-dashboard.js?v=20261117-dashboard-menu-1" defer></script>
 {% endif %}
 {% endblock %}

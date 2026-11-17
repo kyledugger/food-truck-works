@@ -23,8 +23,8 @@
   function makeCard(id) {
     const root=el('article','live-store');
     const header=el('div','live-store-header'), info=el('div');
-    const name=el('h2'), date=el('p','live-store-date'), badge=el('span','tag is-light');
-    info.append(name,date);header.append(info,badge);root.append(header);
+    const name=el('h2'), date=el('p','live-store-date');
+    info.append(name,date);header.append(info);root.append(header);
     const queueLink=el('a','button is-small is-light','View kitchen queue');queueLink.href='/dashboard/stores/'+id+'/kitchen-display?readonly=true';
     const wait=el('p','live-customer-wait'),queueRow=el('div','live-kitchen-row');
     queueRow.style.cssText='display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap';
@@ -61,7 +61,7 @@
     paymentDetails.append(el('summary','','Payment breakdown'));
     ['Payment','Sales','Tip'].forEach(label=>paymentTr.append(el('th','',label)));paymentHead.append(paymentTr);paymentTable.append(paymentHead,paymentRows);paymentDetails.append(paymentTable);
     paymentsPanel.append(combined,combinedNote,paymentHeading,paymentSummary,paymentStatus,paymentDetails);root.append(paymentsPanel);
-    const card={root,name,date,badge,message,body,fields,labels,wait,queueLink,now,recent,pace,last,warning,details,avg,rows,hourly,activity,activityWrap,activityTitle,paymentsPanel,combined,combinedNote,paymentHeading,paymentSummary,paymentStatus,paymentRows,paymentDetails,charts:{}};
+    const card={root,name,date,message,body,fields,labels,wait,queueLink,now,recent,pace,last,warning,details,avg,rows,hourly,activity,activityWrap,activityTitle,paymentsPanel,combined,combinedNote,paymentHeading,paymentSummary,paymentStatus,paymentRows,paymentDetails,charts:{}};
     details.addEventListener('toggle',()=>{if(details.open && card.data)drawCharts(card,card.data);});
     cards.set(id,card);return card;
   }
@@ -109,7 +109,7 @@
         const hasSales=!!s.order_count||!!s.sales_cents||!!s.tips_cents||!!s.additional_payments?.payments?.length;
         c.root.style.order=hasSales?'0':s.setup_required||loading?'1':'2';
       }
-      c.message.hidden=true;c.body.hidden=false;c.badge.textContent='';
+      c.message.hidden=true;c.body.hidden=false;
       const payment=s.additional_payments;
       c.paymentsPanel.hidden=storeView||!payment||!!s.setup_required;
       if(payment&&!storeView&&!s.setup_required){
@@ -119,9 +119,10 @@
         c.combined.textContent='Day total: '+(Number.isFinite(s.combined_sales_cents)?money(s.combined_sales_cents):'Pending');
         c.paymentSummary.className=hasPayments?'':'live-empty';
         c.paymentSummary.textContent=payment.loading?'Loading additional payments…':hasPayments?money(payment.sales_cents)+' · '+payment.payments.length+' payment'+(payment.payments.length===1?'':'s'):'No Additional sales on this date.';
-        c.paymentStatus.textContent=payment.error||(payment.loading?'Collected separately from orders.':payment.stale?'Showing saved payments; checking for updates.':'Checked '+new Date(payment.checked_at).toLocaleString(undefined,{timeZone:s.timezone})+' · '+s.timezone);
+        c.paymentStatus.textContent=payment.error||(payment.stale?'Showing saved payments; checking for updates.':'');
         if(payment.currency_warning)c.paymentStatus.textContent+=' · Non-USD payments excluded.';
         if(payment.review_count)c.paymentStatus.textContent+=' · '+payment.review_count+' payment(s) need verification and are excluded.';
+        c.paymentStatus.hidden=!!payment.loading||!c.paymentStatus.textContent;
         c.paymentRows.replaceChildren();c.paymentDetails.hidden=payment.loading||!payment.payments.length;
         for(const p of payment.payments){const tr=el('tr'),label=el('td');label.append(el('span','',p.label),el('small','is-block',new Date(p.at).toLocaleTimeString(undefined,{timeZone:s.timezone})+' · '+p.id.slice(0,8)));tr.append(label,el('td','',money(p.sales_cents)),el('td','',money(p.tip_cents)));c.paymentRows.append(tr);}
       }
@@ -132,8 +133,6 @@
       const seconds=s.customer_wait?.wait_seconds;
       c.wait.textContent='Customer Wait: '+(!s.kitchen_tracking?'Service off':seconds==null?'No waiting tickets':Math.floor(seconds/60)+'m '+seconds%60+'s');
       const when=s.historical?'on this date':'today';
-      c.badge.textContent=(s.loading??data.initializing)?'Loading sales':s.historical?(s.load_error?'Verification failed':s.verifying?'Checking for updates…':'Historical view'):s.order_count?'Sales today':s.currency_warning?'No USD sales today':'No sales today';
-      if(!s.historical&&!s.order_count&&payment?.payments?.length)c.badge.textContent='Payments today';
       c.labels.sales.textContent='Sales';c.labels.tips.textContent=s.historical?'Tips':'Tips today';c.labels.orders.textContent=s.historical?'Orders':'Orders today';c.labels.items.textContent=s.historical?'Items':'Items today';
       c.now.hidden=!!s.historical;c.activityWrap.hidden=!!s.historical;c.activityTitle.hidden=!!s.historical;
       if(s.historical&&c.charts.activity){c.charts.activity.destroy();delete c.charts.activity;}
@@ -162,6 +161,19 @@
     status.hidden=!text;status.textContent=text;status.className='notification '+(delayed?'is-warning is-light':'is-light');
     const loaded=data.historical_view?data.last_view_loaded_at:data.generated_at;
     refreshed.textContent=data.historical_view&&!loaded?(data.stores.some(s=>s.cached_history)?'Showing saved orders · not yet verified':'Waiting for historical verification'):(data.historical_view?'Sales checked ':'Updated ')+(loaded?new Date(loaded).toLocaleTimeString():'—');
+    if(!storeView){
+      const payments=data.stores.filter(s=>!s.setup_required&&s.additional_payments);
+      const verified=payments.filter(s=>s.additional_payments.checked_at&&Number.isFinite(Date.parse(s.additional_payments.checked_at)));
+      if(payments.length){
+        const checking=payments.some(s=>s.additional_payments.loading||s.additional_payments.stale||s.additional_payments.error);
+        if(verified.length){
+          // Oldest completed check is the common freshness floor across stores.
+          const oldest=verified.reduce((a,b)=>Date.parse(a.additional_payments.checked_at)<=Date.parse(b.additional_payments.checked_at)?a:b);
+          refreshed.textContent+=' · Payments checked '+new Date(oldest.additional_payments.checked_at).toLocaleString(undefined,{timeZone:oldest.timezone})+' · '+oldest.timezone+(checking||verified.length<payments.length?' · Checking payments…':'');
+        }else refreshed.textContent+=' · '+(checking?'Checking payments…':'Payments not yet checked');
+        refreshed.title=payments.map(s=>s.name+': '+(s.additional_payments.checked_at?new Date(s.additional_payments.checked_at).toLocaleString(undefined,{timeZone:s.timezone})+' · '+s.timezone:'Not yet checked')).join('\n');
+      }else refreshed.title='';
+    }
     if(enable)enable.hidden=!!data.historical_view||!data.can_enable_webhook||data.webhook_registered;
     if(data.polling_needed===false){
       clearInterval(timer);
