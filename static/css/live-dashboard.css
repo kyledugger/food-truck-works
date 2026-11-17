@@ -40,3 +40,18 @@
 .live-additional-payments td { overflow-wrap: anywhere; vertical-align: top; }
 .dashboard-menu-bar{display:flex;align-items:center;justify-content:flex-end;gap:1rem}.dashboard-business{color:#687980}.dashboard-menu{position:relative;text-align:left;z-index:20}.dashboard-menu>summary{display:flex;align-items:center;gap:.5rem;cursor:pointer;list-style:none;min-height:44px;padding:.5rem .85rem;border:1px solid #dbe4e8;border-radius:8px;background:#f3f5f6;font-weight:600}.dashboard-menu>summary::-webkit-details-marker{display:none}.dashboard-menu>summary span:first-child{font-size:1.5rem;line-height:1}.dashboard-menu nav{position:absolute;right:0;top:calc(100% + .4rem);width:min(290px,calc(100vw - 2rem));max-height:75dvh;overflow:auto;padding:.5rem;background:white;border:1px solid #dbe4e8;border-radius:10px;box-shadow:0 8px 25px #25313e26}.dashboard-menu a,.dashboard-menu nav button,.dashboard-submenu>summary{display:block;width:100%;padding:.65rem .8rem;text-align:left;color:#25313e;border:0;background:none;font:inherit;cursor:pointer;border-radius:5px}.dashboard-menu a:hover,.dashboard-menu nav button:hover,.dashboard-submenu>summary:hover{background:#edf8f3}.dashboard-menu hr{margin:.4rem 0;background:#dbe4e8;height:1px}.dashboard-submenu>summary{display:list-item;list-style-position:inside;font-weight:600}.dashboard-submenu a{padding-left:2rem}.dashboard-menu :focus-visible{outline:3px solid #16835f;outline-offset:1px}
 .live-view-status{min-width:0;max-width:100%}#live-refreshed{white-space:nowrap;overflow-x:auto;max-width:100%;scrollbar-width:thin}
+/* Compact dashboard header; keep menu touch target at least 44px. */
+.dashboard-page{padding-top:1.25rem;padding-bottom:1.5rem}
+.dashboard-page .ftw-dashboard-header{align-items:center;flex-direction:row;gap:1rem;margin-bottom:.75rem}
+.dashboard-page .ftw-logo--app-header{width:280px;max-width:100%}
+.dashboard-page .ftw-dashboard-actions{min-width:0}
+.dashboard-page .dashboard-menu-bar{gap:.75rem}
+.dashboard-page .dashboard-menu>summary{width:44px;height:44px;min-height:44px;padding:0;justify-content:center;background:transparent;border-color:transparent}
+.dashboard-page .dashboard-menu>summary:hover{background:#f3f5f6}
+.dashboard-menu-user{padding:.55rem .8rem;color:#687980;font-size:.85rem;border-bottom:1px solid #dbe4e8;margin-bottom:.3rem}
+.dashboard-page .live-toolbar{margin-top:.5rem;gap:.5rem 1rem}
+.dashboard-page .live-view-status{display:flex;align-items:center;justify-content:flex-end;gap:.65rem;flex:1 1 360px;overflow:hidden}
+.dashboard-page #live-mode{flex-shrink:0}.dashboard-page #live-refreshed{margin:0;min-width:0}
+.dashboard-page #live-total-revenue{padding:1rem 1.25rem}
+@media(max-width:768px){.dashboard-page .ftw-dashboard-actions{margin-left:auto;align-items:flex-end}.dashboard-page .ftw-logo--app-header{width:220px}.dashboard-page .dashboard-business{font-size:.85rem;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dashboard-page .live-view-status{justify-content:flex-start;flex-basis:100%}}
+@media(max-width:480px){.dashboard-page .ftw-dashboard-header{gap:.5rem}.dashboard-page .ftw-logo--app-header{width:160px}.dashboard-page .dashboard-business{max-width:100px}.dashboard-page .dashboard-menu-bar{gap:.3rem}.dashboard-page .live-date-controls{gap:.35rem}.dashboard-page .live-date-controls label{display:none}}

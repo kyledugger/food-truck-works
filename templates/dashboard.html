@@ -4,10 +4,10 @@
 
 {% block content %}
 
-<section class="section">
+<section class="section dashboard-page">
     <div class="container">
 
-        <nav class="ftw-dashboard-header mb-5">
+        <nav class="ftw-dashboard-header">
             <div class="ftw-dashboard-identity">
                 {% include "_app_brand.html" %}
             </div>
@@ -17,8 +17,9 @@
                     {% if organization_options|length > 1 %}<a href="/organizations/select" class="dashboard-business">{{ active_organization.name if active_organization else "Choose business" }} ▾</a>
                     {% elif active_organization %}<span class="dashboard-business">{{ active_organization.name }}</span>{% endif %}
                     <details class="dashboard-menu" id="dashboard-menu">
-                        <summary aria-label="Open dashboard menu"><span aria-hidden="true">☰</span><span>Menu</span></summary>
+                        <summary aria-label="Open dashboard menu" title="Open menu"><span aria-hidden="true">☰</span></summary>
                         <nav aria-label="Dashboard navigation">
+                            <p class="dashboard-menu-user">{{ user.display_name }}</p>
                             <a href="/account">Account Settings</a>
                             <form method="post" action="/logout"><button type="submit">Logout</button></form>
                             <hr>
@@ -42,9 +43,7 @@
                     </details>
                 </div>
 
-                <p class="subtitle is-6 ftw-dashboard-welcome">
-                    Welcome, {{ user.display_name }}
-                </p>
+
             </div>
         </nav>
 
@@ -66,10 +65,10 @@
                 {% endif %}
             </div>
                 <div class="live-view-status has-text-right"><span id="live-mode" class="tag is-success is-light">Loading sales</span>
-                    <p id="live-refreshed" class="is-size-7 mt-2">Connecting…</p></div>
+                    <p id="live-refreshed" class="is-size-7">Connecting…</p></div>
             </div>
             <div id="live-status" class="notification is-light mt-4" role="status" aria-live="polite">Loading sales…</div>
-            <article id="live-total-revenue" class="live-store mt-5" aria-labelledby="live-total-revenue-label" hidden>
+            <article id="live-total-revenue" class="live-store mt-3" aria-labelledby="live-total-revenue-label" hidden>
                 <h2 id="live-total-revenue-label">Total revenue for the day</h2>
                 <p id="live-total-revenue-value" class="is-size-2 has-text-weight-bold">—</p>
                 <p id="live-total-revenue-detail" class="is-size-7 has-text-grey">Loading sales…</p>
@@ -105,12 +104,12 @@
 {% endblock %}
 
 {% block head %}
-<link rel="stylesheet" href="/static/css/live-dashboard.css?v=20261117-dashboard-menu-1">
+<link rel="stylesheet" href="/static/css/live-dashboard.css?v=20261117-compact-header-1">
 {% endblock %}
 {% block scripts %}
-<script src="/static/js/dashboard-menu.js?v=20261117-dashboard-menu-1" defer></script>
+<script src="/static/js/dashboard-menu.js?v=20261117-compact-header-1" defer></script>
 {% if poynt_connection and can_view_dashboard_sales %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.min.js"></script>
-<script src="/static/js/live-dashboard.js?v=20261117-dashboard-menu-1" defer></script>
+<script src="/static/js/live-dashboard.js?v=20261117-compact-header-1" defer></script>
 {% endif %}
 {% endblock %}
