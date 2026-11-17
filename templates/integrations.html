@@ -6,6 +6,25 @@
 <h1 class="title mt-4">Integrations</h1>
 {% if notice %}<div class="notification is-info is-light">{{ notice }}</div>{% endif %}
 <div class="box">
+<h2 class="title is-4">GoDaddy kitchen notifications</h2>
+{% if poynt.connected %}
+<p>Automatic setup: <strong>{{ poynt.status }}</strong></p>
+{% if poynt.error %}<p class="notification is-warning is-light">{{ poynt.error }}</p>{% endif %}
+<p>Last verified (UTC): {{ poynt.verified or 'Not yet' }}</p>
+<p>Last notification (UTC): {{ poynt.last_received or 'None received yet' }}</p>
+<p class="my-3">Choose stores that should receive faster kitchen updates. Notifications trigger order checks while kitchen service is active.</p>
+<p class="mb-3"><a href="/settings/stores">Set up or update your GoDaddy stores</a></p>
+<form method="post" action="/integrations/poynt/transactions">
+<input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+{% for store in stores if store.is_active %}
+<label class="checkbox is-block mb-2"><input type="checkbox" name="stores" value="{{ store.store_id }}" {% if store.store_id in poynt.selected %}checked{% endif %}> {{ store.display_name or store.poynt_name }}</label>
+{% endfor %}
+<button class="button is-primary mt-3" type="submit">Save stores and verify setup</button>
+</form>
+{% else %}<p>Connect GoDaddy to set up kitchen notifications.</p>{% endif %}
+<a href="/oauth/start" class="button is-light mt-3">{{ 'Reconnect' if poynt.connected else 'Connect' }} GoDaddy</a>
+</div>
+<div class="box">
 <h2 class="title is-4">Square</h2>
 <p class="mb-4">Connect your account, then link its locations and team members to your business records.</p>
 <form method="post" action="/integrations/square/connect">

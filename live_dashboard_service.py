@@ -246,6 +246,12 @@ async def process_organization(organization_id, business_id, token, refresh_only
                 return
         except SQLAlchemyError as exc:
             logger.warning('Transaction inbox unavailable; normal polling continues: %s',type(exc).__name__)
+    if transaction_trigger.enabled() and not refresh_only and history_only is None:
+        try:
+            from transaction_webhooks import reconcile as reconcile_transaction_hook
+            await reconcile_transaction_hook(SessionLocal,organization_id,business_id,client)
+        except SQLAlchemyError:
+            logger.warning('Transaction registration unavailable; normal polling continues')
     for day_id, report_date in historical_days:
         try:
             bounds = []

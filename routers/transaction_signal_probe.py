@@ -69,6 +69,18 @@ def evidence(data, organization_id, now):
 
 @router.post('/webhooks/poynt/transaction-probe/{organization_id:int}', include_in_schema=False)
 async def transaction_probe(request: Request, organization_id: int, background_tasks: BackgroundTasks):
+    # Adopted pilots use the same URL and now authenticate from database storage.
+    from transaction_webhooks import registration
+    from sqlalchemy.exc import SQLAlchemyError
+    try:
+        with SessionLocal() as session:
+            connection = session.scalar(select(PoyntConnection).where(PoyntConnection.organization_id == organization_id))
+            row = registration(session,organization_id,connection.business_id) if connection else None
+            adopted = row and row.delivery_url.endswith('/transaction-probe/' + str(organization_id))
+        if adopted:
+            return await transaction_notification(request,organization_id)
+    except SQLAlchemyError:
+        pass  # Permit the existing pilot to run before the new migration is installed.
     if os.getenv('POYNT_TRANSACTION_PROBE_ENABLED') != '1':
         raise HTTPException(404, 'Transaction probe is disabled.')
     try:
@@ -111,3 +123,51 @@ async def transaction_probe(request: Request, organization_id: int, background_t
         from transaction_order_probe import run_probe
         background_tasks.add_task(run_probe, data, organization_id, received)
     return {'accepted': True, 'mode': 'observe_only'}
+
+
+@router.post('/webhooks/poynt/transactions/{organization_id:int}', include_in_schema=False)
+async def transaction_notification(request: Request, organization_id: int):
+    from transaction_webhooks import registration
+    from integrations.crypto import decrypt
+    from transaction_trigger import enqueue, enabled
+    from sqlalchemy.exc import SQLAlchemyError
+    if not enabled():
+        raise HTTPException(503, 'Transaction processing is temporarily disabled.')
+    body = bytearray()
+    async for chunk in request.stream():
+        body.extend(chunk)
+        if len(body) > 65536:
+            raise HTTPException(413, 'Notification too large.')
+    try:
+        candidate = json.loads(body)
+        business = candidate.get('businessId') if isinstance(candidate,dict) else None
+        if not isinstance(business,str) or not 1 <= len(business) <= 100:
+            raise ValueError()
+    except (ValueError,TypeError):
+        raise HTTPException(400, 'Invalid notification.') from None
+    received = datetime.now(timezone.utc)
+    try:
+        with SessionLocal() as session:
+            connection = session.scalar(select(PoyntConnection).where(
+                PoyntConnection.organization_id == organization_id,
+                PoyntConnection.business_id == business))
+            row = registration(session,organization_id,business)
+            if not connection or not row:
+                raise HTTPException(403, 'Unknown connection.')
+            if not row.hook_id:
+                raise HTTPException(503, 'Registration is completing; retry delivery.')
+            try:
+                secret = decrypt(row.secret_encrypted)
+            except Exception:
+                raise HTTPException(503, 'Webhook credentials unavailable.') from None
+            data = validate_notification(bytes(body),request.headers.get('poynt-webhook-signature'),
+                secret,row.application_id,row.hook_id)
+            result = enqueue(session,organization_id,data,received)
+            row.last_received_at = received
+            session.commit()
+    except SQLAlchemyError:
+        raise HTTPException(503, 'Transaction inbox unavailable; retry delivery.') from None
+    logger.info('TRANSACTION_PROBE %s',json.dumps(evidence(data,organization_id,received),separators=(',',':')))
+    logger.info('TRANSACTION_TRIGGER received organization=%s transaction=%s outcome=%s',
+        organization_id,data['resourceId'],result)
+    return {'accepted':True,'mode':'transaction_trigger','outcome':result}

@@ -566,6 +566,41 @@ class PoyntClient:
             raise PoyntAPIError("Unexpected signal response shape")
         return data
 
+    async def list_transaction_hooks(self):
+        await self._refresh_if_needed()
+        rows, seen = [], set()
+        async with self._api_client() as client:
+            for offset in range(0, 2000, 100):
+                response = await client.get(self.BASE_URL + '/hooks', headers=self._headers(),
+                    params={'businessId':self.business_id,'limit':100,'startOffset':offset}, timeout=5)
+                if not response.is_success:
+                    raise PoyntAPIError('Webhook listing failed')
+                data = response.json()
+                batch = data.get('hooks', [] if data.get('count') == 0 else None)
+                if not isinstance(batch,list) or any(not isinstance(h,dict) for h in batch):
+                    raise PoyntAPIError('Unexpected webhook list')
+                signature = tuple(h.get('id') for h in batch)
+                if batch and signature in seen:
+                    raise PoyntAPIError('Repeated webhook page')
+                seen.add(signature)
+                rows.extend(batch)
+                if len(batch) < 100 and not any(h.get('rel') == 'next' for h in data.get('links',[])):
+                    return rows
+        raise PoyntAPIError('Webhook listing exceeded safe bounds')
+
+    async def create_transaction_hook(self, delivery_url, secret, application_id):
+        from transaction_webhooks import EVENTS
+        from uuid import uuid4
+        await self._refresh_if_needed()
+        async with self._api_client() as client:
+            response = await client.post(self.BASE_URL + '/hooks',
+                headers={**self._headers(),'Poynt-Request-Id':str(uuid4())}, timeout=5,
+                json={'applicationId':application_id,'businessId':self.business_id,
+                      'deliveryUrl':delivery_url,'secret':secret,'eventTypes':EVENTS})
+        if not response.is_success:
+            raise PoyntAPIError('Webhook registration failed')
+        return response.json()
+
     async def register_order_webhook(self, delivery_url: str, secret: str) -> dict:
         import uuid
         await self._refresh_if_needed()

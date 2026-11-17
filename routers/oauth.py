@@ -312,7 +312,21 @@ async def oauth_callback(
         expires_at=expires_at,
     )
 
+    # Connection succeeds independently of webhook setup; polling remains available.
+    try:
+        from transaction_webhooks import configure, reconcile
+        from poynt.connection import get_poynt_credentials
+        from poynt.client import PoyntClient
+        with SessionLocal() as session:
+            configure(session,organization_id,businessId)
+            session.commit()
+        credentials = get_poynt_credentials(organization_id)
+        await reconcile(SessionLocal,organization_id,businessId,PoyntClient(credentials,organization_id),force=True)
+    except Exception:
+        logger.warning('Automatic transaction webhook setup pending organization=%s',organization_id)
+        request.session['integration_notice'] = 'GoDaddy connected. Open Integrations to finish kitchen notification setup.'
+
     return RedirectResponse(
-        "/dashboard",
+        "/integrations",
         status_code=303
     )

@@ -9,7 +9,7 @@ from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from cryptography.fernet import InvalidToken
 from database import SessionLocal
-from models import OrganizationStore, Employee
+from models import OrganizationStore, Employee, PoyntConnection
 from organization_context import get_current_organization_id
 from permissions import get_organization_role, role_can_manage_integrations
 from integrations.models import IntegrationConnection, IntegrationMapping, IntegrationOAuthAttempt
@@ -61,6 +61,15 @@ def index(request: Request):
         connections = session.scalars(select(IntegrationConnection).where(IntegrationConnection.organization_id == org_id)).all()
         stores = session.scalars(select(OrganizationStore).where(OrganizationStore.organization_id == org_id)).all()
         employees = session.scalars(select(Employee).where(Employee.organization_id == org_id)).all()
+        from transaction_webhooks import registration, selected_stores
+        poynt = session.scalar(select(PoyntConnection).where(PoyntConnection.organization_id == org_id))
+        webhook = registration(session,org_id,poynt.business_id) if poynt else None
+        selected = selected_stores(session,org_id,poynt.business_id) if poynt else set()
+        poynt_card = {'connected':bool(poynt), 'status':webhook.status if webhook else 'not configured',
+            'error':webhook.error if webhook else None,
+            'last_received':webhook.last_received_at.isoformat() if webhook and webhook.last_received_at else None,
+            'verified':webhook.verified_at.isoformat() if webhook and webhook.verified_at else None,
+            'selected':selected}
         for connection in connections:
             error, locations, team = None, [], []
             if connection.status != "disconnected":
@@ -78,7 +87,31 @@ def index(request: Request):
                 "mappings": {(m.kind, m.external_id): m.store_id or m.employee_id for m in mappings}})
         return templates.TemplateResponse(request=request, name="integrations.html", context={
             "cards": cards, "stores": stores, "employees": employees,
-            "csrf_token": request.session["integration_csrf"], "notice": notices})
+            "csrf_token": request.session["integration_csrf"], "notice": notices, "poynt":poynt_card})
+
+
+@router.post('/poynt/transactions')
+def poynt_transactions(request: Request, csrf_token: str = Form(...), stores: list[str] = Form(default=[])):
+    _, org_id = authorize(request)
+    csrf(request,csrf_token)
+    from transaction_webhooks import configure, reconcile
+    from poynt.connection import get_poynt_credentials
+    from poynt.client import PoyntClient
+    try:
+        with SessionLocal() as session:
+            connection = session.scalar(select(PoyntConnection).where(PoyntConnection.organization_id == org_id))
+            if not connection:
+                return finish(request,'Connect GoDaddy first.')
+            business = connection.business_id
+            configure(session,org_id,business,set(stores))
+            session.commit()
+        credentials = get_poynt_credentials(org_id)
+        if not credentials or credentials.business_id != business:
+            return finish(request,'GoDaddy connection changed. Reload and try again.')
+        asyncio.run(reconcile(SessionLocal,org_id,business,PoyntClient(credentials,org_id),force=True))
+    except (RuntimeError,ValueError,InvalidToken,IntegrityError,KeyError):
+        return finish(request,'Setup could not finish. Check server configuration or reconnect GoDaddy.')
+    return finish(request,'Store settings saved. Check automatic setup status below.')
 
 
 @router.post("/square/connect")

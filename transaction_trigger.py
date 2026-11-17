@@ -17,11 +17,7 @@ RETRY_SECONDS = (2, 2, 2, 3, 5)
 
 
 def enabled():
-    return os.getenv('POYNT_TRANSACTION_TRIGGER_ENABLED') == '1'
-
-
-def allowed_stores():
-    return {s.strip() for s in os.getenv('POYNT_TRANSACTION_TRIGGER_STORE_IDS', '').split(',') if s.strip()}
+    return os.getenv('POYNT_TRANSACTION_TRIGGER_ENABLED', '1') == '1'
 
 
 def active_kitchen(session, org, business, store_id, now):
@@ -36,7 +32,8 @@ def enqueue(session, org, data, now=None):
     """Called only AFTER signature, hook, application and tenant validation."""
     now = now or utc_now()
     store, business = data.get('storeId'), data['businessId']
-    if not enabled() or store not in allowed_stores():
+    from transaction_webhooks import selected_stores
+    if not enabled() or store not in selected_stores(session, org, business):
         return 'not_enabled_for_store'
     try:
         if not -30 <= (now-instant(data.get('createdAt'))).total_seconds() <= 300:
@@ -125,7 +122,8 @@ async def process_signals(factory, org, business, token, client, owns, save_orde
     for job_id, transaction_id, store, reference, attempts, generation, cycle in jobs:
         matches=[];problem=None;defer=None;used=0;stop_all=False;ignored=False
         with factory() as session:
-            eligible_store=store in allowed_stores() and active_kitchen(session,org,business,store,utc_now())
+            from transaction_webhooks import selected_stores
+            eligible_store=store in selected_stores(session,org,business) and active_kitchen(session,org,business,store,utc_now())
         if not eligible_store or utc_now()-cycle>timedelta(minutes=2) or attempts>=6:
             ignored=True
         else:
@@ -190,7 +188,7 @@ async def process_signals(factory, org, business, token, client, owns, save_orde
                 state.next_reconcile_at=max(state.next_reconcile_at,defer)
             ready=False
             saved_order_id=None
-            if matches and active_kitchen(session,org,business,store,current):
+            if matches and store in selected_stores(session,org,business) and active_kitchen(session,org,business,store,current):
                 for order in matches:
                     save_order(session,org,business,order)
                     ready=completed(order) and any(i.get('status') not in {'RETURNED','CANCELLED'}

@@ -1,10 +1,39 @@
 """Persistent sales cache and durable webhook inbox. Alembic owns creation."""
 from datetime import datetime, date
-from sqlalchemy import ForeignKey, String, JSON, UniqueConstraint, Index, Date, Integer
+from sqlalchemy import ForeignKey, String, JSON, UniqueConstraint, Index, Date, Integer, Boolean, Text
 from sqlalchemy.orm import Mapped, mapped_column
 from database import Base
 from instant_type import UTCInstant
 from store_time import utc_now
+
+
+class TransactionWebhook(Base):
+    __tablename__ = "poynt_transaction_webhooks"
+    __table_args__ = (UniqueConstraint("organization_id", "business_id", name="uq_transaction_webhook_business"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    organization_id: Mapped[int] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"))
+    business_id: Mapped[str] = mapped_column(String(100))
+    application_id: Mapped[str] = mapped_column(String(100))
+    delivery_url: Mapped[str] = mapped_column(String(500))
+    secret_encrypted: Mapped[str] = mapped_column(Text)
+    hook_id: Mapped[str | None] = mapped_column(String(100))
+    status: Mapped[str] = mapped_column(String(20), default="pending")
+    error: Mapped[str | None] = mapped_column(String(200))
+    next_check_at: Mapped[datetime] = mapped_column(UTCInstant(), default=utc_now)
+    verified_at: Mapped[datetime | None] = mapped_column(UTCInstant())
+    last_received_at: Mapped[datetime | None] = mapped_column(UTCInstant())
+    lease_token: Mapped[str | None] = mapped_column(String(64))
+    lease_until: Mapped[datetime | None] = mapped_column(UTCInstant())
+
+
+class TransactionStoreSetting(Base):
+    __tablename__ = "poynt_transaction_store_settings"
+    __table_args__ = (UniqueConstraint("organization_id", "business_id", "store_id", name="uq_transaction_store_setting"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    organization_id: Mapped[int] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"))
+    business_id: Mapped[str] = mapped_column(String(100))
+    store_id: Mapped[str] = mapped_column(String(100))
+    enabled: Mapped[bool] = mapped_column(Boolean, default=False)
 
 
 class TransactionSignal(Base):
