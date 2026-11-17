@@ -12,4 +12,10 @@
 .marker-icon-choice .kitchen-food-icon{width:36px;height:36px;margin:0}
 .marker-rule-preview{grid-column:1/-1;margin:0!important;padding:.4rem .5rem;background:#f3f5f6;border-radius:5px;font-size:1.15rem;overflow-wrap:anywhere}
 .marker-rule-preview small{font-size:.8rem;color:#687980}
+.marker-select{display:flex;align-items:center;justify-content:center;gap:.25rem;min-height:44px;width:100%;white-space:normal}
+.kitchen-marker-picker{margin:auto;width:min(760px,94vw);max-height:85dvh;overflow:auto;overscroll-behavior:contain;background:white;color:#25313e;border:1px solid #bac5d0;border-radius:12px;padding:1rem}
+.kitchen-marker-picker::backdrop{background:#25313e88}.kitchen-marker-picker h2{font-size:1.4rem;font-weight:700}.kitchen-marker-picker h3{font-size:1.15rem;font-weight:700;margin:1rem 0 .5rem}.kitchen-marker-picker h4{font-size:1rem;font-weight:600;margin:1rem 0 .4rem}
+.kitchen-marker-picker .marker-icon-choices{grid-template-columns:repeat(auto-fit,minmax(145px,1fr))}.kitchen-marker-picker .marker-icon-choice{flex-direction:row;justify-content:flex-start;min-height:56px;font-size:1rem;text-align:left}
+.marker-emoji-choices{display:grid;grid-template-columns:repeat(auto-fill,minmax(48px,1fr));gap:.35rem}.marker-emoji-choice{min-height:48px;font-size:1.65rem;line-height:1.3;padding:.3rem;background:white;border:2px solid #dbe4e8;border-radius:6px;cursor:pointer}.marker-emoji-choice[aria-pressed=true]{border-color:#16835f;background:#edf8f3}.marker-emoji-choice:focus-visible{outline:3px solid #16835f;outline-offset:2px}
+.marker-custom-emoji{display:flex;flex-wrap:wrap;align-items:flex-end;gap:.5rem;margin:1.2rem 0}.marker-custom-emoji label{flex:1;min-width:140px}.marker-custom-emoji input{display:block;width:100%;font-size:1.2rem;padding:.4rem;border:1px solid #89949e;border-radius:4px;margin-top:.3rem}
 @media(max-width:650px){.marker-rule{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.marker-visual{grid-column:1/-1}.marker-rule>.button{justify-self:start}}

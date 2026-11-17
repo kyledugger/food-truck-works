@@ -71,33 +71,55 @@
       const revision=markers.revision,dialog=el('dialog','kitchen-marker-editor'),form=el('form'),rows=el('div'),message=el('p');
       form.append(el('h2','','Kitchen item markers'),el('p','','Shared across all stores in this organization. Rules match anywhere, ignoring case. Modifier underscores match spaces.'),rows);
       function addRule(rule={target:'item',text:'',marker:''}){
-        const row=el('div','marker-rule'),target=el('select'),text=el('input'),emoji=el('input'),remove=el('button','button','Remove');
-        const visual=el('div','marker-visual'),type=el('select'),choices=el('div','marker-icon-choices'),preview=el('p','marker-rule-preview');
-        let selectedIcon=rule.icon||'';
+        const row=el('div','marker-rule'),target=el('select'),text=el('input'),remove=el('button','button','Remove');
+        const visual=el('div','marker-visual'),selectMarker=el('button','button marker-select'),preview=el('p','marker-rule-preview');
+        let selectedIcon=rule.icon||'',selectedEmoji=rule.marker||'';
         for(const [value,label] of [['item','Item name'],['modifier','Modifier value']]){const option=el('option','',label);option.value=value;target.append(option);}target.value=rule.target;target.setAttribute('aria-label','Rule target');
         text.value=rule.text;text.placeholder='Name contains (e.g. banana)';text.maxLength=100;text.required=true;text.setAttribute('aria-label','Matching text');
-        emoji.value=rule.marker||'';emoji.placeholder='Paste emoji';emoji.maxLength=32;emoji.setAttribute('aria-label','Emoji marker');
-        for(const [value,label] of [['emoji','Emoji'],['icon','Food icon']]){const option=el('option','',label);option.value=value;if(value==='icon'&&!(markers.icons||[]).length)option.disabled=true;type.append(option);}type.value=rule.icon?'icon':'emoji';type.setAttribute('aria-label','Marker type');
-        row.readRule=()=>({target:target.value,text:text.value.trim(),marker:type.value==='emoji'?emoji.value.trim():'',...(type.value==='icon'?{icon:selectedIcon}:{})});
+        selectMarker.type='button';selectMarker.setAttribute('aria-haspopup','dialog');
+        row.readRule=()=>({target:target.value,text:text.value.trim(),marker:selectedIcon?'':selectedEmoji,...(selectedIcon?{icon:selectedIcon}:{})});
         function updatePreview(){
-          const usingIcon=type.value==='icon';emoji.hidden=usingIcon;emoji.disabled=usingIcon;emoji.required=!usingIcon;choices.hidden=!usingIcon;
+          selectMarker.replaceChildren();appendMarker(selectMarker,row.readRule());selectMarker.append(document.createTextNode('Select marker'));
           preview.replaceChildren(el('small','','Preview: '));appendMarker(preview,row.readRule());preview.append(document.createTextNode(text.value.trim()||'Item name'));
-          for(const button of choices.children)button.setAttribute('aria-pressed',String(button.dataset.icon===selectedIcon));
         }
-        for(const icon of markers.icons||[]){
-          if(!foodIcon(icon.id))continue;
-          const button=el('button','marker-icon-choice');button.type='button';button.dataset.icon=icon.id;button.setAttribute('aria-label',icon.label);
-          button.append(iconImage(icon),el('span','',icon.label));button.onclick=()=>{selectedIcon=icon.id;updatePreview();};choices.append(button);
-        }
-        type.onchange=()=>{if(type.value==='icon'&&!selectedIcon)selectedIcon=(markers.icons||[])[0]?.id||'';updatePreview();};
-        emoji.oninput=text.oninput=target.onchange=updatePreview;
-        visual.append(type,emoji,choices);remove.type='button';remove.onclick=()=>row.remove();row.append(target,text,visual,remove,preview);rows.append(row);updatePreview();
+        selectMarker.onclick=()=>{
+          const picker=el('dialog','kitchen-marker-picker'),heading=el('h2','','Select marker'),close=el('button','button','Cancel');
+          heading.id='marker-picker-title';picker.setAttribute('aria-labelledby',heading.id);close.type='button';close.onclick=()=>picker.close();
+          picker.append(heading,el('h3','','Food icons'));
+          const choices=el('div','marker-icon-choices');picker.append(choices);
+          const choose=(icon,emoji)=>{selectedIcon=icon;selectedEmoji=emoji;updatePreview();picker.close();};
+          for(const icon of markers.icons||[]){
+            if(!foodIcon(icon.id))continue;
+            const button=el('button','marker-icon-choice');button.type='button';button.dataset.icon=icon.id;button.setAttribute('aria-label',icon.label);button.setAttribute('aria-pressed',String(selectedIcon===icon.id));
+            button.append(iconImage(icon),el('span','',icon.label));button.onclick=()=>choose(icon.id,'');choices.append(button);
+          }
+          picker.append(el('h3','','Emojis'));
+          const groups=[
+            ['Fruits & vegetables','🍇 Grapes|🍈 Melon|🍉 Watermelon|🍊 Tangerine|🍋 Lemon|🍋‍🟩 Lime|🍌 Banana|🍍 Pineapple|🥭 Mango|🍎 Red apple|🍏 Green apple|🍐 Pear|🍑 Peach|🍒 Cherries|🍓 Strawberry|🫐 Blueberries|🥝 Kiwi|🍅 Tomato|🫒 Olive|🥥 Coconut|🥑 Avocado|🍆 Eggplant|🥔 Potato|🥕 Carrot|🌽 Corn|🌶️ Hot pepper|🫑 Bell pepper|🥒 Cucumber|🥬 Leafy greens|🥦 Broccoli|🧄 Garlic|🧅 Onion|🥜 Peanuts|🫘 Beans|🌰 Chestnut|🫚 Ginger|🫛 Pea pod|🍄 Mushroom'],
+            ['Prepared foods & meals','🍞 Bread|🥐 Croissant|🥖 Baguette|🫓 Flatbread|🥨 Pretzel|🥯 Bagel|🥞 Pancakes|🧇 Waffle|🧀 Cheese|🍖 Meat|🍗 Poultry|🥩 Steak|🥓 Bacon|🍔 Hamburger|🍟 Fries|🍕 Pizza|🌭 Hot dog|🥪 Sandwich|🌮 Taco|🌯 Burrito|🫔 Tamale|🥙 Stuffed flatbread|🧆 Falafel|🥚 Egg|🍳 Cooking|🥘 Pan of food|🍲 Pot of food|🫕 Fondue|🥣 Bowl with spoon|🥗 Salad|🍿 Popcorn|🧈 Butter|🧂 Salt|🥫 Canned food|🍱 Bento|🍘 Rice cracker|🍙 Rice ball|🍚 Rice|🍛 Curry|🍜 Noodles|🍝 Spaghetti|🍠 Sweet potato|🍢 Skewer|🍣 Sushi|🍤 Fried shrimp|🍥 Fish cake|🥟 Dumpling|🥠 Fortune cookie|🥡 Takeout'],
+            ['Sweets, desserts & snacks','🍦 Soft serve|🍧 Shave ice|🍨 Ice cream|🍩 Doughnut|🍪 Cookie|🎂 Birthday cake|🍰 Cake slice|🧁 Cupcake|🥧 Pie|🍫 Chocolate|🍬 Candy|🍭 Lollipop|🍮 Custard|🍯 Honey|🍡 Dango|🥮 Moon cake|🍫 Chocolate bar|🥜 Nuts|🥨 Pretzel snack|🍿 Popcorn snack'],
+            ['Drinks & helpful markers','☕ Hot coffee|🧋 Bubble tea|🥤 Soda|🧃 Juice|🥛 Milk|🍵 Tea|🫖 Teapot|🧊 Ice|💧 Water|🍹 Tropical drink|🍺 Beer|🍷 Wine|🚫 Without|⚠️ Attention|🌶️ Spicy|🔥 Hot|❄️ Cold|⭐ Special|✅ Yes']
+          ];
+          for(const [label,entries] of groups){
+            picker.append(el('h4','',label));const grid=el('div','marker-emoji-choices');
+            const seen=new Set();for(const entry of entries.split('|')){const split=entry.indexOf(' '),emoji=entry.slice(0,split),name=entry.slice(split+1);if(seen.has(emoji))continue;seen.add(emoji);
+              const button=el('button','marker-emoji-choice',emoji);button.type='button';button.title=name;button.setAttribute('aria-label',name);button.setAttribute('aria-pressed',String(!selectedIcon&&selectedEmoji===emoji));button.onclick=()=>choose('',emoji);grid.append(button);}
+            picker.append(grid);
+          }
+          const custom=el('form','marker-custom-emoji'),label=el('label','','Paste your own emoji'),input=el('input'),use=el('button','button','Use emoji');
+          input.value=selectedIcon?'':selectedEmoji;input.maxLength=32;input.required=true;input.placeholder='Paste emoji';input.setAttribute('aria-label','Your emoji');label.append(input);use.type='submit';custom.append(label,use);
+          custom.onsubmit=event=>{event.preventDefault();if(input.value.trim())choose('',input.value.trim());};picker.append(custom,close);
+          picker.addEventListener('close',()=>{picker.remove();if(selectMarker.isConnected)selectMarker.focus();});document.body.append(picker);picker.showModal();
+        };
+        text.oninput=target.onchange=updatePreview;
+        visual.append(selectMarker);remove.type='button';remove.onclick=()=>row.remove();row.append(target,text,visual,remove,preview);rows.append(row);updatePreview();
       }
       markers.rules.forEach(addRule);
       const add=el('button','button','Add rule'),save=el('button','button','Save'),cancel=el('button','button','Cancel');add.type=cancel.type='button';save.type='submit';add.onclick=()=>{if(rows.children.length<50)addRule();};cancel.onclick=()=>dialog.close();form.append(add,message,save,cancel);
       form.onsubmit=async event=>{
         event.preventDefault();save.disabled=true;message.textContent='Saving…';
         const rules=[...rows.children].map(row=>row.readRule());
+        if(rules.some(rule=>!rule.icon&&!rule.marker)){message.textContent='Select a marker for each rule.';save.disabled=false;return;}
         try{const response=await fetch('/dashboard/stores/'+storeId+'/kitchen-markers',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','X-Kitchen-CSRF':feed.dataset.csrf},body:JSON.stringify({rules,revision})});const data=await response.json();if(!response.ok)throw Error(typeof data.detail==='string'?data.detail:'Check the rules and try again.');markers=data;dialog.close();await refresh(true);}catch(error){message.textContent=error.message;}finally{save.disabled=false;}
       };
       dialog.append(form);document.body.append(dialog);dialog.addEventListener('close',()=>dialog.remove());dialog.showModal();
