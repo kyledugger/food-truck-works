@@ -18,6 +18,7 @@ from kitchen_models import KitchenTicket, KitchenAction, KitchenTimerProfile, Ki
 from kitchen_service import sync_ticket, transition, serialize, edit_note
 from live_dashboard_metrics import kitchen_intake, instant, order_pace
 from store_time import utc_now, utc_iso, local_day_bounds
+from kitchen_icons import FOOD_ICONS, FOOD_ICON_IDS
 
 router = APIRouter()
 
@@ -148,13 +149,15 @@ def check_csrf(request):
 
 def marker_settings(session, organization_id):
     saved = session.get(KitchenMarkers, organization_id)
-    return {"rules": saved.rules if saved else [], "revision": saved.revision if saved else 0}
+    return {"rules": saved.rules if saved else [], "revision": saved.revision if saved else 0,
+            "icons": FOOD_ICONS}
 
 
 class MarkerRule(BaseModel):
     target: Literal["item", "modifier"]
     text: str = Field(min_length=1, max_length=100)
-    marker: str = Field(min_length=1, max_length=32)
+    marker: str = Field(default="", max_length=32)
+    icon: str | None = Field(default=None, max_length=64)
 
 
 class MarkerSettings(BaseModel):
@@ -172,9 +175,14 @@ def save_markers(request: Request, store_id: int, body: MarkerSettings):
     rules = []
     for rule in body.rules:
         text, marker = rule.text.strip(), rule.marker.strip()
-        if not text or not marker or any(ord(c) < 32 for c in text + marker):
-            raise HTTPException(422, "Enter matching text and a single-line marker for every rule.")
-        rules.append({"target": rule.target, "text": text, "marker": marker})
+        if rule.icon is not None and rule.icon not in FOOD_ICON_IDS:
+            raise HTTPException(422, "Choose a food icon from the library.")
+        if not text or not (marker or rule.icon) or (marker and rule.icon) or any(ord(c) < 32 for c in text + marker):
+            raise HTTPException(422, "Enter matching text and choose either an emoji or a food icon for every rule.")
+        saved_rule={"target": rule.target, "text": text, "marker": marker}
+        if rule.icon:
+            saved_rule["icon"]=rule.icon
+        rules.append(saved_rule)
     with SessionLocal() as session:
         store, _ = scope(request, session, store_id)
         # Lock the organization even on the first save to serialize creation.

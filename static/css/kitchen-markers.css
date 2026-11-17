@@ -1,0 +1,14 @@
+.kitchen-food-icon{display:inline-block;width:26px;height:26px;object-fit:contain;vertical-align:-.3em;margin-right:.18em;pointer-events:none;user-select:none}
+.kitchen-modifier .kitchen-food-icon{width:22px;height:22px}
+.kitchen-marker-editor{margin:auto;width:min(900px,95vw);max-height:85vh;overflow:auto;background:white;color:#25313e;border:1px solid #bac5d0;border-radius:10px;padding:1rem}
+.kitchen-marker-editor h2{font-size:1.25rem;font-weight:700}.kitchen-marker-editor p{margin:.5rem 0}
+.marker-rule{display:grid;grid-template-columns:120px minmax(120px,1fr) 200px auto;gap:.6rem;align-items:start;margin:1rem 0;padding-bottom:1rem;border-bottom:1px solid #dbe4e8}
+.marker-rule input,.marker-rule select{min-width:0;width:100%;padding:.4rem;border:1px solid #89949e;border-radius:4px;font-size:1rem}
+.marker-visual{display:grid;gap:.4rem}.marker-visual [hidden]{display:none!important}
+.marker-icon-choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(85px,1fr));gap:.35rem}
+.marker-icon-choice{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.25rem;padding:.45rem;background:#fff;border:2px solid #dbe4e8;border-radius:6px;cursor:pointer;color:#25313e;font:inherit;font-size:.8rem}
+.marker-icon-choice[aria-pressed=true]{border-color:#16835f;background:#edf8f3}.marker-icon-choice:focus-visible{outline:3px solid #16835f;outline-offset:2px}
+.marker-icon-choice .kitchen-food-icon{width:36px;height:36px;margin:0}
+.marker-rule-preview{grid-column:1/-1;margin:0!important;padding:.4rem .5rem;background:#f3f5f6;border-radius:5px;font-size:1.15rem;overflow-wrap:anywhere}
+.marker-rule-preview small{font-size:.8rem;color:#687980}
+@media(max-width:650px){.marker-rule{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.marker-visual{grid-column:1/-1}.marker-rule>.button{justify-self:start}}

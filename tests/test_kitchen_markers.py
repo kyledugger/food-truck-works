@@ -6,6 +6,7 @@ from alembic.operations import Operations
 import test_kitchen
 from kitchen_models import KitchenMarkers
 from models import OrganizationMember
+from kitchen_icons import FOOD_ICONS
 
 
 class MarkerTests(test_kitchen.KitchenTests):
@@ -16,7 +17,7 @@ class MarkerTests(test_kitchen.KitchenTests):
     def test_marker_rules_save_queue_watch_and_revision(self):
         rules=[{'target':'item','text':'banana','marker':'🍌'},
                {'target':'modifier','text':'caffeine free','marker':'⚠️'}]
-        self.assertEqual(self.queue()['markers'],{'rules':[],'revision':0})
+        self.assertEqual(self.queue()['markers'],{'rules':[],'revision':0,'icons':FOOD_ICONS})
         saved=self.save_rules(rules)
         self.assertEqual(saved.status_code,200)
         self.assertEqual(self.queue()['markers']['rules'],rules)
@@ -48,3 +49,22 @@ class MarkerTests(test_kitchen.KitchenTests):
                 migration.downgrade()
                 self.assertNotIn('kitchen_markers',inspect(connection).get_table_names())
                 migration.upgrade()
+
+    def test_food_icon_and_emoji_rules_roundtrip_without_migration(self):
+        rules=[{'target':'item','text':'bar','marker':'','icon':'ice-cream-bar'},
+               {'target':'modifier','text':'caffeine free','marker':'⚠️'}]
+        response=self.save_rules(rules)
+        self.assertEqual(response.status_code,200,response.text)
+        self.assertEqual(response.json()['rules'],rules)
+        self.assertEqual(self.queue()['markers']['rules'],rules)
+        self.assertEqual(self.client.get('/dashboard/stores/1/kitchen-watch').json()['markers']['rules'],rules)
+        self.assertEqual(self.client.get('/dashboard/stores/1/kitchen-test').json()['markers']['icons'],FOOD_ICONS)
+        self.assertEqual(self.save_rules([],0).status_code,409)
+
+    def test_food_icon_validation_disallows_urls_paths_and_mixed_markers(self):
+        rule={'target':'item','text':'bar','icon':'ice-cream-bar'}
+        self.assertEqual(self.save_rules([rule]).status_code,200)
+        for icon in ('https://evil.example/image.svg','../private','unknown-icon'):
+            self.assertEqual(self.save_rules([{**rule,'icon':icon}],1).status_code,422)
+        self.assertEqual(self.save_rules([{**rule,'marker':'🍦'}],1).status_code,422)
+        self.assertEqual(self.save_rules([{'target':'item','text':'bar','marker':''}],1).status_code,422)

@@ -1,0 +1,4004 @@
+{
+  "organization_id": 1,
+  "business_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+  "stores": [
+    {
+      "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+      "display_name": "Ice Cream Crush Truck",
+      "poynt_name": "Ice Cream Crush",
+      "timezone_name": "America/Phoenix",
+      "is_active": true
+    },
+    {
+      "store_id": "6440e3cd-757f-4e2d-8076-d4895722f044",
+      "display_name": "Ice Cream Crush Popup",
+      "poynt_name": "Ice Cream Crush popup",
+      "timezone_name": "America/Phoenix",
+      "is_active": true
+    },
+    {
+      "store_id": "8ed02483-791e-4aa1-8686-00a0afba348f",
+      "display_name": "Ice Cream Crush Trailer",
+      "poynt_name": "Ice Cream Crush Trailer",
+      "timezone_name": "America/Phoenix",
+      "is_active": false
+    },
+    {
+      "store_id": "17e4a4ac-4d7b-458f-aa25-ae2699f1ecfa",
+      "display_name": "Ice Cream Crush Store",
+      "poynt_name": "Ice Cream Crush Store",
+      "timezone_name": "America/Phoenix",
+      "is_active": true
+    }
+  ],
+  "collection_control": {
+    "next_request_at": "2026-11-17 04:54:36.000891+00:00"
+  },
+  "shared_lookup_budget": {
+    "backoff_until": null,
+    "request_count": 4,
+    "window_started_at": "2026-11-17 04:53:34.192346+00:00"
+  },
+  "days": [
+    {
+      "date": "2026-09-03",
+      "query_start_at": "2026-09-03 07:00:00+00:00",
+      "query_end_at": "2026-09-04 07:00:00+00:00",
+      "cache_state": "not_queued",
+      "cached_payments": [],
+      "staged_payments": [],
+      "provider": {
+        "http_status": 200,
+        "complete": true,
+        "records": [
+          {
+            "payment": {
+              "id": "c83cc60d-adbf-45e2-b89d-7b1363c62dc6",
+              "created_at": "2026-09-03T16:34:23Z",
+              "updated_at": "2026-09-04T01:55:54Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 20144,
+                "transactionAmount": 20144,
+                "tipAmount": 0
+              },
+              "order_ids": [],
+              "order_linked": false,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [],
+            "linked_order_ids": []
+          },
+          {
+            "payment": {
+              "id": "68dd839f-01a0-1000-cb74-d3b0b89d7e3c",
+              "created_at": "2026-09-03T20:02:28Z",
+              "updated_at": "2026-09-04T02:10:21Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 60508,
+                "transactionAmount": 69584,
+                "tipAmount": 9076
+              },
+              "order_ids": [
+                "9983495c-d33b-4d12-b476-19a59913b2e1"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order"
+            ],
+            "linked_order_ids": []
+          }
+        ]
+      }
+    },
+    {
+      "date": "2026-09-09",
+      "query_start_at": "2026-09-09 07:00:00+00:00",
+      "query_end_at": "2026-09-10 07:00:00+00:00",
+      "cache_state": {
+        "requested_at": "2026-11-17 04:09:59.248156+00:00",
+        "next_sync_at": "2026-11-18 03:16:34.609067+00:00",
+        "loaded_at": "2026-11-17 03:16:34.609067+00:00",
+        "phase": "orders",
+        "cursor": 0,
+        "error": null
+      },
+      "cached_payments": [
+        {
+          "payment": {
+            "id": "88060ad6-01a0-1000-238f-09df320c5fee",
+            "created_at": "2026-09-09T21:14:58Z",
+            "updated_at": "2026-09-10T01:58:57Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 1408,
+              "transactionAmount": 1619,
+              "tipAmount": 211
+            },
+            "order_ids": [
+              "5b0f6d6d-5f26-47f2-b012-c1f41f9abca4"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order"
+          ],
+          "linked_order_ids": [
+            "5b0f6d6d-5f26-47f2-b012-c1f41f9abca4"
+          ]
+        },
+        {
+          "payment": {
+            "id": "880f1f1b-01a0-1000-238f-09df320c5fee",
+            "created_at": "2026-09-09T21:24:51Z",
+            "updated_at": "2026-09-10T01:58:57Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 704,
+              "transactionAmount": 704,
+              "tipAmount": 0
+            },
+            "order_ids": [
+              "fdd7ff80-ed5e-4a7f-b89a-489ffe51e580"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order"
+          ],
+          "linked_order_ids": [
+            "fdd7ff80-ed5e-4a7f-b89a-489ffe51e580"
+          ]
+        },
+        {
+          "payment": {
+            "id": "881245ef-01a0-1000-238f-09df320c5fee",
+            "created_at": "2026-09-09T21:28:18Z",
+            "updated_at": "2026-09-10T01:58:57Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 2166,
+              "transactionAmount": 2383,
+              "tipAmount": 217
+            },
+            "order_ids": [
+              "c1ced145-99b4-4b87-8459-97b45376c45a"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order"
+          ],
+          "linked_order_ids": [
+            "c1ced145-99b4-4b87-8459-97b45376c45a"
+          ]
+        },
+        {
+          "payment": {
+            "id": "8813d2ea-01a0-1000-238f-09df320c5fee",
+            "created_at": "2026-09-09T21:29:59Z",
+            "updated_at": "2026-09-10T01:58:57Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 2274,
+              "transactionAmount": 2615,
+              "tipAmount": 341
+            },
+            "order_ids": [
+              "2b5e580f-4665-4780-940d-8ec1681230bd"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order"
+          ],
+          "linked_order_ids": [
+            "2b5e580f-4665-4780-940d-8ec1681230bd"
+          ]
+        },
+        {
+          "payment": {
+            "id": "8817d734-01a0-1000-238f-09df320c5fee",
+            "created_at": "2026-09-09T21:34:23Z",
+            "updated_at": "2026-09-10T01:58:57Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 3249,
+              "transactionAmount": 3249,
+              "tipAmount": 0
+            },
+            "order_ids": [
+              "9cd12b92-3672-4104-b108-67ba7072ea15"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order"
+          ],
+          "linked_order_ids": [
+            "9cd12b92-3672-4104-b108-67ba7072ea15"
+          ]
+        },
+        {
+          "payment": {
+            "id": "88189f15-01a0-1000-238f-09df320c5fee",
+            "created_at": "2026-09-09T21:35:14Z",
+            "updated_at": "2026-09-10T01:58:57Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 2274,
+              "transactionAmount": 2501,
+              "tipAmount": 227
+            },
+            "order_ids": [
+              "7ccfe1b6-5c9b-41ed-a1e0-15545272e56a"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order"
+          ],
+          "linked_order_ids": [
+            "7ccfe1b6-5c9b-41ed-a1e0-15545272e56a"
+          ]
+        },
+        {
+          "payment": {
+            "id": "ac013614-2849-4a24-8755-b8fff8bb1c64",
+            "created_at": "2026-09-09T21:36:38Z",
+            "updated_at": "2026-09-09T21:36:38Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 2383,
+              "transactionAmount": 5000,
+              "tipAmount": 0
+            },
+            "order_ids": [
+              "cea5ba79-627f-4043-995e-23ccb8646c84"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order",
+            "amounts_missing_invalid_or_do_not_balance"
+          ],
+          "linked_order_ids": [
+            "cea5ba79-627f-4043-995e-23ccb8646c84"
+          ]
+        },
+        {
+          "payment": {
+            "id": "881b8132-01a0-1000-238f-09df320c5fee",
+            "created_at": "2026-09-09T21:38:23Z",
+            "updated_at": "2026-09-10T01:58:57Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 758,
+              "transactionAmount": 858,
+              "tipAmount": 100
+            },
+            "order_ids": [
+              "79060081-5c13-4b37-ba14-e58ba944b4c0"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order"
+          ],
+          "linked_order_ids": [
+            "79060081-5c13-4b37-ba14-e58ba944b4c0"
+          ]
+        },
+        {
+          "payment": {
+            "id": "881e60f6-01a0-1000-238f-09df320c5fee",
+            "created_at": "2026-09-09T21:41:31Z",
+            "updated_at": "2026-09-10T01:58:57Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 2274,
+              "transactionAmount": 2274,
+              "tipAmount": 0
+            },
+            "order_ids": [
+              "c00a2320-d87a-4391-a30e-41be655c689e"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order"
+          ],
+          "linked_order_ids": [
+            "c00a2320-d87a-4391-a30e-41be655c689e"
+          ]
+        },
+        {
+          "payment": {
+            "id": "881f157b-01a0-1000-238f-09df320c5fee",
+            "created_at": "2026-09-09T21:42:17Z",
+            "updated_at": "2026-09-10T01:58:57Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 704,
+              "transactionAmount": 904,
+              "tipAmount": 200
+            },
+            "order_ids": [
+              "cc94d7c9-9c0a-4b83-a8db-47928695c04c"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order"
+          ],
+          "linked_order_ids": [
+            "cc94d7c9-9c0a-4b83-a8db-47928695c04c"
+          ]
+        },
+        {
+          "payment": {
+            "id": "a106e1c1-ba7c-42c3-84c4-d74b9223a9ee",
+            "created_at": "2026-09-09T21:43:37Z",
+            "updated_at": "2026-09-09T21:43:37Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 1408,
+              "transactionAmount": 2000,
+              "tipAmount": 0
+            },
+            "order_ids": [
+              "f48ae8df-45c7-4d67-8852-68b78d32250e"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order",
+            "amounts_missing_invalid_or_do_not_balance"
+          ],
+          "linked_order_ids": [
+            "f48ae8df-45c7-4d67-8852-68b78d32250e"
+          ]
+        },
+        {
+          "payment": {
+            "id": "882174a3-01a0-1000-238f-09df320c5fee",
+            "created_at": "2026-09-09T21:44:53Z",
+            "updated_at": "2026-09-10T01:58:57Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 1949,
+              "transactionAmount": 2241,
+              "tipAmount": 292
+            },
+            "order_ids": [
+              "78f7cab3-431f-41ea-82a0-f91ce457490a"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order"
+          ],
+          "linked_order_ids": [
+            "78f7cab3-431f-41ea-82a0-f91ce457490a"
+          ]
+        },
+        {
+          "payment": {
+            "id": "b0143cb4-f5fa-47bd-8167-f9ea75ccd846",
+            "created_at": "2026-09-09T21:46:07Z",
+            "updated_at": "2026-09-09T21:46:07Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 1408,
+              "transactionAmount": 2000,
+              "tipAmount": 0
+            },
+            "order_ids": [
+              "7e35ba74-f943-4a1a-bbc8-7d23d6d7c32d"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order",
+            "amounts_missing_invalid_or_do_not_balance"
+          ],
+          "linked_order_ids": [
+            "7e35ba74-f943-4a1a-bbc8-7d23d6d7c32d"
+          ]
+        },
+        {
+          "payment": {
+            "id": "88264a74-01a0-1000-238f-09df320c5fee",
+            "created_at": "2026-09-09T21:50:10Z",
+            "updated_at": "2026-09-10T01:58:57Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 2058,
+              "transactionAmount": 2058,
+              "tipAmount": 0
+            },
+            "order_ids": [
+              "400da36d-18dd-46fe-9096-6e5d58952aae"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order"
+          ],
+          "linked_order_ids": [
+            "400da36d-18dd-46fe-9096-6e5d58952aae"
+          ]
+        },
+        {
+          "payment": {
+            "id": "8828fd3c-01a0-1000-238f-09df320c5fee",
+            "created_at": "2026-09-09T21:53:06Z",
+            "updated_at": "2026-09-10T01:58:57Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 1300,
+              "transactionAmount": 1430,
+              "tipAmount": 130
+            },
+            "order_ids": [
+              "085e2d57-c681-4668-a3b6-746dbeca20d6"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order"
+          ],
+          "linked_order_ids": [
+            "085e2d57-c681-4668-a3b6-746dbeca20d6"
+          ]
+        },
+        {
+          "payment": {
+            "id": "8829a408-01a0-1000-238f-09df320c5fee",
+            "created_at": "2026-09-09T21:53:49Z",
+            "updated_at": "2026-09-10T01:58:57Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 1300,
+              "transactionAmount": 1430,
+              "tipAmount": 130
+            },
+            "order_ids": [
+              "1639bc4f-747f-4b8a-b4f6-8d70b40c1b55"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order"
+          ],
+          "linked_order_ids": [
+            "1639bc4f-747f-4b8a-b4f6-8d70b40c1b55"
+          ]
+        },
+        {
+          "payment": {
+            "id": "882a419c-01a0-1000-238f-09df320c5fee",
+            "created_at": "2026-09-09T21:54:29Z",
+            "updated_at": "2026-09-10T01:58:57Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 866,
+              "transactionAmount": 966,
+              "tipAmount": 100
+            },
+            "order_ids": [
+              "430e4827-4a39-4415-b2a9-ffb53ea26a76"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order"
+          ],
+          "linked_order_ids": [
+            "430e4827-4a39-4415-b2a9-ffb53ea26a76"
+          ]
+        },
+        {
+          "payment": {
+            "id": "9a4498f7-e809-43d6-983d-42c42232028b",
+            "created_at": "2026-09-09T21:55:59Z",
+            "updated_at": "2026-09-09T21:55:59Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 758,
+              "transactionAmount": 800,
+              "tipAmount": 0
+            },
+            "order_ids": [
+              "1dacc224-be27-4a22-b0f4-c731af36db23"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order",
+            "amounts_missing_invalid_or_do_not_balance"
+          ],
+          "linked_order_ids": [
+            "1dacc224-be27-4a22-b0f4-c731af36db23"
+          ]
+        },
+        {
+          "payment": {
+            "id": "882c5010-01a0-1000-238f-09df320c5fee",
+            "created_at": "2026-09-09T21:56:44Z",
+            "updated_at": "2026-09-10T01:58:57Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 1625,
+              "transactionAmount": 1869,
+              "tipAmount": 244
+            },
+            "order_ids": [
+              "4bb7ec00-80a9-48aa-9a63-6c97b1fd9e5a"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order"
+          ],
+          "linked_order_ids": [
+            "4bb7ec00-80a9-48aa-9a63-6c97b1fd9e5a"
+          ]
+        },
+        {
+          "payment": {
+            "id": "3300803f-b042-49be-a011-58ad9a58527e",
+            "created_at": "2026-09-09T21:57:33Z",
+            "updated_at": "2026-09-09T21:57:33Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 2274,
+              "transactionAmount": 4000,
+              "tipAmount": 0
+            },
+            "order_ids": [
+              "d2ded6b0-3ba0-48d0-bd1f-4c9b191eeb58"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order",
+            "amounts_missing_invalid_or_do_not_balance"
+          ],
+          "linked_order_ids": [
+            "d2ded6b0-3ba0-48d0-bd1f-4c9b191eeb58"
+          ]
+        },
+        {
+          "payment": {
+            "id": "6fdfe279-bf14-46c1-a35a-009f528ffb8a",
+            "created_at": "2026-09-09T21:58:53Z",
+            "updated_at": "2026-09-09T21:58:53Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 1516,
+              "transactionAmount": 2000,
+              "tipAmount": 0
+            },
+            "order_ids": [
+              "9f3af5f9-4148-49e7-86a5-0c5d723be32e"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order",
+            "amounts_missing_invalid_or_do_not_balance"
+          ],
+          "linked_order_ids": [
+            "9f3af5f9-4148-49e7-86a5-0c5d723be32e"
+          ]
+        },
+        {
+          "payment": {
+            "id": "882f669a-01a0-1000-238f-09df320c5fee",
+            "created_at": "2026-09-09T22:00:07Z",
+            "updated_at": "2026-09-10T01:58:57Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 650,
+              "transactionAmount": 650,
+              "tipAmount": 0
+            },
+            "order_ids": [
+              "62feab8f-88b8-4979-bd48-9d2eb496ef16"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order"
+          ],
+          "linked_order_ids": [
+            "62feab8f-88b8-4979-bd48-9d2eb496ef16"
+          ]
+        },
+        {
+          "payment": {
+            "id": "883069b4-01a0-1000-238f-09df320c5fee",
+            "created_at": "2026-09-09T22:01:13Z",
+            "updated_at": "2026-09-10T01:58:57Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 2599,
+              "transactionAmount": 2989,
+              "tipAmount": 390
+            },
+            "order_ids": [
+              "b30db484-2dca-4a5c-be61-55bb058d726f"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order"
+          ],
+          "linked_order_ids": [
+            "b30db484-2dca-4a5c-be61-55bb058d726f"
+          ]
+        },
+        {
+          "payment": {
+            "id": "883113e2-01a0-1000-238f-09df320c5fee",
+            "created_at": "2026-09-09T22:01:56Z",
+            "updated_at": "2026-09-10T01:58:57Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 704,
+              "transactionAmount": 704,
+              "tipAmount": 0
+            },
+            "order_ids": [
+              "937dfa28-1c46-4021-a463-eccf045c00bd"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order"
+          ],
+          "linked_order_ids": [
+            "937dfa28-1c46-4021-a463-eccf045c00bd"
+          ]
+        },
+        {
+          "payment": {
+            "id": "8832e9a4-01a0-1000-238f-09df320c5fee",
+            "created_at": "2026-09-09T22:03:57Z",
+            "updated_at": "2026-09-10T01:58:57Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 2274,
+              "transactionAmount": 2274,
+              "tipAmount": 0
+            },
+            "order_ids": [
+              "e2d53291-9ef6-4164-a745-7e3eec84f812"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order"
+          ],
+          "linked_order_ids": [
+            "e2d53291-9ef6-4164-a745-7e3eec84f812"
+          ]
+        },
+        {
+          "payment": {
+            "id": "8833a8b7-01a0-1000-238f-09df320c5fee",
+            "created_at": "2026-09-09T22:04:46Z",
+            "updated_at": "2026-09-10T01:58:57Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 4115,
+              "transactionAmount": 4527,
+              "tipAmount": 412
+            },
+            "order_ids": [
+              "b3969c02-75d6-46e4-a274-3495a1784f47"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order"
+          ],
+          "linked_order_ids": [
+            "b3969c02-75d6-46e4-a274-3495a1784f47"
+          ]
+        },
+        {
+          "payment": {
+            "id": "88351b21-01a0-1000-238f-09df320c5fee",
+            "created_at": "2026-09-09T22:06:21Z",
+            "updated_at": "2026-09-10T01:58:57Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 2274,
+              "transactionAmount": 2501,
+              "tipAmount": 227
+            },
+            "order_ids": [
+              "35c5cded-64f7-4a4b-b7f8-7b066859616a"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order"
+          ],
+          "linked_order_ids": [
+            "35c5cded-64f7-4a4b-b7f8-7b066859616a"
+          ]
+        },
+        {
+          "payment": {
+            "id": "88362130-01a0-1000-238f-09df320c5fee",
+            "created_at": "2026-09-09T22:07:28Z",
+            "updated_at": "2026-09-10T01:58:57Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 650,
+              "transactionAmount": 650,
+              "tipAmount": 0
+            },
+            "order_ids": [
+              "d3124278-8c8f-45c9-bd0f-30e4800ee214"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order"
+          ],
+          "linked_order_ids": [
+            "d3124278-8c8f-45c9-bd0f-30e4800ee214"
+          ]
+        },
+        {
+          "payment": {
+            "id": "88371968-01a0-1000-238f-09df320c5fee",
+            "created_at": "2026-09-09T22:08:31Z",
+            "updated_at": "2026-09-10T01:58:57Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 3141,
+              "transactionAmount": 3141,
+              "tipAmount": 0
+            },
+            "order_ids": [
+              "e6953409-fb99-4600-860c-8d18a2d26bff"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order"
+          ],
+          "linked_order_ids": [
+            "e6953409-fb99-4600-860c-8d18a2d26bff"
+          ]
+        },
+        {
+          "payment": {
+            "id": "8838c7f8-01a0-1000-238f-09df320c5fee",
+            "created_at": "2026-09-09T22:10:21Z",
+            "updated_at": "2026-09-10T01:58:57Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 2058,
+              "transactionAmount": 2058,
+              "tipAmount": 0
+            },
+            "order_ids": [
+              "21ae11ba-e468-4131-9157-fa77827540ce"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order"
+          ],
+          "linked_order_ids": [
+            "21ae11ba-e468-4131-9157-fa77827540ce"
+          ]
+        },
+        {
+          "payment": {
+            "id": "883a107c-01a0-1000-238f-09df320c5fee",
+            "created_at": "2026-09-09T22:11:46Z",
+            "updated_at": "2026-09-10T01:58:57Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 1300,
+              "transactionAmount": 1430,
+              "tipAmount": 130
+            },
+            "order_ids": [
+              "8be64f91-6209-457e-bc0a-defbcb001f89"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order"
+          ],
+          "linked_order_ids": [
+            "8be64f91-6209-457e-bc0a-defbcb001f89"
+          ]
+        },
+        {
+          "payment": {
+            "id": "883ba1d2-01a0-1000-238f-09df320c5fee",
+            "created_at": "2026-09-09T22:13:30Z",
+            "updated_at": "2026-09-10T01:58:57Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 2599,
+              "transactionAmount": 2599,
+              "tipAmount": 0
+            },
+            "order_ids": [
+              "21c59bc4-d3d3-44ed-90ae-bb373431bc38"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order"
+          ],
+          "linked_order_ids": [
+            "21c59bc4-d3d3-44ed-90ae-bb373431bc38"
+          ]
+        },
+        {
+          "payment": {
+            "id": "883c526a-01a0-1000-238f-09df320c5fee",
+            "created_at": "2026-09-09T22:14:13Z",
+            "updated_at": "2026-09-10T01:58:57Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 1408,
+              "transactionAmount": 1408,
+              "tipAmount": 0
+            },
+            "order_ids": [
+              "55d5980c-2b17-4beb-a91f-c67bc624d631"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order"
+          ],
+          "linked_order_ids": [
+            "55d5980c-2b17-4beb-a91f-c67bc624d631"
+          ]
+        },
+        {
+          "payment": {
+            "id": "f4eff90b-b943-4464-9da7-6f298a9c7f4f",
+            "created_at": "2026-09-09T22:14:57Z",
+            "updated_at": "2026-09-09T22:14:57Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 1733,
+              "transactionAmount": 2000,
+              "tipAmount": 0
+            },
+            "order_ids": [
+              "fa6aa588-9df9-44eb-b170-ba9ba271c78c"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order",
+            "amounts_missing_invalid_or_do_not_balance"
+          ],
+          "linked_order_ids": [
+            "fa6aa588-9df9-44eb-b170-ba9ba271c78c"
+          ]
+        },
+        {
+          "payment": {
+            "id": "394ac308-7e82-43ca-a109-87be0eb559e4",
+            "created_at": "2026-09-09T22:15:40Z",
+            "updated_at": "2026-09-09T22:15:40Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 1733,
+              "transactionAmount": 2000,
+              "tipAmount": 0
+            },
+            "order_ids": [
+              "3c4b89d8-f7a6-41c0-864c-5d2209a15025"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order",
+            "amounts_missing_invalid_or_do_not_balance"
+          ],
+          "linked_order_ids": [
+            "3c4b89d8-f7a6-41c0-864c-5d2209a15025"
+          ]
+        },
+        {
+          "payment": {
+            "id": "c918068b-5480-437d-98ea-4c41ce37dc53",
+            "created_at": "2026-09-09T22:16:52Z",
+            "updated_at": "2026-09-09T22:16:52Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 650,
+              "transactionAmount": 2000,
+              "tipAmount": 0
+            },
+            "order_ids": [
+              "c25404cf-4651-4519-b43b-c61e9d83d0a4"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order",
+            "amounts_missing_invalid_or_do_not_balance"
+          ],
+          "linked_order_ids": [
+            "c25404cf-4651-4519-b43b-c61e9d83d0a4"
+          ]
+        },
+        {
+          "payment": {
+            "id": "495e5415-c061-4829-ba26-43c34bacaa11",
+            "created_at": "2026-09-09T22:18:32Z",
+            "updated_at": "2026-09-09T22:18:32Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 650,
+              "transactionAmount": 700,
+              "tipAmount": 0
+            },
+            "order_ids": [
+              "b637316b-adb4-47b6-bb6c-fb4da081ca93"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order",
+            "amounts_missing_invalid_or_do_not_balance"
+          ],
+          "linked_order_ids": [
+            "b637316b-adb4-47b6-bb6c-fb4da081ca93"
+          ]
+        },
+        {
+          "payment": {
+            "id": "88420ed9-01a0-1000-238f-09df320c5fee",
+            "created_at": "2026-09-09T22:20:29Z",
+            "updated_at": "2026-09-10T01:58:57Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 4332,
+              "transactionAmount": 4332,
+              "tipAmount": 0
+            },
+            "order_ids": [
+              "901748d6-e35d-4c95-926d-c201da8970a5"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order"
+          ],
+          "linked_order_ids": [
+            "901748d6-e35d-4c95-926d-c201da8970a5"
+          ]
+        },
+        {
+          "payment": {
+            "id": "88460194-01a0-1000-238f-09df320c5fee",
+            "created_at": "2026-09-09T22:24:48Z",
+            "updated_at": "2026-09-10T01:58:57Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 1300,
+              "transactionAmount": 1430,
+              "tipAmount": 130
+            },
+            "order_ids": [
+              "1aa5e753-d352-4100-ac8f-27f3ae3629f2"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order"
+          ],
+          "linked_order_ids": [
+            "1aa5e753-d352-4100-ac8f-27f3ae3629f2"
+          ]
+        },
+        {
+          "payment": {
+            "id": "8846b886-01a0-1000-238f-09df320c5fee",
+            "created_at": "2026-09-09T22:25:35Z",
+            "updated_at": "2026-09-10T01:58:57Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 866,
+              "transactionAmount": 866,
+              "tipAmount": 0
+            },
+            "order_ids": [
+              "08b83d55-b5ae-4e1b-907c-01188daeee13"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order"
+          ],
+          "linked_order_ids": [
+            "08b83d55-b5ae-4e1b-907c-01188daeee13"
+          ]
+        },
+        {
+          "payment": {
+            "id": "8847b1e3-01a0-1000-238f-09df320c5fee",
+            "created_at": "2026-09-09T22:26:39Z",
+            "updated_at": "2026-09-10T01:58:57Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 650,
+              "transactionAmount": 650,
+              "tipAmount": 0
+            },
+            "order_ids": [
+              "5a599a12-facc-45bf-8498-3363679a5084"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order"
+          ],
+          "linked_order_ids": [
+            "5a599a12-facc-45bf-8498-3363679a5084"
+          ]
+        },
+        {
+          "payment": {
+            "id": "88495e5d-01a0-1000-238f-09df320c5fee",
+            "created_at": "2026-09-09T22:28:28Z",
+            "updated_at": "2026-09-10T01:58:57Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 2058,
+              "transactionAmount": 2058,
+              "tipAmount": 0
+            },
+            "order_ids": [
+              "b3d6ba2a-3d8f-4b9a-a1aa-5ea27b7a0fcb"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order"
+          ],
+          "linked_order_ids": [
+            "b3d6ba2a-3d8f-4b9a-a1aa-5ea27b7a0fcb"
+          ]
+        },
+        {
+          "payment": {
+            "id": "884be5db-01a0-1000-238f-09df320c5fee",
+            "created_at": "2026-09-09T22:31:14Z",
+            "updated_at": "2026-09-10T01:58:57Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 3357,
+              "transactionAmount": 3861,
+              "tipAmount": 504
+            },
+            "order_ids": [
+              "0dc19b7e-3c8a-448d-bff3-05627615b0e9"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order"
+          ],
+          "linked_order_ids": [
+            "0dc19b7e-3c8a-448d-bff3-05627615b0e9"
+          ]
+        },
+        {
+          "payment": {
+            "id": "884cf125-01a0-1000-238f-09df320c5fee",
+            "created_at": "2026-09-09T22:32:23Z",
+            "updated_at": "2026-09-10T01:58:57Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 3032,
+              "transactionAmount": 3032,
+              "tipAmount": 0
+            },
+            "order_ids": [
+              "8abe8544-b243-4c25-860a-3da5c45904dc"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order"
+          ],
+          "linked_order_ids": [
+            "8abe8544-b243-4c25-860a-3da5c45904dc"
+          ]
+        },
+        {
+          "payment": {
+            "id": "884db99a-01a0-1000-238f-09df320c5fee",
+            "created_at": "2026-09-09T22:33:14Z",
+            "updated_at": "2026-09-10T01:58:57Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 866,
+              "transactionAmount": 866,
+              "tipAmount": 0
+            },
+            "order_ids": [
+              "c159f508-0d7d-4210-8950-552bed0e1fb9"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order"
+          ],
+          "linked_order_ids": [
+            "c159f508-0d7d-4210-8950-552bed0e1fb9"
+          ]
+        },
+        {
+          "payment": {
+            "id": "884e6b9f-01a0-1000-238f-09df320c5fee",
+            "created_at": "2026-09-09T22:34:00Z",
+            "updated_at": "2026-09-10T01:58:57Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 758,
+              "transactionAmount": 758,
+              "tipAmount": 0
+            },
+            "order_ids": [
+              "7507e4fe-50e7-4883-bbfc-b2c876ec106d"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order"
+          ],
+          "linked_order_ids": [
+            "7507e4fe-50e7-4883-bbfc-b2c876ec106d"
+          ]
+        },
+        {
+          "payment": {
+            "id": "884f8bad-01a0-1000-238f-09df320c5fee",
+            "created_at": "2026-09-09T22:35:13Z",
+            "updated_at": "2026-09-10T01:58:57Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 1733,
+              "transactionAmount": 1906,
+              "tipAmount": 173
+            },
+            "order_ids": [
+              "763aa04e-0dc9-4820-b0c6-7801028a72f5"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order"
+          ],
+          "linked_order_ids": [
+            "763aa04e-0dc9-4820-b0c6-7801028a72f5"
+          ]
+        },
+        {
+          "payment": {
+            "id": "80932136-368f-4973-9d07-deb0c6eb0ab5",
+            "created_at": "2026-09-09T22:36:22Z",
+            "updated_at": "2026-09-09T22:36:22Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 2274,
+              "transactionAmount": 2300,
+              "tipAmount": 0
+            },
+            "order_ids": [
+              "c9e33946-1174-4cfa-860d-2680e0dcd2d8"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order",
+            "amounts_missing_invalid_or_do_not_balance"
+          ],
+          "linked_order_ids": [
+            "c9e33946-1174-4cfa-860d-2680e0dcd2d8"
+          ]
+        },
+        {
+          "payment": {
+            "id": "885169cf-01a0-1000-238f-09df320c5fee",
+            "created_at": "2026-09-09T22:37:16Z",
+            "updated_at": "2026-09-10T01:58:57Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 866,
+              "transactionAmount": 966,
+              "tipAmount": 100
+            },
+            "order_ids": [
+              "a143520f-d893-44a3-b0a8-6d6adad8ec48"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order"
+          ],
+          "linked_order_ids": [
+            "a143520f-d893-44a3-b0a8-6d6adad8ec48"
+          ]
+        },
+        {
+          "payment": {
+            "id": "885204b8-01a0-1000-238f-09df320c5fee",
+            "created_at": "2026-09-09T22:37:55Z",
+            "updated_at": "2026-09-10T01:58:57Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 866,
+              "transactionAmount": 866,
+              "tipAmount": 0
+            },
+            "order_ids": [
+              "f42a7212-0e43-4efe-b3a3-94200385d78e"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order"
+          ],
+          "linked_order_ids": [
+            "f42a7212-0e43-4efe-b3a3-94200385d78e"
+          ]
+        },
+        {
+          "payment": {
+            "id": "8853ec9e-01a0-1000-238f-09df320c5fee",
+            "created_at": "2026-09-09T22:40:00Z",
+            "updated_at": "2026-09-10T01:58:57Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 4332,
+              "transactionAmount": 4982,
+              "tipAmount": 650
+            },
+            "order_ids": [
+              "daf8f2d0-791f-4a28-82e3-0a98c907bc46"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order"
+          ],
+          "linked_order_ids": [
+            "daf8f2d0-791f-4a28-82e3-0a98c907bc46"
+          ]
+        },
+        {
+          "payment": {
+            "id": "885516e6-01a0-1000-238f-09df320c5fee",
+            "created_at": "2026-09-09T22:41:17Z",
+            "updated_at": "2026-09-10T01:58:57Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 2599,
+              "transactionAmount": 2859,
+              "tipAmount": 260
+            },
+            "order_ids": [
+              "68cdcc17-182e-4980-b5da-68944caf5e6e"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order"
+          ],
+          "linked_order_ids": [
+            "68cdcc17-182e-4980-b5da-68944caf5e6e"
+          ]
+        },
+        {
+          "payment": {
+            "id": "cf5fcaa7-23b4-4f72-9154-84d732cf5080",
+            "created_at": "2026-09-09T22:42:47Z",
+            "updated_at": "2026-09-09T22:42:47Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 1516,
+              "transactionAmount": 2000,
+              "tipAmount": 0
+            },
+            "order_ids": [
+              "b662493f-fffd-4bb0-b6a2-9fc4cf4f8a1b"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order",
+            "amounts_missing_invalid_or_do_not_balance"
+          ],
+          "linked_order_ids": [
+            "b662493f-fffd-4bb0-b6a2-9fc4cf4f8a1b"
+          ]
+        },
+        {
+          "payment": {
+            "id": "8858a662-01a0-1000-238f-09df320c5fee",
+            "created_at": "2026-09-09T22:45:10Z",
+            "updated_at": "2026-09-10T01:58:57Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 758,
+              "transactionAmount": 858,
+              "tipAmount": 100
+            },
+            "order_ids": [
+              "e217b7a6-1ac1-46ae-82e6-92fb942f40c4"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order"
+          ],
+          "linked_order_ids": [
+            "e217b7a6-1ac1-46ae-82e6-92fb942f40c4"
+          ]
+        },
+        {
+          "payment": {
+            "id": "885939d1-01a0-1000-238f-09df320c5fee",
+            "created_at": "2026-09-09T22:45:48Z",
+            "updated_at": "2026-09-10T01:58:57Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 866,
+              "transactionAmount": 866,
+              "tipAmount": 0
+            },
+            "order_ids": [
+              "23317d0a-b3c3-4273-9b24-0aa74d2d5d20"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order"
+          ],
+          "linked_order_ids": [
+            "23317d0a-b3c3-4273-9b24-0aa74d2d5d20"
+          ]
+        },
+        {
+          "payment": {
+            "id": "885a3fac-01a0-1000-238f-09df320c5fee",
+            "created_at": "2026-09-09T22:46:55Z",
+            "updated_at": "2026-09-10T01:58:57Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 650,
+              "transactionAmount": 750,
+              "tipAmount": 100
+            },
+            "order_ids": [
+              "d88e1ce1-e7d9-48c1-a3d7-d33bbf2bf9d8"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order"
+          ],
+          "linked_order_ids": [
+            "d88e1ce1-e7d9-48c1-a3d7-d33bbf2bf9d8"
+          ]
+        },
+        {
+          "payment": {
+            "id": "885b364d-01a0-1000-238f-09df320c5fee",
+            "created_at": "2026-09-09T22:47:58Z",
+            "updated_at": "2026-09-10T01:58:57Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 2383,
+              "transactionAmount": 2621,
+              "tipAmount": 238
+            },
+            "order_ids": [
+              "666eec55-abf1-454a-9c83-1e0f1361ea65"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order"
+          ],
+          "linked_order_ids": [
+            "666eec55-abf1-454a-9c83-1e0f1361ea65"
+          ]
+        },
+        {
+          "payment": {
+            "id": "885fea0e-01a0-1000-238f-09df320c5fee",
+            "created_at": "2026-09-09T22:53:06Z",
+            "updated_at": "2026-09-10T01:58:57Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 3357,
+              "transactionAmount": 3861,
+              "tipAmount": 504
+            },
+            "order_ids": [
+              "81e78fd6-fa4e-4202-aedf-8f38695890fb"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order"
+          ],
+          "linked_order_ids": [
+            "81e78fd6-fa4e-4202-aedf-8f38695890fb"
+          ]
+        },
+        {
+          "payment": {
+            "id": "8861daa6-01a0-1000-238f-09df320c5fee",
+            "created_at": "2026-09-09T22:55:13Z",
+            "updated_at": "2026-09-10T01:58:57Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 650,
+              "transactionAmount": 650,
+              "tipAmount": 0
+            },
+            "order_ids": [
+              "3bc5df45-5344-4d67-bd00-dabf59e8ab4c"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order"
+          ],
+          "linked_order_ids": [
+            "3bc5df45-5344-4d67-bd00-dabf59e8ab4c"
+          ]
+        },
+        {
+          "payment": {
+            "id": "88632aeb-01a0-1000-238f-09df320c5fee",
+            "created_at": "2026-09-09T22:56:39Z",
+            "updated_at": "2026-09-10T01:58:57Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 2166,
+              "transactionAmount": 2166,
+              "tipAmount": 0
+            },
+            "order_ids": [
+              "ac8891a6-3ffb-428d-ac7e-e5de7513197d"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order"
+          ],
+          "linked_order_ids": [
+            "ac8891a6-3ffb-428d-ac7e-e5de7513197d"
+          ]
+        },
+        {
+          "payment": {
+            "id": "24b4cc76-f1fd-4d66-a125-6d6d4d7b91d6",
+            "created_at": "2026-09-09T22:57:52Z",
+            "updated_at": "2026-09-09T22:57:52Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 2383,
+              "transactionAmount": 2500,
+              "tipAmount": 0
+            },
+            "order_ids": [
+              "e82e1ffc-409e-4bc7-862e-613774495665"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order",
+            "amounts_missing_invalid_or_do_not_balance"
+          ],
+          "linked_order_ids": [
+            "e82e1ffc-409e-4bc7-862e-613774495665"
+          ]
+        },
+        {
+          "payment": {
+            "id": "4c4857af-54a0-4a35-bc50-df71a485286c",
+            "created_at": "2026-09-09T23:09:02Z",
+            "updated_at": "2026-09-09T23:09:02Z",
+            "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+            "parent_id": null,
+            "action": "SALE",
+            "status": "CAPTURED",
+            "voided": false,
+            "currency": "USD",
+            "amounts": {
+              "orderAmount": 866,
+              "transactionAmount": 866,
+              "tipAmount": 0
+            },
+            "order_ids": [
+              "08f9f7da-7141-4eba-a257-82558db4f090"
+            ],
+            "order_linked": true,
+            "paylink": false,
+            "invoice": false
+          },
+          "assigned_store_name": "Ice Cream Crush Truck",
+          "possible_exclusion_reasons": [
+            "already_linked_to_an_order"
+          ],
+          "linked_order_ids": [
+            "08f9f7da-7141-4eba-a257-82558db4f090"
+          ]
+        }
+      ],
+      "staged_payments": [],
+      "provider": {
+        "http_status": 200,
+        "complete": true,
+        "records": [
+          {
+            "payment": {
+              "id": "88060ad6-01a0-1000-238f-09df320c5fee",
+              "created_at": "2026-09-09T21:14:58Z",
+              "updated_at": "2026-09-10T01:58:57Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 1408,
+                "transactionAmount": 1619,
+                "tipAmount": 211
+              },
+              "order_ids": [
+                "5b0f6d6d-5f26-47f2-b012-c1f41f9abca4"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order"
+            ],
+            "linked_order_ids": [
+              "5b0f6d6d-5f26-47f2-b012-c1f41f9abca4"
+            ]
+          },
+          {
+            "payment": {
+              "id": "880f1f1b-01a0-1000-238f-09df320c5fee",
+              "created_at": "2026-09-09T21:24:51Z",
+              "updated_at": "2026-09-10T01:58:57Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 704,
+                "transactionAmount": 704,
+                "tipAmount": 0
+              },
+              "order_ids": [
+                "fdd7ff80-ed5e-4a7f-b89a-489ffe51e580"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order"
+            ],
+            "linked_order_ids": [
+              "fdd7ff80-ed5e-4a7f-b89a-489ffe51e580"
+            ]
+          },
+          {
+            "payment": {
+              "id": "881245ef-01a0-1000-238f-09df320c5fee",
+              "created_at": "2026-09-09T21:28:18Z",
+              "updated_at": "2026-09-10T01:58:57Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 2166,
+                "transactionAmount": 2383,
+                "tipAmount": 217
+              },
+              "order_ids": [
+                "c1ced145-99b4-4b87-8459-97b45376c45a"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order"
+            ],
+            "linked_order_ids": [
+              "c1ced145-99b4-4b87-8459-97b45376c45a"
+            ]
+          },
+          {
+            "payment": {
+              "id": "8813d2ea-01a0-1000-238f-09df320c5fee",
+              "created_at": "2026-09-09T21:29:59Z",
+              "updated_at": "2026-09-10T01:58:57Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 2274,
+                "transactionAmount": 2615,
+                "tipAmount": 341
+              },
+              "order_ids": [
+                "2b5e580f-4665-4780-940d-8ec1681230bd"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order"
+            ],
+            "linked_order_ids": [
+              "2b5e580f-4665-4780-940d-8ec1681230bd"
+            ]
+          },
+          {
+            "payment": {
+              "id": "8817d734-01a0-1000-238f-09df320c5fee",
+              "created_at": "2026-09-09T21:34:23Z",
+              "updated_at": "2026-09-10T01:58:57Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 3249,
+                "transactionAmount": 3249,
+                "tipAmount": 0
+              },
+              "order_ids": [
+                "9cd12b92-3672-4104-b108-67ba7072ea15"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order"
+            ],
+            "linked_order_ids": [
+              "9cd12b92-3672-4104-b108-67ba7072ea15"
+            ]
+          },
+          {
+            "payment": {
+              "id": "88189f15-01a0-1000-238f-09df320c5fee",
+              "created_at": "2026-09-09T21:35:14Z",
+              "updated_at": "2026-09-10T01:58:57Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 2274,
+                "transactionAmount": 2501,
+                "tipAmount": 227
+              },
+              "order_ids": [
+                "7ccfe1b6-5c9b-41ed-a1e0-15545272e56a"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order"
+            ],
+            "linked_order_ids": [
+              "7ccfe1b6-5c9b-41ed-a1e0-15545272e56a"
+            ]
+          },
+          {
+            "payment": {
+              "id": "ac013614-2849-4a24-8755-b8fff8bb1c64",
+              "created_at": "2026-09-09T21:36:38Z",
+              "updated_at": "2026-09-09T21:36:38Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 2383,
+                "transactionAmount": 5000,
+                "tipAmount": 0
+              },
+              "order_ids": [
+                "cea5ba79-627f-4043-995e-23ccb8646c84"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order",
+              "amounts_missing_invalid_or_do_not_balance"
+            ],
+            "linked_order_ids": [
+              "cea5ba79-627f-4043-995e-23ccb8646c84"
+            ]
+          },
+          {
+            "payment": {
+              "id": "881b8132-01a0-1000-238f-09df320c5fee",
+              "created_at": "2026-09-09T21:38:23Z",
+              "updated_at": "2026-09-10T01:58:57Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 758,
+                "transactionAmount": 858,
+                "tipAmount": 100
+              },
+              "order_ids": [
+                "79060081-5c13-4b37-ba14-e58ba944b4c0"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order"
+            ],
+            "linked_order_ids": [
+              "79060081-5c13-4b37-ba14-e58ba944b4c0"
+            ]
+          },
+          {
+            "payment": {
+              "id": "881e60f6-01a0-1000-238f-09df320c5fee",
+              "created_at": "2026-09-09T21:41:31Z",
+              "updated_at": "2026-09-10T01:58:57Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 2274,
+                "transactionAmount": 2274,
+                "tipAmount": 0
+              },
+              "order_ids": [
+                "c00a2320-d87a-4391-a30e-41be655c689e"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order"
+            ],
+            "linked_order_ids": [
+              "c00a2320-d87a-4391-a30e-41be655c689e"
+            ]
+          },
+          {
+            "payment": {
+              "id": "881f157b-01a0-1000-238f-09df320c5fee",
+              "created_at": "2026-09-09T21:42:17Z",
+              "updated_at": "2026-09-10T01:58:57Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 704,
+                "transactionAmount": 904,
+                "tipAmount": 200
+              },
+              "order_ids": [
+                "cc94d7c9-9c0a-4b83-a8db-47928695c04c"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order"
+            ],
+            "linked_order_ids": [
+              "cc94d7c9-9c0a-4b83-a8db-47928695c04c"
+            ]
+          },
+          {
+            "payment": {
+              "id": "a106e1c1-ba7c-42c3-84c4-d74b9223a9ee",
+              "created_at": "2026-09-09T21:43:37Z",
+              "updated_at": "2026-09-09T21:43:37Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 1408,
+                "transactionAmount": 2000,
+                "tipAmount": 0
+              },
+              "order_ids": [
+                "f48ae8df-45c7-4d67-8852-68b78d32250e"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order",
+              "amounts_missing_invalid_or_do_not_balance"
+            ],
+            "linked_order_ids": [
+              "f48ae8df-45c7-4d67-8852-68b78d32250e"
+            ]
+          },
+          {
+            "payment": {
+              "id": "882174a3-01a0-1000-238f-09df320c5fee",
+              "created_at": "2026-09-09T21:44:53Z",
+              "updated_at": "2026-09-10T01:58:57Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 1949,
+                "transactionAmount": 2241,
+                "tipAmount": 292
+              },
+              "order_ids": [
+                "78f7cab3-431f-41ea-82a0-f91ce457490a"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order"
+            ],
+            "linked_order_ids": [
+              "78f7cab3-431f-41ea-82a0-f91ce457490a"
+            ]
+          },
+          {
+            "payment": {
+              "id": "b0143cb4-f5fa-47bd-8167-f9ea75ccd846",
+              "created_at": "2026-09-09T21:46:07Z",
+              "updated_at": "2026-09-09T21:46:07Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 1408,
+                "transactionAmount": 2000,
+                "tipAmount": 0
+              },
+              "order_ids": [
+                "7e35ba74-f943-4a1a-bbc8-7d23d6d7c32d"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order",
+              "amounts_missing_invalid_or_do_not_balance"
+            ],
+            "linked_order_ids": [
+              "7e35ba74-f943-4a1a-bbc8-7d23d6d7c32d"
+            ]
+          },
+          {
+            "payment": {
+              "id": "88264a74-01a0-1000-238f-09df320c5fee",
+              "created_at": "2026-09-09T21:50:10Z",
+              "updated_at": "2026-09-10T01:58:57Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 2058,
+                "transactionAmount": 2058,
+                "tipAmount": 0
+              },
+              "order_ids": [
+                "400da36d-18dd-46fe-9096-6e5d58952aae"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order"
+            ],
+            "linked_order_ids": [
+              "400da36d-18dd-46fe-9096-6e5d58952aae"
+            ]
+          },
+          {
+            "payment": {
+              "id": "8828fd3c-01a0-1000-238f-09df320c5fee",
+              "created_at": "2026-09-09T21:53:06Z",
+              "updated_at": "2026-09-10T01:58:57Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 1300,
+                "transactionAmount": 1430,
+                "tipAmount": 130
+              },
+              "order_ids": [
+                "085e2d57-c681-4668-a3b6-746dbeca20d6"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order"
+            ],
+            "linked_order_ids": [
+              "085e2d57-c681-4668-a3b6-746dbeca20d6"
+            ]
+          },
+          {
+            "payment": {
+              "id": "8829a408-01a0-1000-238f-09df320c5fee",
+              "created_at": "2026-09-09T21:53:49Z",
+              "updated_at": "2026-09-10T01:58:57Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 1300,
+                "transactionAmount": 1430,
+                "tipAmount": 130
+              },
+              "order_ids": [
+                "1639bc4f-747f-4b8a-b4f6-8d70b40c1b55"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order"
+            ],
+            "linked_order_ids": [
+              "1639bc4f-747f-4b8a-b4f6-8d70b40c1b55"
+            ]
+          },
+          {
+            "payment": {
+              "id": "882a419c-01a0-1000-238f-09df320c5fee",
+              "created_at": "2026-09-09T21:54:29Z",
+              "updated_at": "2026-09-10T01:58:57Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 866,
+                "transactionAmount": 966,
+                "tipAmount": 100
+              },
+              "order_ids": [
+                "430e4827-4a39-4415-b2a9-ffb53ea26a76"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order"
+            ],
+            "linked_order_ids": [
+              "430e4827-4a39-4415-b2a9-ffb53ea26a76"
+            ]
+          },
+          {
+            "payment": {
+              "id": "9a4498f7-e809-43d6-983d-42c42232028b",
+              "created_at": "2026-09-09T21:55:59Z",
+              "updated_at": "2026-09-09T21:55:59Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 758,
+                "transactionAmount": 800,
+                "tipAmount": 0
+              },
+              "order_ids": [
+                "1dacc224-be27-4a22-b0f4-c731af36db23"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order",
+              "amounts_missing_invalid_or_do_not_balance"
+            ],
+            "linked_order_ids": [
+              "1dacc224-be27-4a22-b0f4-c731af36db23"
+            ]
+          },
+          {
+            "payment": {
+              "id": "882c5010-01a0-1000-238f-09df320c5fee",
+              "created_at": "2026-09-09T21:56:44Z",
+              "updated_at": "2026-09-10T01:58:57Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 1625,
+                "transactionAmount": 1869,
+                "tipAmount": 244
+              },
+              "order_ids": [
+                "4bb7ec00-80a9-48aa-9a63-6c97b1fd9e5a"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order"
+            ],
+            "linked_order_ids": [
+              "4bb7ec00-80a9-48aa-9a63-6c97b1fd9e5a"
+            ]
+          },
+          {
+            "payment": {
+              "id": "3300803f-b042-49be-a011-58ad9a58527e",
+              "created_at": "2026-09-09T21:57:33Z",
+              "updated_at": "2026-09-09T21:57:33Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 2274,
+                "transactionAmount": 4000,
+                "tipAmount": 0
+              },
+              "order_ids": [
+                "d2ded6b0-3ba0-48d0-bd1f-4c9b191eeb58"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order",
+              "amounts_missing_invalid_or_do_not_balance"
+            ],
+            "linked_order_ids": [
+              "d2ded6b0-3ba0-48d0-bd1f-4c9b191eeb58"
+            ]
+          },
+          {
+            "payment": {
+              "id": "6fdfe279-bf14-46c1-a35a-009f528ffb8a",
+              "created_at": "2026-09-09T21:58:53Z",
+              "updated_at": "2026-09-09T21:58:53Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 1516,
+                "transactionAmount": 2000,
+                "tipAmount": 0
+              },
+              "order_ids": [
+                "9f3af5f9-4148-49e7-86a5-0c5d723be32e"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order",
+              "amounts_missing_invalid_or_do_not_balance"
+            ],
+            "linked_order_ids": [
+              "9f3af5f9-4148-49e7-86a5-0c5d723be32e"
+            ]
+          },
+          {
+            "payment": {
+              "id": "882f669a-01a0-1000-238f-09df320c5fee",
+              "created_at": "2026-09-09T22:00:07Z",
+              "updated_at": "2026-09-10T01:58:57Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 650,
+                "transactionAmount": 650,
+                "tipAmount": 0
+              },
+              "order_ids": [
+                "62feab8f-88b8-4979-bd48-9d2eb496ef16"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order"
+            ],
+            "linked_order_ids": [
+              "62feab8f-88b8-4979-bd48-9d2eb496ef16"
+            ]
+          },
+          {
+            "payment": {
+              "id": "883069b4-01a0-1000-238f-09df320c5fee",
+              "created_at": "2026-09-09T22:01:13Z",
+              "updated_at": "2026-09-10T01:58:57Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 2599,
+                "transactionAmount": 2989,
+                "tipAmount": 390
+              },
+              "order_ids": [
+                "b30db484-2dca-4a5c-be61-55bb058d726f"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order"
+            ],
+            "linked_order_ids": [
+              "b30db484-2dca-4a5c-be61-55bb058d726f"
+            ]
+          },
+          {
+            "payment": {
+              "id": "883113e2-01a0-1000-238f-09df320c5fee",
+              "created_at": "2026-09-09T22:01:56Z",
+              "updated_at": "2026-09-10T01:58:57Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 704,
+                "transactionAmount": 704,
+                "tipAmount": 0
+              },
+              "order_ids": [
+                "937dfa28-1c46-4021-a463-eccf045c00bd"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order"
+            ],
+            "linked_order_ids": [
+              "937dfa28-1c46-4021-a463-eccf045c00bd"
+            ]
+          },
+          {
+            "payment": {
+              "id": "8832e9a4-01a0-1000-238f-09df320c5fee",
+              "created_at": "2026-09-09T22:03:57Z",
+              "updated_at": "2026-09-10T01:58:57Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 2274,
+                "transactionAmount": 2274,
+                "tipAmount": 0
+              },
+              "order_ids": [
+                "e2d53291-9ef6-4164-a745-7e3eec84f812"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order"
+            ],
+            "linked_order_ids": [
+              "e2d53291-9ef6-4164-a745-7e3eec84f812"
+            ]
+          },
+          {
+            "payment": {
+              "id": "8833a8b7-01a0-1000-238f-09df320c5fee",
+              "created_at": "2026-09-09T22:04:46Z",
+              "updated_at": "2026-09-10T01:58:57Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 4115,
+                "transactionAmount": 4527,
+                "tipAmount": 412
+              },
+              "order_ids": [
+                "b3969c02-75d6-46e4-a274-3495a1784f47"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order"
+            ],
+            "linked_order_ids": [
+              "b3969c02-75d6-46e4-a274-3495a1784f47"
+            ]
+          },
+          {
+            "payment": {
+              "id": "88351b21-01a0-1000-238f-09df320c5fee",
+              "created_at": "2026-09-09T22:06:21Z",
+              "updated_at": "2026-09-10T01:58:57Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 2274,
+                "transactionAmount": 2501,
+                "tipAmount": 227
+              },
+              "order_ids": [
+                "35c5cded-64f7-4a4b-b7f8-7b066859616a"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order"
+            ],
+            "linked_order_ids": [
+              "35c5cded-64f7-4a4b-b7f8-7b066859616a"
+            ]
+          },
+          {
+            "payment": {
+              "id": "88362130-01a0-1000-238f-09df320c5fee",
+              "created_at": "2026-09-09T22:07:28Z",
+              "updated_at": "2026-09-10T01:58:57Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 650,
+                "transactionAmount": 650,
+                "tipAmount": 0
+              },
+              "order_ids": [
+                "d3124278-8c8f-45c9-bd0f-30e4800ee214"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order"
+            ],
+            "linked_order_ids": [
+              "d3124278-8c8f-45c9-bd0f-30e4800ee214"
+            ]
+          },
+          {
+            "payment": {
+              "id": "88371968-01a0-1000-238f-09df320c5fee",
+              "created_at": "2026-09-09T22:08:31Z",
+              "updated_at": "2026-09-10T01:58:57Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 3141,
+                "transactionAmount": 3141,
+                "tipAmount": 0
+              },
+              "order_ids": [
+                "e6953409-fb99-4600-860c-8d18a2d26bff"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order"
+            ],
+            "linked_order_ids": [
+              "e6953409-fb99-4600-860c-8d18a2d26bff"
+            ]
+          },
+          {
+            "payment": {
+              "id": "8838c7f8-01a0-1000-238f-09df320c5fee",
+              "created_at": "2026-09-09T22:10:21Z",
+              "updated_at": "2026-09-10T01:58:57Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 2058,
+                "transactionAmount": 2058,
+                "tipAmount": 0
+              },
+              "order_ids": [
+                "21ae11ba-e468-4131-9157-fa77827540ce"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order"
+            ],
+            "linked_order_ids": [
+              "21ae11ba-e468-4131-9157-fa77827540ce"
+            ]
+          },
+          {
+            "payment": {
+              "id": "883a107c-01a0-1000-238f-09df320c5fee",
+              "created_at": "2026-09-09T22:11:46Z",
+              "updated_at": "2026-09-10T01:58:57Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 1300,
+                "transactionAmount": 1430,
+                "tipAmount": 130
+              },
+              "order_ids": [
+                "8be64f91-6209-457e-bc0a-defbcb001f89"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order"
+            ],
+            "linked_order_ids": [
+              "8be64f91-6209-457e-bc0a-defbcb001f89"
+            ]
+          },
+          {
+            "payment": {
+              "id": "883ba1d2-01a0-1000-238f-09df320c5fee",
+              "created_at": "2026-09-09T22:13:30Z",
+              "updated_at": "2026-09-10T01:58:57Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 2599,
+                "transactionAmount": 2599,
+                "tipAmount": 0
+              },
+              "order_ids": [
+                "21c59bc4-d3d3-44ed-90ae-bb373431bc38"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order"
+            ],
+            "linked_order_ids": [
+              "21c59bc4-d3d3-44ed-90ae-bb373431bc38"
+            ]
+          },
+          {
+            "payment": {
+              "id": "883c526a-01a0-1000-238f-09df320c5fee",
+              "created_at": "2026-09-09T22:14:13Z",
+              "updated_at": "2026-09-10T01:58:57Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 1408,
+                "transactionAmount": 1408,
+                "tipAmount": 0
+              },
+              "order_ids": [
+                "55d5980c-2b17-4beb-a91f-c67bc624d631"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order"
+            ],
+            "linked_order_ids": [
+              "55d5980c-2b17-4beb-a91f-c67bc624d631"
+            ]
+          },
+          {
+            "payment": {
+              "id": "f4eff90b-b943-4464-9da7-6f298a9c7f4f",
+              "created_at": "2026-09-09T22:14:57Z",
+              "updated_at": "2026-09-09T22:14:57Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 1733,
+                "transactionAmount": 2000,
+                "tipAmount": 0
+              },
+              "order_ids": [
+                "fa6aa588-9df9-44eb-b170-ba9ba271c78c"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order",
+              "amounts_missing_invalid_or_do_not_balance"
+            ],
+            "linked_order_ids": [
+              "fa6aa588-9df9-44eb-b170-ba9ba271c78c"
+            ]
+          },
+          {
+            "payment": {
+              "id": "394ac308-7e82-43ca-a109-87be0eb559e4",
+              "created_at": "2026-09-09T22:15:40Z",
+              "updated_at": "2026-09-09T22:15:40Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 1733,
+                "transactionAmount": 2000,
+                "tipAmount": 0
+              },
+              "order_ids": [
+                "3c4b89d8-f7a6-41c0-864c-5d2209a15025"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order",
+              "amounts_missing_invalid_or_do_not_balance"
+            ],
+            "linked_order_ids": [
+              "3c4b89d8-f7a6-41c0-864c-5d2209a15025"
+            ]
+          },
+          {
+            "payment": {
+              "id": "c918068b-5480-437d-98ea-4c41ce37dc53",
+              "created_at": "2026-09-09T22:16:52Z",
+              "updated_at": "2026-09-09T22:16:52Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 650,
+                "transactionAmount": 2000,
+                "tipAmount": 0
+              },
+              "order_ids": [
+                "c25404cf-4651-4519-b43b-c61e9d83d0a4"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order",
+              "amounts_missing_invalid_or_do_not_balance"
+            ],
+            "linked_order_ids": [
+              "c25404cf-4651-4519-b43b-c61e9d83d0a4"
+            ]
+          },
+          {
+            "payment": {
+              "id": "495e5415-c061-4829-ba26-43c34bacaa11",
+              "created_at": "2026-09-09T22:18:32Z",
+              "updated_at": "2026-09-09T22:18:32Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 650,
+                "transactionAmount": 700,
+                "tipAmount": 0
+              },
+              "order_ids": [
+                "b637316b-adb4-47b6-bb6c-fb4da081ca93"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order",
+              "amounts_missing_invalid_or_do_not_balance"
+            ],
+            "linked_order_ids": [
+              "b637316b-adb4-47b6-bb6c-fb4da081ca93"
+            ]
+          },
+          {
+            "payment": {
+              "id": "88420ed9-01a0-1000-238f-09df320c5fee",
+              "created_at": "2026-09-09T22:20:29Z",
+              "updated_at": "2026-09-10T01:58:57Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 4332,
+                "transactionAmount": 4332,
+                "tipAmount": 0
+              },
+              "order_ids": [
+                "901748d6-e35d-4c95-926d-c201da8970a5"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order"
+            ],
+            "linked_order_ids": [
+              "901748d6-e35d-4c95-926d-c201da8970a5"
+            ]
+          },
+          {
+            "payment": {
+              "id": "88460194-01a0-1000-238f-09df320c5fee",
+              "created_at": "2026-09-09T22:24:48Z",
+              "updated_at": "2026-09-10T01:58:57Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 1300,
+                "transactionAmount": 1430,
+                "tipAmount": 130
+              },
+              "order_ids": [
+                "1aa5e753-d352-4100-ac8f-27f3ae3629f2"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order"
+            ],
+            "linked_order_ids": [
+              "1aa5e753-d352-4100-ac8f-27f3ae3629f2"
+            ]
+          },
+          {
+            "payment": {
+              "id": "8846b886-01a0-1000-238f-09df320c5fee",
+              "created_at": "2026-09-09T22:25:35Z",
+              "updated_at": "2026-09-10T01:58:57Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 866,
+                "transactionAmount": 866,
+                "tipAmount": 0
+              },
+              "order_ids": [
+                "08b83d55-b5ae-4e1b-907c-01188daeee13"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order"
+            ],
+            "linked_order_ids": [
+              "08b83d55-b5ae-4e1b-907c-01188daeee13"
+            ]
+          },
+          {
+            "payment": {
+              "id": "8847b1e3-01a0-1000-238f-09df320c5fee",
+              "created_at": "2026-09-09T22:26:39Z",
+              "updated_at": "2026-09-10T01:58:57Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 650,
+                "transactionAmount": 650,
+                "tipAmount": 0
+              },
+              "order_ids": [
+                "5a599a12-facc-45bf-8498-3363679a5084"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order"
+            ],
+            "linked_order_ids": [
+              "5a599a12-facc-45bf-8498-3363679a5084"
+            ]
+          },
+          {
+            "payment": {
+              "id": "88495e5d-01a0-1000-238f-09df320c5fee",
+              "created_at": "2026-09-09T22:28:28Z",
+              "updated_at": "2026-09-10T01:58:57Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 2058,
+                "transactionAmount": 2058,
+                "tipAmount": 0
+              },
+              "order_ids": [
+                "b3d6ba2a-3d8f-4b9a-a1aa-5ea27b7a0fcb"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order"
+            ],
+            "linked_order_ids": [
+              "b3d6ba2a-3d8f-4b9a-a1aa-5ea27b7a0fcb"
+            ]
+          },
+          {
+            "payment": {
+              "id": "884be5db-01a0-1000-238f-09df320c5fee",
+              "created_at": "2026-09-09T22:31:14Z",
+              "updated_at": "2026-09-10T01:58:57Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 3357,
+                "transactionAmount": 3861,
+                "tipAmount": 504
+              },
+              "order_ids": [
+                "0dc19b7e-3c8a-448d-bff3-05627615b0e9"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order"
+            ],
+            "linked_order_ids": [
+              "0dc19b7e-3c8a-448d-bff3-05627615b0e9"
+            ]
+          },
+          {
+            "payment": {
+              "id": "884cf125-01a0-1000-238f-09df320c5fee",
+              "created_at": "2026-09-09T22:32:23Z",
+              "updated_at": "2026-09-10T01:58:57Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 3032,
+                "transactionAmount": 3032,
+                "tipAmount": 0
+              },
+              "order_ids": [
+                "8abe8544-b243-4c25-860a-3da5c45904dc"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order"
+            ],
+            "linked_order_ids": [
+              "8abe8544-b243-4c25-860a-3da5c45904dc"
+            ]
+          },
+          {
+            "payment": {
+              "id": "884db99a-01a0-1000-238f-09df320c5fee",
+              "created_at": "2026-09-09T22:33:14Z",
+              "updated_at": "2026-09-10T01:58:57Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 866,
+                "transactionAmount": 866,
+                "tipAmount": 0
+              },
+              "order_ids": [
+                "c159f508-0d7d-4210-8950-552bed0e1fb9"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order"
+            ],
+            "linked_order_ids": [
+              "c159f508-0d7d-4210-8950-552bed0e1fb9"
+            ]
+          },
+          {
+            "payment": {
+              "id": "884e6b9f-01a0-1000-238f-09df320c5fee",
+              "created_at": "2026-09-09T22:34:00Z",
+              "updated_at": "2026-09-10T01:58:57Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 758,
+                "transactionAmount": 758,
+                "tipAmount": 0
+              },
+              "order_ids": [
+                "7507e4fe-50e7-4883-bbfc-b2c876ec106d"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order"
+            ],
+            "linked_order_ids": [
+              "7507e4fe-50e7-4883-bbfc-b2c876ec106d"
+            ]
+          },
+          {
+            "payment": {
+              "id": "884f8bad-01a0-1000-238f-09df320c5fee",
+              "created_at": "2026-09-09T22:35:13Z",
+              "updated_at": "2026-09-10T01:58:57Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 1733,
+                "transactionAmount": 1906,
+                "tipAmount": 173
+              },
+              "order_ids": [
+                "763aa04e-0dc9-4820-b0c6-7801028a72f5"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order"
+            ],
+            "linked_order_ids": [
+              "763aa04e-0dc9-4820-b0c6-7801028a72f5"
+            ]
+          },
+          {
+            "payment": {
+              "id": "80932136-368f-4973-9d07-deb0c6eb0ab5",
+              "created_at": "2026-09-09T22:36:22Z",
+              "updated_at": "2026-09-09T22:36:22Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 2274,
+                "transactionAmount": 2300,
+                "tipAmount": 0
+              },
+              "order_ids": [
+                "c9e33946-1174-4cfa-860d-2680e0dcd2d8"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order",
+              "amounts_missing_invalid_or_do_not_balance"
+            ],
+            "linked_order_ids": [
+              "c9e33946-1174-4cfa-860d-2680e0dcd2d8"
+            ]
+          },
+          {
+            "payment": {
+              "id": "885169cf-01a0-1000-238f-09df320c5fee",
+              "created_at": "2026-09-09T22:37:16Z",
+              "updated_at": "2026-09-10T01:58:57Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 866,
+                "transactionAmount": 966,
+                "tipAmount": 100
+              },
+              "order_ids": [
+                "a143520f-d893-44a3-b0a8-6d6adad8ec48"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order"
+            ],
+            "linked_order_ids": [
+              "a143520f-d893-44a3-b0a8-6d6adad8ec48"
+            ]
+          },
+          {
+            "payment": {
+              "id": "885204b8-01a0-1000-238f-09df320c5fee",
+              "created_at": "2026-09-09T22:37:55Z",
+              "updated_at": "2026-09-10T01:58:57Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 866,
+                "transactionAmount": 866,
+                "tipAmount": 0
+              },
+              "order_ids": [
+                "f42a7212-0e43-4efe-b3a3-94200385d78e"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order"
+            ],
+            "linked_order_ids": [
+              "f42a7212-0e43-4efe-b3a3-94200385d78e"
+            ]
+          },
+          {
+            "payment": {
+              "id": "8853ec9e-01a0-1000-238f-09df320c5fee",
+              "created_at": "2026-09-09T22:40:00Z",
+              "updated_at": "2026-09-10T01:58:57Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 4332,
+                "transactionAmount": 4982,
+                "tipAmount": 650
+              },
+              "order_ids": [
+                "daf8f2d0-791f-4a28-82e3-0a98c907bc46"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order"
+            ],
+            "linked_order_ids": [
+              "daf8f2d0-791f-4a28-82e3-0a98c907bc46"
+            ]
+          },
+          {
+            "payment": {
+              "id": "885516e6-01a0-1000-238f-09df320c5fee",
+              "created_at": "2026-09-09T22:41:17Z",
+              "updated_at": "2026-09-10T01:58:57Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 2599,
+                "transactionAmount": 2859,
+                "tipAmount": 260
+              },
+              "order_ids": [
+                "68cdcc17-182e-4980-b5da-68944caf5e6e"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order"
+            ],
+            "linked_order_ids": [
+              "68cdcc17-182e-4980-b5da-68944caf5e6e"
+            ]
+          },
+          {
+            "payment": {
+              "id": "cf5fcaa7-23b4-4f72-9154-84d732cf5080",
+              "created_at": "2026-09-09T22:42:47Z",
+              "updated_at": "2026-09-09T22:42:47Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 1516,
+                "transactionAmount": 2000,
+                "tipAmount": 0
+              },
+              "order_ids": [
+                "b662493f-fffd-4bb0-b6a2-9fc4cf4f8a1b"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order",
+              "amounts_missing_invalid_or_do_not_balance"
+            ],
+            "linked_order_ids": [
+              "b662493f-fffd-4bb0-b6a2-9fc4cf4f8a1b"
+            ]
+          },
+          {
+            "payment": {
+              "id": "8858a662-01a0-1000-238f-09df320c5fee",
+              "created_at": "2026-09-09T22:45:10Z",
+              "updated_at": "2026-09-10T01:58:57Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 758,
+                "transactionAmount": 858,
+                "tipAmount": 100
+              },
+              "order_ids": [
+                "e217b7a6-1ac1-46ae-82e6-92fb942f40c4"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order"
+            ],
+            "linked_order_ids": [
+              "e217b7a6-1ac1-46ae-82e6-92fb942f40c4"
+            ]
+          },
+          {
+            "payment": {
+              "id": "885939d1-01a0-1000-238f-09df320c5fee",
+              "created_at": "2026-09-09T22:45:48Z",
+              "updated_at": "2026-09-10T01:58:57Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 866,
+                "transactionAmount": 866,
+                "tipAmount": 0
+              },
+              "order_ids": [
+                "23317d0a-b3c3-4273-9b24-0aa74d2d5d20"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order"
+            ],
+            "linked_order_ids": [
+              "23317d0a-b3c3-4273-9b24-0aa74d2d5d20"
+            ]
+          },
+          {
+            "payment": {
+              "id": "885a3fac-01a0-1000-238f-09df320c5fee",
+              "created_at": "2026-09-09T22:46:55Z",
+              "updated_at": "2026-09-10T01:58:57Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 650,
+                "transactionAmount": 750,
+                "tipAmount": 100
+              },
+              "order_ids": [
+                "d88e1ce1-e7d9-48c1-a3d7-d33bbf2bf9d8"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order"
+            ],
+            "linked_order_ids": [
+              "d88e1ce1-e7d9-48c1-a3d7-d33bbf2bf9d8"
+            ]
+          },
+          {
+            "payment": {
+              "id": "885b364d-01a0-1000-238f-09df320c5fee",
+              "created_at": "2026-09-09T22:47:58Z",
+              "updated_at": "2026-09-10T01:58:57Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 2383,
+                "transactionAmount": 2621,
+                "tipAmount": 238
+              },
+              "order_ids": [
+                "666eec55-abf1-454a-9c83-1e0f1361ea65"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order"
+            ],
+            "linked_order_ids": [
+              "666eec55-abf1-454a-9c83-1e0f1361ea65"
+            ]
+          },
+          {
+            "payment": {
+              "id": "885fea0e-01a0-1000-238f-09df320c5fee",
+              "created_at": "2026-09-09T22:53:06Z",
+              "updated_at": "2026-09-10T01:58:57Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 3357,
+                "transactionAmount": 3861,
+                "tipAmount": 504
+              },
+              "order_ids": [
+                "81e78fd6-fa4e-4202-aedf-8f38695890fb"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order"
+            ],
+            "linked_order_ids": [
+              "81e78fd6-fa4e-4202-aedf-8f38695890fb"
+            ]
+          },
+          {
+            "payment": {
+              "id": "8861daa6-01a0-1000-238f-09df320c5fee",
+              "created_at": "2026-09-09T22:55:13Z",
+              "updated_at": "2026-09-10T01:58:57Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 650,
+                "transactionAmount": 650,
+                "tipAmount": 0
+              },
+              "order_ids": [
+                "3bc5df45-5344-4d67-bd00-dabf59e8ab4c"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order"
+            ],
+            "linked_order_ids": [
+              "3bc5df45-5344-4d67-bd00-dabf59e8ab4c"
+            ]
+          },
+          {
+            "payment": {
+              "id": "88632aeb-01a0-1000-238f-09df320c5fee",
+              "created_at": "2026-09-09T22:56:39Z",
+              "updated_at": "2026-09-10T01:58:57Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 2166,
+                "transactionAmount": 2166,
+                "tipAmount": 0
+              },
+              "order_ids": [
+                "ac8891a6-3ffb-428d-ac7e-e5de7513197d"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order"
+            ],
+            "linked_order_ids": [
+              "ac8891a6-3ffb-428d-ac7e-e5de7513197d"
+            ]
+          },
+          {
+            "payment": {
+              "id": "24b4cc76-f1fd-4d66-a125-6d6d4d7b91d6",
+              "created_at": "2026-09-09T22:57:52Z",
+              "updated_at": "2026-09-09T22:57:52Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 2383,
+                "transactionAmount": 2500,
+                "tipAmount": 0
+              },
+              "order_ids": [
+                "e82e1ffc-409e-4bc7-862e-613774495665"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order",
+              "amounts_missing_invalid_or_do_not_balance"
+            ],
+            "linked_order_ids": [
+              "e82e1ffc-409e-4bc7-862e-613774495665"
+            ]
+          },
+          {
+            "payment": {
+              "id": "4c4857af-54a0-4a35-bc50-df71a485286c",
+              "created_at": "2026-09-09T23:09:02Z",
+              "updated_at": "2026-09-09T23:09:02Z",
+              "store_id": "bddd89b0-c3cc-4135-befa-476c89fdf4f1",
+              "parent_id": null,
+              "action": "SALE",
+              "status": "CAPTURED",
+              "voided": false,
+              "currency": "USD",
+              "amounts": {
+                "orderAmount": 866,
+                "transactionAmount": 866,
+                "tipAmount": 0
+              },
+              "order_ids": [
+                "08f9f7da-7141-4eba-a257-82558db4f090"
+              ],
+              "order_linked": true,
+              "paylink": false,
+              "invoice": false
+            },
+            "assigned_store_name": "Ice Cream Crush Truck",
+            "possible_exclusion_reasons": [
+              "already_linked_to_an_order"
+            ],
+            "linked_order_ids": [
+              "08f9f7da-7141-4eba-a257-82558db4f090"
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

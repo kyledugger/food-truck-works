@@ -11,10 +11,23 @@
   let timerProfile={green_seconds:0,yellow_seconds:300,red_seconds:600};
   let markers={rules:[],revision:0};
   const normalizeMarkerText=text=>String(text).replaceAll('_',' ').toLowerCase();
+  function foodIcon(id){return (markers.icons||[]).find(icon=>icon.id===id&&icon.url.startsWith('/static/food-icons/'));}
+  function iconImage(icon){
+    const image=document.createElement('img');image.className='kitchen-food-icon';image.src=icon.url;
+    image.width=image.height=26;image.alt='';image.setAttribute('aria-hidden','true');image.draggable=false;
+    image.onerror=()=>image.remove();
+    return image;
+  }
+  function appendMarker(node,rule){
+    const icon=rule.icon&&foodIcon(rule.icon);
+    if(icon)node.append(iconImage(icon));
+    else if(!rule.icon&&rule.marker)node.append(document.createTextNode(rule.marker+' '));
+  }
   function marked(text,target){
     const matching=markers.rules.filter(rule=>rule.target===target&&normalizeMarkerText(text).includes(normalizeMarkerText(rule.text)));
-    const prefix=[...new Set(matching.map(rule=>rule.marker))].join(' ');
-    return (prefix?prefix+' ':'')+text;
+    const fragment=document.createDocumentFragment(),seen=new Set();
+    for(const rule of matching){const key=rule.icon?'icon:'+rule.icon:'emoji:'+rule.marker;if(!seen.has(key)){appendMarker(fragment,rule);seen.add(key);}}
+    fragment.append(document.createTextNode(text));return fragment;
   }
   let serverTime=Date.now(),observed=performance.now(),snapshot=null;
   const el=(tag,cls,text)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=text;return n;};
@@ -59,15 +72,32 @@
       form.append(el('h2','','Kitchen item markers'),el('p','','Shared across all stores in this organization. Rules match anywhere, ignoring case. Modifier underscores match spaces.'),rows);
       function addRule(rule={target:'item',text:'',marker:''}){
         const row=el('div','marker-rule'),target=el('select'),text=el('input'),emoji=el('input'),remove=el('button','button','Remove');
+        const visual=el('div','marker-visual'),type=el('select'),choices=el('div','marker-icon-choices'),preview=el('p','marker-rule-preview');
+        let selectedIcon=rule.icon||'';
         for(const [value,label] of [['item','Item name'],['modifier','Modifier value']]){const option=el('option','',label);option.value=value;target.append(option);}target.value=rule.target;target.setAttribute('aria-label','Rule target');
         text.value=rule.text;text.placeholder='Name contains (e.g. banana)';text.maxLength=100;text.required=true;text.setAttribute('aria-label','Matching text');
-        emoji.value=rule.marker;emoji.placeholder='Paste emoji';emoji.maxLength=32;emoji.required=true;emoji.setAttribute('aria-label','Emoji marker');remove.type='button';remove.onclick=()=>row.remove();row.append(target,text,emoji,remove);rows.append(row);
+        emoji.value=rule.marker||'';emoji.placeholder='Paste emoji';emoji.maxLength=32;emoji.setAttribute('aria-label','Emoji marker');
+        for(const [value,label] of [['emoji','Emoji'],['icon','Food icon']]){const option=el('option','',label);option.value=value;if(value==='icon'&&!(markers.icons||[]).length)option.disabled=true;type.append(option);}type.value=rule.icon?'icon':'emoji';type.setAttribute('aria-label','Marker type');
+        row.readRule=()=>({target:target.value,text:text.value.trim(),marker:type.value==='emoji'?emoji.value.trim():'',...(type.value==='icon'?{icon:selectedIcon}:{})});
+        function updatePreview(){
+          const usingIcon=type.value==='icon';emoji.hidden=usingIcon;emoji.disabled=usingIcon;emoji.required=!usingIcon;choices.hidden=!usingIcon;
+          preview.replaceChildren(el('small','','Preview: '));appendMarker(preview,row.readRule());preview.append(document.createTextNode(text.value.trim()||'Item name'));
+          for(const button of choices.children)button.setAttribute('aria-pressed',String(button.dataset.icon===selectedIcon));
+        }
+        for(const icon of markers.icons||[]){
+          if(!foodIcon(icon.id))continue;
+          const button=el('button','marker-icon-choice');button.type='button';button.dataset.icon=icon.id;button.setAttribute('aria-label',icon.label);
+          button.append(iconImage(icon),el('span','',icon.label));button.onclick=()=>{selectedIcon=icon.id;updatePreview();};choices.append(button);
+        }
+        type.onchange=()=>{if(type.value==='icon'&&!selectedIcon)selectedIcon=(markers.icons||[])[0]?.id||'';updatePreview();};
+        emoji.oninput=text.oninput=target.onchange=updatePreview;
+        visual.append(type,emoji,choices);remove.type='button';remove.onclick=()=>row.remove();row.append(target,text,visual,remove,preview);rows.append(row);updatePreview();
       }
       markers.rules.forEach(addRule);
       const add=el('button','button','Add rule'),save=el('button','button','Save'),cancel=el('button','button','Cancel');add.type=cancel.type='button';save.type='submit';add.onclick=()=>{if(rows.children.length<50)addRule();};cancel.onclick=()=>dialog.close();form.append(add,message,save,cancel);
       form.onsubmit=async event=>{
         event.preventDefault();save.disabled=true;message.textContent='Saving…';
-        const rules=[...rows.children].map(row=>({target:row.querySelector('select').value,text:row.querySelectorAll('input')[0].value.trim(),marker:row.querySelectorAll('input')[1].value.trim()}));
+        const rules=[...rows.children].map(row=>row.readRule());
         try{const response=await fetch('/dashboard/stores/'+storeId+'/kitchen-markers',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','X-Kitchen-CSRF':feed.dataset.csrf},body:JSON.stringify({rules,revision})});const data=await response.json();if(!response.ok)throw Error(typeof data.detail==='string'?data.detail:'Check the rules and try again.');markers=data;dialog.close();await refresh(true);}catch(error){message.textContent=error.message;}finally{save.disabled=false;}
       };
       dialog.append(form);document.body.append(dialog);dialog.addEventListener('close',()=>dialog.remove());dialog.showModal();
@@ -270,8 +300,11 @@
     const body=el('tbody');
     for(const item of ticket.items){
       const row=el('tr','kitchen-'+item.state),name=el('td','kitchen-item-name');
-      name.append(el('strong','kitchen-quantity',String(item.quantity)),document.createTextNode('\u00a0\u00a0'+marked(item.name,'item')));
-      for(const group of item.modifiers||[])name.append(el('div','kitchen-modifier',group.attribute.replaceAll('_',' ')+': '+group.values.map(value=>marked(value.replaceAll('_',' '),'modifier')).join(', ')));
+      name.append(el('strong','kitchen-quantity',String(item.quantity)),document.createTextNode('\u00a0\u00a0'),marked(item.name,'item'));
+      for(const group of item.modifiers||[]){
+        const modifier=el('div','kitchen-modifier',group.attribute.replaceAll('_',' ')+': ');
+        group.values.forEach((value,index)=>{if(index)modifier.append(document.createTextNode(', '));modifier.append(marked(value.replaceAll('_',' '),'modifier'));});name.append(modifier);
+      }
       if(item.saving){row.classList.add('kitchen-saving');const spinner=el('span','kitchen-save-indicator');spinner.setAttribute('role','img');spinner.setAttribute('aria-label','Saving changes');spinner.title='Saving changes';name.append(spinner);row.setAttribute('aria-busy','true');}
       if(!finished){
         const action=item.state==='available'?'claim':item.state==='claimed'?'done':'undo';
