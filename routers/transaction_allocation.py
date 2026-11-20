@@ -12,6 +12,7 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from allocation_models import allocation_claims as claims, allocation_events as events
 from database import SessionLocal
+from models import OrganizationStore
 from organization_context import get_current_organization_id
 from permissions import get_organization_role, role_can_manage_organization
 from poynt.transaction_history import transactions
@@ -81,6 +82,14 @@ def allocation_page(request: Request, day: date = date(2025, 12, 6), notice: str
         day_events = session.execute(select(events).where(
             ec.organization_id == org_id, ec.event_date == day,
         ).order_by(ec.name, ec.id)).all()
+        store_names = {
+            store_id: (display_name or "").strip() or poynt_name
+            for store_id, display_name, poynt_name in session.execute(
+                select(OrganizationStore.store_id, OrganizationStore.display_name,
+                       OrganizationStore.poynt_name)
+                .where(OrganizationStore.organization_id == org_id)
+            )
+        }
 
     unassigned = [row for row in rows if row.event_id is None]
     totals = {}
@@ -92,6 +101,7 @@ def allocation_page(request: Request, day: date = date(2025, 12, 6), notice: str
             tally[1] += row.order_cents or 0
     return templates.TemplateResponse(request=request, name="transaction_allocation.html", context={
         "day": day, "zone": ZONE, "notice": notice, "events": day_events,
+        "store_names": store_names,
         "csrf_token": request.session["allocation_csrf"], "bundles": bundles_for(unassigned),
         "total_count": len(rows), "unassigned_count": len(unassigned),
         "total_cents": sum(row.order_cents or 0 for row in rows),

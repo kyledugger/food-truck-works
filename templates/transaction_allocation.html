@@ -56,11 +56,13 @@
       {% set last = bundle[-1] %}
       <details class="box" data-sale-bundle>
         <summary>
-          {{ first.created_at.astimezone(zone).strftime("%I:%M %p").lstrip("0") }}–{{ last.created_at.astimezone(zone).strftime("%I:%M %p").lstrip("0") }}
-          · {{ bundle|length }} sales
-          · {{ first.terminal_id or "Unknown device" }}
+          <strong>{{ store_names.get(first.store_id) or ("Unmapped store" if first.store_id else "Unknown store") }}</strong>
+          · {{ "TID " ~ first.terminal_id[-6:] if first.terminal_id else "Unknown device" }}
+          · {{ first.created_at.astimezone(zone).strftime("%I:%M %p").lstrip("0") }}–{{ last.created_at.astimezone(zone).strftime("%I:%M %p").lstrip("0") }}
+          · {{ bundle|length }} {{ "sale" if bundle|length == 1 else "sales" }}
         </summary>
-        <p class="mt-2">Store {{ first.store_id or "unknown" }}</p>
+        <p class="mt-2">Store ID <code>{{ first.store_id or "Unknown" }}</code><br>
+          Terminal ID <code>{{ first.terminal_id or "Unknown" }}</code></p>
         <label class="checkbox mt-2" hidden data-bundle-toggle-label>
           <input type="checkbox" data-bundle-toggle> Select all sales in this bundle
         </label>
