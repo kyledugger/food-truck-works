@@ -89,7 +89,9 @@ async def backfill_day(client, session_factory, organization_id, day, zone):
     start, end = local_day_bounds(day, zone)
     seen = set()
     rows = []
-    for offset in range(0, 10000, 100):
+    expected_count = 0
+    for _ in range(100):
+        offset = len(seen)
         page = await client.signal_get("transactions", params={
             "timeType": "createdAt",
             "startAt": utc_iso(start),
@@ -98,12 +100,12 @@ async def backfill_day(client, session_factory, organization_id, day, zone):
             "startOffset": offset,
         })
         batch = page.get("transactions", [] if page.get("count") == 0 else None)
-        if not isinstance(batch, list):
+        if not isinstance(batch, list) or len(batch) > 100:
             raise ValueError("Unexpected Poynt transaction page")
-        if not batch:
-            if type(page.get("count")) is int and page["count"] > len(seen):
-                raise ValueError("Poynt reported more transactions than the scan retrieved")
-            break
+        count = page.get("count")
+        if type(count) is int:
+            expected_count = max(expected_count, count)
+        has_next = any(link.get("rel") == "next" for link in page.get("links") or [])
         for payload in batch:
             identifier = payload["id"]
             if identifier in seen:
@@ -111,10 +113,14 @@ async def backfill_day(client, session_factory, organization_id, day, zone):
             seen.add(identifier)
             if start <= instant(payload["createdAt"]) < end:
                 rows.append(payload)
-        if len(batch) < 100:
-            if type(page.get("count")) is int and page["count"] > len(seen):
-                raise ValueError("Poynt reported more transactions than the scan retrieved")
+        more = len(seen) < expected_count or has_next or (count is None and len(batch) == 100)
+        if not more:
             break
+        if not batch:
+            raise ValueError(
+                f"Incomplete Poynt scan for {day}: empty page at offset {offset}, "
+                f"reported total {expected_count}"
+            )
     else:
         raise ValueError("Transaction scan reached its pagination limit")
     with session_factory.begin() as session:
