@@ -28,6 +28,7 @@ from database import Base
 import models
 import kitchen_models
 import live_dashboard_models
+import poynt.transaction_history
 
 target_metadata = Base.metadata
 

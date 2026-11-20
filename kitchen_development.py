@@ -12,3 +12,5 @@ def can_test_kitchen(request):
 def require_kitchen_admin(request):
     if not can_test_kitchen(request):
         raise HTTPException(403, "Kitchen test mode is available only to FTW administrators.")
+
+#comment

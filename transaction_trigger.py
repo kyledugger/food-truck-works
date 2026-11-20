@@ -4,12 +4,13 @@ import logging
 import os
 
 from sqlalchemy import select, delete
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from models import OrganizationStore
 from kitchen_models import KitchenSession
 from live_dashboard_models import TransactionSignal, TransactionSignalReceipt, TransactionSignalBudget
 from live_dashboard_metrics import instant, order_store, completed, number
 from poynt.client import PoyntSignalAPIError
+from poynt.transaction_history import save_transaction
 from store_time import utc_now, utc_iso
 
 logger = logging.getLogger(__name__)
@@ -121,6 +122,7 @@ async def process_signals(factory, org, business, token, client, owns, save_orde
                 .order_by(TransactionSignal.next_attempt_at,TransactionSignal.id).limit(4)).all()]
     for job_id, transaction_id, store, reference, attempts, generation, cycle in jobs:
         matches=[];problem=None;defer=None;used=0;stop_all=False;ignored=False
+        fetched_transaction = None
         with factory() as session:
             from transaction_webhooks import selected_stores
             eligible_store=store in selected_stores(session,org,business) and active_kitchen(session,org,business,store,utc_now())
@@ -140,6 +142,7 @@ async def process_signals(factory, org, business, token, client, owns, save_orde
                     tx_store=(tx.get('context') or {}).get('storeId')
                     if tx_store and tx_store!=store:
                         raise ValueError('Unexpected transaction store')
+                    fetched_transaction = tx
                     if any(r.get('customType')=='checkoutUrlId' for r in tx.get('references') or []):
                         ignored=True
                     refs={r['id'] for r in tx.get('references') or [] if r.get('type')=='POYNT_ORDER'
@@ -180,6 +183,12 @@ async def process_signals(factory, org, business, token, client, owns, save_orde
             job=session.scalar(select(TransactionSignal).where(TransactionSignal.id==job_id).with_for_update())
             if job is None:
                 continue
+            if fetched_transaction is not None:
+                try:
+                    with session.begin_nested():
+                        save_transaction(session, org, business, fetched_transaction, store)
+                except (SQLAlchemyError, ValueError, KeyError, TypeError, AttributeError):
+                    logger.warning("POYNT_TRANSACTION_HISTORY save_failed organization=%s", org)
             current=utc_now()
             if stop_all:
                 budget=session.get(TransactionSignalBudget,org)
