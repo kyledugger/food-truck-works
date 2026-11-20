@@ -97,9 +97,22 @@
         <fieldset id="allocation-new-event">
           <div class="columns">
             <div class="column"><label class="label" for="allocation-name">New event name</label><input class="input" id="allocation-name" name="name" maxlength="200"></div>
-            <div class="column"><label class="label" for="allocation-city">City</label><input class="input" id="allocation-city" name="city" maxlength="100"></div>
-            <div class="column"><label class="label" for="allocation-county">County</label><input class="input" id="allocation-county" name="county" maxlength="100"></div>
+            <div class="column">
+              <label class="label" for="allocation-city">City</label>
+              <input class="input" id="allocation-city" name="city" maxlength="100" list="allocation-cities" aria-describedby="allocation-place-help">
+              <datalist id="allocation-cities">
+                {% for city in cities %}<option value="{{ city }}"></option>{% endfor %}
+              </datalist>
+            </div>
+            <div class="column">
+              <label class="label" for="allocation-county">County</label>
+              <input class="input" id="allocation-county" name="county" maxlength="100" list="allocation-counties" aria-describedby="allocation-place-help">
+              <datalist id="allocation-counties">
+                {% for county in counties %}<option value="{{ county }}"></option>{% endfor %}
+              </datalist>
+            </div>
           </div>
+          <p class="help" id="allocation-place-help">Choose a saved name or type a new one. New names appear after you assign the sales.</p>
         </fieldset>
         <button class="button is-primary mt-4" type="submit">Assign selected sales</button>
       </div>

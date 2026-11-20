@@ -65,6 +65,17 @@ def amount(cents):
 templates.env.filters["allocation_amount"] = amount
 
 
+def saved_place_names(session, org_id, column):
+    names = {}
+    for value in session.scalars(
+        select(column).where(ec.organization_id == org_id).distinct().order_by(column)
+    ):
+        name = " ".join(value.split())
+        if name:
+            names.setdefault(name.casefold(), name)
+    return names
+
+
 @router.get("")
 def allocation_page(request: Request, day: date = date(2025, 12, 6), notice: str = ""):
     org_id, _ = manager(request)
@@ -90,6 +101,8 @@ def allocation_page(request: Request, day: date = date(2025, 12, 6), notice: str
                 .where(OrganizationStore.organization_id == org_id)
             )
         }
+        cities = saved_place_names(session, org_id, ec.city)
+        counties = saved_place_names(session, org_id, ec.county)
 
     unassigned = [row for row in rows if row.event_id is None]
     totals = {}
@@ -102,6 +115,8 @@ def allocation_page(request: Request, day: date = date(2025, 12, 6), notice: str
     return templates.TemplateResponse(request=request, name="transaction_allocation.html", context={
         "day": day, "zone": ZONE, "notice": notice, "events": day_events,
         "store_names": store_names,
+        "cities": sorted(cities.values(), key=str.casefold),
+        "counties": sorted(counties.values(), key=str.casefold),
         "csrf_token": request.session["allocation_csrf"], "bundles": bundles_for(unassigned),
         "total_count": len(rows), "unassigned_count": len(unassigned),
         "total_cents": sum(row.order_cents or 0 for row in rows),
@@ -124,7 +139,8 @@ def claim_sales(
     keys = {tuple(key.split("|", 1)) for key in sale_keys}
     if not keys or any(len(key) != 2 or not all(0 < len(part) <= 100 for part in key) for key in keys):
         raise HTTPException(400, "Select one or more sales.")
-    name, city, county = name.strip(), city.strip(), county.strip()
+    name = name.strip()
+    city, county = " ".join(city.split()), " ".join(county.split())
     if event_id == 0 and not (0 < len(name) <= 200 and 0 < len(city) <= 100 and 0 < len(county) <= 100):
         raise HTTPException(400, "Enter the event name, city, and county.")
 
@@ -135,6 +151,8 @@ def claim_sales(
         if verified != keys:
             raise HTTPException(409, "A selected sale is unavailable for this date. Reload and try again.")
         if event_id == 0:
+            city = saved_place_names(session, org_id, ec.city).get(city.casefold(), city)
+            county = saved_place_names(session, org_id, ec.county).get(county.casefold(), county)
             event_id = session.execute(insert(events).values(
                 organization_id=org_id, event_date=day, name=name, city=city, county=county,
             ).returning(ec.id)).scalar_one()
