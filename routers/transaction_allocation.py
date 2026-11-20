@@ -114,6 +114,8 @@ def allocation_page(request: Request, day: date = date(2025, 12, 6), notice: str
             tally[1] += row.order_cents or 0
     return templates.TemplateResponse(request=request, name="transaction_allocation.html", context={
         "day": day, "zone": ZONE, "notice": notice, "events": day_events,
+        "previous_day": day - timedelta(days=1) if day > date.min else None,
+        "next_day": day + timedelta(days=1) if day < date.max - timedelta(days=1) else None,
         "store_names": store_names,
         "cities": sorted(cities.values(), key=str.casefold),
         "counties": sorted(counties.values(), key=str.casefold),

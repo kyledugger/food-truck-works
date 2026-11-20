@@ -9,7 +9,15 @@
     <form method="get" action="/tpt/allocation" class="field is-grouped is-align-items-end">
       <div class="control">
         <label class="label" for="allocation-day">Sales date (Phoenix)</label>
-        <input class="input" id="allocation-day" type="date" name="day" value="{{ day }}" required>
+        <div class="field has-addons">
+          {% if previous_day %}
+          <p class="control"><a class="button" href="/tpt/allocation?day={{ previous_day }}" aria-label="Previous day" title="Previous day"><span aria-hidden="true">←</span></a></p>
+          {% endif %}
+          <p class="control"><input class="input" id="allocation-day" type="date" name="day" value="{{ day }}" required></p>
+          {% if next_day %}
+          <p class="control"><a class="button" href="/tpt/allocation?day={{ next_day }}" aria-label="Next day" title="Next day"><span aria-hidden="true">→</span></a></p>
+          {% endif %}
+        </div>
       </div>
       <div class="control"><button class="button">View sales</button></div>
     </form>
