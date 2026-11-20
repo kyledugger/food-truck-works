@@ -31,6 +31,7 @@ from routers.account_security import router as account_security_router
 from routers.account_settings import router as account_settings_router
 from routers.stores import router as stores_router
 from routers.integrations import router as integrations_router
+from routers.transaction_allocation import router as transaction_allocation_router
 from routers.live_dashboard import router as live_dashboard_router
 from routers.refresher import run_poynt_refresher
 from routers.claim_tips import router as claim_tips_router
@@ -100,6 +101,7 @@ app.include_router(employees_router)
 app.include_router(account_security_router)
 app.include_router(account_settings_router)
 app.include_router(stores_router)
+app.include_router(transaction_allocation_router)
 app.include_router(integrations_router)
 app.include_router(live_dashboard_router)
 from routers.transaction_signal_probe import router as transaction_signal_probe_router

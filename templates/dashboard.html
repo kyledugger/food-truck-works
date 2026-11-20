@@ -23,7 +23,7 @@
                             <a href="/account">Account Settings</a>
                             <form method="post" action="/logout"><button type="submit">Logout</button></form>
                             <hr>
-                            {% if poynt_connection and can_manage_poynt %}<a href="/poynt/orders">Orders Report</a>{% endif %}
+                            {% if poynt_connection and can_manage_poynt %}<a href="/poynt/orders">Orders Report</a><a href="/tpt/allocation">Transaction Allocation</a>{% endif %}
                             {% if poynt_connection and organization_role in ["owner", "manager", "payroll"] %}<a href="/poynt/claim-tips">Claim Tips</a>{% endif %}
                             {% if poynt_connection %}<a href="/poynt/tip-submissions">Tip History</a>{% endif %}
                             {% if poynt_connection and can_manage_employees %}<a href="/employees">Employee Management</a>{% endif %}

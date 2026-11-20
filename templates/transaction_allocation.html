@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}Transaction Allocation - Food Truck Works{% endblock %}
+{% block content %}
+<section class="section">
+  <div class="container">
+    {% include "_app_brand.html" %}
+    <a href="/dashboard">Back to dashboard</a>
+    <h1 class="title mt-4">Transaction allocation</h1>
+    <form method="get" action="/tpt/allocation" class="field is-grouped is-align-items-end">
+      <div class="control">
+        <label class="label" for="allocation-day">Sales date (Phoenix)</label>
+        <input class="input" id="allocation-day" type="date" name="day" value="{{ day }}" required>
+      </div>
+      <div class="control"><button class="button">View sales</button></div>
+    </form>
+    {% if notice == "claimed" %}
+      <p class="notification is-success is-light" role="status">Selected sales assigned.</p>
+    {% endif %}
+    {% if missing_amount %}
+      <p class="notification is-warning is-light">{{ missing_amount }} sales have no before-tip amount. Totals include known amounts only.</p>
+    {% endif %}
+    <div class="columns mt-4">
+      <div class="column"><div class="box">
+        <p>Total captured sales</p><p class="title is-4">{{ total_cents | allocation_amount }}</p>
+        <p>{{ total_count }} sales before tips</p>
+      </div></div>
+      <div class="column"><div class="box">
+        <p>Assigned</p><p class="title is-4">{{ (total_cents - unassigned_cents) | allocation_amount }}</p>
+        <p>{{ total_count - unassigned_count }} sales</p>
+      </div></div>
+      <div class="column"><div class="box">
+        <p>Unassigned</p><p class="title is-4">{{ unassigned_cents | allocation_amount }}</p>
+        <p>{{ unassigned_count }} sales</p>
+      </div></div>
+    </div>
+    {% if assigned_events %}
+    <h2 class="title is-5">Assigned sales by event</h2>
+    <div class="table-container">
+      <table class="table is-fullwidth">
+        <thead><tr><th>Event</th><th>City</th><th>County</th><th>Sales</th><th>Before tips</th></tr></thead>
+        <tbody>
+        {% for (_, name, city, county), (count, cents) in assigned_events.items() %}
+          <tr><td>{{ name }}</td><td>{{ city }}</td><td>{{ county }}</td><td>{{ count }}</td><td>{{ cents | allocation_amount }}</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+    {% if bundles %}
+    <form method="post" action="/tpt/allocation/claim">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input type="hidden" name="day" value="{{ day }}">
+      <h2 class="title is-5">Unassigned bundles</h2>
+      {% for bundle in bundles %}
+      {% set first = bundle[0] %}
+      {% set last = bundle[-1] %}
+      <details class="box" data-sale-bundle>
+        <summary>
+          {{ first.created_at.astimezone(zone).strftime("%I:%M %p").lstrip("0") }}–{{ last.created_at.astimezone(zone).strftime("%I:%M %p").lstrip("0") }}
+          · {{ bundle|length }} sales
+          · {{ first.terminal_id or "Unknown device" }}
+        </summary>
+        <p class="mt-2">Store {{ first.store_id or "unknown" }}</p>
+        <label class="checkbox mt-2" hidden data-bundle-toggle-label>
+          <input type="checkbox" data-bundle-toggle> Select all sales in this bundle
+        </label>
+        <div class="table-container mt-2">
+          <table class="table is-fullwidth is-narrow">
+            <thead><tr><th>Select</th><th>Time</th><th>Sale ID</th><th>Employee ID</th><th>Before tips</th><th>Tips</th></tr></thead>
+            <tbody>{% for sale in bundle %}
+              <tr>
+                <td><input type="checkbox" name="sale_keys" value="{{ sale.business_id }}|{{ sale.transaction_id }}" aria-label="Select sale {{ sale.transaction_id }}"></td>
+                <td>{{ sale.created_at.astimezone(zone).strftime("%I:%M:%S %p").lstrip("0") }}</td>
+                <td><code>{{ sale.transaction_id }}</code></td>
+                <td>{{ sale.employee_user_id or "—" }}</td>
+                <td>{{ sale.order_cents | allocation_amount }}</td>
+                <td>{{ sale.tip_cents | allocation_amount }}</td>
+              </tr>
+            {% endfor %}</tbody>
+          </table>
+        </div>
+      </details>
+      {% endfor %}
+      <div class="box">
+        <h2 class="title is-5">Assign selected sales</h2>
+        <div class="field">
+          <label class="label" for="allocation-event">Event</label>
+          <div class="select"><select id="allocation-event" name="event_id">
+            <option value="0">Create a new event</option>
+            {% for event in events %}
+              <option value="{{ event.id }}">{{ event.name }} · {{ event.city }}, {{ event.county }}</option>
+            {% endfor %}
+          </select></div>
+        </div>
+        <fieldset id="allocation-new-event">
+          <div class="columns">
+            <div class="column"><label class="label" for="allocation-name">New event name</label><input class="input" id="allocation-name" name="name" maxlength="200"></div>
+            <div class="column"><label class="label" for="allocation-city">City</label><input class="input" id="allocation-city" name="city" maxlength="100"></div>
+            <div class="column"><label class="label" for="allocation-county">County</label><input class="input" id="allocation-county" name="county" maxlength="100"></div>
+          </div>
+        </fieldset>
+        <button class="button is-primary mt-4" type="submit">Assign selected sales</button>
+      </div>
+    </form>
+    <script src="/static/js/transaction-allocation.js" defer></script>
+    {% elif total_count %}
+      <p>All captured sales for this date are assigned.</p>
+    {% else %}
+      <p>No captured sales were found for this date.</p>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

@@ -29,6 +29,7 @@ import models
 import kitchen_models
 import live_dashboard_models
 import poynt.transaction_history
+import allocation_models
 
 target_metadata = Base.metadata
 
