@@ -1,4 +1,6 @@
 """Shared Poynt transaction history for event attribution and reconciliation."""
+from urllib.parse import parse_qs, urlsplit
+
 from sqlalchemy import BigInteger, Boolean, Column, ForeignKey, Index, String, Table
 from sqlalchemy.dialects.postgresql import insert
 
@@ -90,22 +92,22 @@ async def backfill_day(client, session_factory, organization_id, day, zone):
     seen = set()
     rows = []
     expected_count = 0
+    cursors = set()
+    params = {
+        "timeType": "createdAt",
+        "startAt": utc_iso(start),
+        "endAt": utc_iso(end),
+        "limit": 100,
+    }
     for _ in range(100):
-        offset = len(seen)
-        page = await client.signal_get("transactions", params={
-            "timeType": "createdAt",
-            "startAt": utc_iso(start),
-            "endAt": utc_iso(end),
-            "limit": 100,
-            "startOffset": offset,
-        })
+        page = await client.signal_get("transactions", params=params)
         batch = page.get("transactions", [] if page.get("count") == 0 else None)
         if not isinstance(batch, list) or len(batch) > 100:
             raise ValueError("Unexpected Poynt transaction page")
         count = page.get("count")
         if type(count) is int:
             expected_count = max(expected_count, count)
-        has_next = any(link.get("rel") == "next" for link in page.get("links") or [])
+        next_links = [link for link in page.get("links") or [] if link.get("rel") == "next"]
         for payload in batch:
             identifier = payload["id"]
             if identifier in seen:
@@ -113,14 +115,23 @@ async def backfill_day(client, session_factory, organization_id, day, zone):
             seen.add(identifier)
             if start <= instant(payload["createdAt"]) < end:
                 rows.append(payload)
-        more = len(seen) < expected_count or has_next or (count is None and len(batch) == 100)
-        if not more:
+        if not next_links:
+            if len(seen) < expected_count or (count is None and len(batch) == 100):
+                raise ValueError(
+                    f"Incomplete Poynt scan for {day}: {len(seen)} unique rows, "
+                    f"reported total {expected_count}, no next link"
+                )
             break
-        if not batch:
-            raise ValueError(
-                f"Incomplete Poynt scan for {day}: empty page at offset {offset}, "
-                f"reported total {expected_count}"
-            )
+        if not batch or len(next_links) != 1:
+            raise ValueError(f"Invalid Poynt continuation for {day}")
+        # Keep the configured API endpoint and original date bounds.
+        query = parse_qs(urlsplit(next_links[0].get("href") or "").query)
+        tokens = query.get("startFrom", [])
+        if len(tokens) != 1 or tokens[0] in cursors:
+            raise ValueError(f"Missing or repeated Poynt startFrom cursor for {day}")
+        cursor = tokens[0]
+        cursors.add(cursor)
+        params = {**params, "startFrom": cursor}
     else:
         raise ValueError("Transaction scan reached its pagination limit")
     with session_factory.begin() as session:
