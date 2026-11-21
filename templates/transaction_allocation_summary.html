@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}Monthly Allocation Summary - Food Truck Works{% endblock %}
+{% block content %}
+<section class="section">
+  <div class="container">
+    {% include "_app_brand.html" %}
+    <a href="/tpt/allocation?day={{ first }}">Back to daily allocation</a>
+    <h1 class="title mt-4">Monthly allocation summary</h1>
+    <form method="get" action="/tpt/allocation/summary" class="field is-grouped is-align-items-end">
+      <div class="control">
+        <label class="label" for="allocation-month">Sales month (Phoenix)</label>
+        <input class="input" id="allocation-month" type="month" name="month" value="{{ month }}" required>
+      </div>
+      <div class="control"><button class="button">View month</button></div>
+    </form>
+    <h2 class="title is-5 mt-5">{{ month_name }} · Captured sales before tips</h2>
+    <div class="columns">
+      <div class="column"><div class="box">
+        <p>Imported</p><p class="title is-4">{{ (totals.assigned_cents + totals.unassigned_cents) | allocation_amount }}</p>
+        <p>{{ totals.sales }} sales</p>
+      </div></div>
+      <div class="column"><div class="box">
+        <p>Assigned</p><p class="title is-4">{{ totals.assigned_cents | allocation_amount }}</p>
+        <p>{{ totals.assigned }} sales</p>
+      </div></div>
+      <div class="column"><div class="box">
+        <p>Unassigned</p><p class="title is-4">{{ totals.unassigned_cents | allocation_amount }}</p>
+        <p>{{ totals.unassigned }} sales</p>
+      </div></div>
+    </div>
+    {% if totals.missing_amount %}
+      <p class="notification is-warning is-light">{{ totals.missing_amount }} sales have no before-tip amount. Dollar totals include known amounts only.</p>
+    {% endif %}
+    <h2 class="title is-5">Sales by day</h2>
+    <div class="table-container">
+      <table class="table is-fullwidth is-striped">
+        <thead><tr><th>Date</th><th>Imported</th><th>Assigned</th><th>Unassigned</th><th>Status</th></tr></thead>
+        <tbody>
+        {% for day, daily in days.items() %}
+          <tr>
+            <td><a href="/tpt/allocation?day={{ day }}">{{ day.strftime('%a, %b %d') }}</a></td>
+            <td>{{ (daily.assigned_cents + daily.unassigned_cents) | allocation_amount }} · {{ daily.sales }}</td>
+            <td>{{ daily.assigned_cents | allocation_amount }} · {{ daily.assigned }}</td>
+            <td>{{ daily.unassigned_cents | allocation_amount }} · {{ daily.unassigned }}</td>
+            <td>
+              {% if daily.unassigned %}<span class="tag is-warning is-light">Needs allocation</span>
+              {% elif daily.sales %}<span class="tag is-success is-light">All assigned</span>
+              {% else %}No imported sales{% endif %}
+              {% if daily.missing_amount %}<span class="tag is-warning is-light">Missing amounts</span>{% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <h2 class="title is-5 mt-5">Assigned sales by county and city</h2>
+    {% for county, county_totals in counties %}
+      <div class="box">
+        <h3 class="title is-6">{{ county }} · {{ county_totals.cents | allocation_amount }} · {{ county_totals.sales }} sales</h3>
+        {% for city, city_totals in county_totals.cities | dictsort %}
+          <details class="mb-3">
+            <summary>{{ city }} · {{ city_totals.cents | allocation_amount }} · {{ city_totals.sales }} sales</summary>
+            <div class="table-container mt-2">
+              <table class="table is-fullwidth is-narrow">
+                <thead><tr><th>Date</th><th>Event</th><th>Sales</th><th>Before tips</th></tr></thead>
+                <tbody>
+                {% for (day, event_id, name), event_totals in city_totals.events | dictsort %}
+                  <tr><td>{{ day }}</td><td><a href="/tpt/allocation?day={{ day }}#assigned-event-{{ event_id }}">{{ name }}</a></td>
+                      <td>{{ event_totals.sales }}</td><td>{{ event_totals.cents | allocation_amount }}</td></tr>
+                {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </details>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p>No assigned sales for this month.</p>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

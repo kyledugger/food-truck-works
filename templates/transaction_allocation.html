@@ -6,6 +6,7 @@
     {% include "_app_brand.html" %}
     <a href="/dashboard">Back to dashboard</a>
     <h1 class="title mt-4">Transaction allocation</h1>
+    <p class="mb-4"><a href="/tpt/allocation/summary?month={{ day.strftime('%Y-%m') }}">Monthly summary</a></p>
     <form method="get" action="/tpt/allocation" class="field is-grouped is-align-items-end">
       <div class="control">
         <label class="label" for="allocation-day">Sales date (Phoenix)</label>
@@ -47,12 +48,26 @@
       <table class="table is-fullwidth">
         <thead><tr><th>Event</th><th>City</th><th>County</th><th>Sales</th><th>Before tips</th></tr></thead>
         <tbody>
-        {% for (_, name, city, county), (count, cents) in assigned_events.items() %}
-          <tr><td>{{ name }}</td><td>{{ city }}</td><td>{{ county }}</td><td>{{ count }}</td><td>{{ cents | allocation_amount }}</td></tr>
+        {% for (event_id, name, city, county), (count, cents) in assigned_events.items() %}
+          <tr><td><a href="#assigned-event-{{ event_id }}">{{ name }}</a></td><td>{{ city }}</td><td>{{ county }}</td><td>{{ count }}</td><td>{{ cents | allocation_amount }}</td></tr>
         {% endfor %}
         </tbody>
       </table>
     </div>
+    {% for (event_id, name, city, county), (count, cents) in assigned_events.items() %}
+    <details class="box" id="assigned-event-{{ event_id }}">
+      <summary>{{ name }} · Assigned transactions</summary>
+      <div class="table-container mt-2">
+        <table class="table is-fullwidth is-narrow">
+          <thead><tr><th>Time (Phoenix)</th><th>Transaction ID</th><th>Before tips</th></tr></thead>
+          <tbody>{% for sale in assigned_transactions.get(event_id, []) %}
+            <tr><td>{{ sale.created_at.astimezone(zone).strftime("%I:%M:%S %p").lstrip("0") }}</td>
+                <td><code>{{ sale.transaction_id }}</code></td><td>{{ sale.order_cents | allocation_amount }}</td></tr>
+          {% endfor %}</tbody>
+        </table>
+      </div>
+    </details>
+    {% endfor %}
     {% endif %}
     {% if bundles %}
     <form method="post" action="/tpt/allocation/claim">
